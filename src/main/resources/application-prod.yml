@@ -1,5 +1,0 @@
-app:
-  security:
-    cookie:
-      secure: true
-      same-site: Lax
