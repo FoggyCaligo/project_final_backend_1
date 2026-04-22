@@ -1,0 +1,6 @@
+.gradle/
+.project
+.settings/
+.classpath
+.vscode/
+fileHashes.lock
