@@ -8,13 +8,17 @@ spring:
       max-file-size: 5MB
       max-request-size: 25MB
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/today_fridge}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/today_fridge?currentSchema=today_fridge}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:1234}
     driver-class-name: org.postgresql.Driver
   jpa:
     open-in-view: false
+    properties:
+      hibernate:
+        default_schema: today_fridge
     hibernate:
+      # 팀 DDL 적용 후 단일 기준이면 validate 또는 none 권장 (sql/README_스키마적용대기.md)
       ddl-auto: update
   flyway:
     enabled: false
