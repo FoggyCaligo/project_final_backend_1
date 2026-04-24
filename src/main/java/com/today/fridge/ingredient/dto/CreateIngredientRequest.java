@@ -10,16 +10,11 @@ import java.time.LocalDate;
 
 @Getter
 @Setter
-public class FridgeIngredientCreateRequest {
+public class CreateIngredientRequest {
 
     @NotBlank
     @Size(max = 100)
-    private String rawName;
-
-    @Size(max = 100)
-    private String normalizedNameSnapshot;
-
-    private Long ingredientMasterId;
+    private String name;
 
     private BigDecimal quantity;
 
@@ -30,4 +25,6 @@ public class FridgeIngredientCreateRequest {
     private String storageType;
 
     private LocalDate expirationDate;
+
+    private Long categoryId;
 }

@@ -3,15 +3,16 @@ package com.today.fridge.ingredient.dto;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-public record FridgeIngredientItemResponse(
+/** 지침서 v1.0 IngredientResponse */
+public record IngredientResponse(
         Long ingredientId,
-        Long ingredientMasterId,
-        String rawName,
-        String normalizedNameSnapshot,
+        String name,
+        String normalizedName,
+        String category,
+        LocalDate expirationDate,
         BigDecimal quantity,
         String unit,
         String storageType,
-        LocalDate expirationDate,
         String freshnessStatus
 ) {
 }

@@ -23,6 +23,10 @@ public class ApiResponse<T> {
         return new ApiResponse<>(true, "OK", "요청이 성공했습니다.", data, requestId);
     }
 
+    public static <T> ApiResponse<T> ok(T data, String requestId, String message) {
+        return new ApiResponse<>(true, "OK", message, data, requestId);
+    }
+
     public static <T> ApiResponse<T> fail(String code, String message, T data, String requestId) {
         return new ApiResponse<>(false, code, message, data, requestId);
     }

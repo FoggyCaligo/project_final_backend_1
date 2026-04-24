@@ -4,5 +4,5 @@ import com.today.fridge.global.response.PageInfo;
 
 import java.util.List;
 
-public record FridgeIngredientListData(List<FridgeIngredientItemResponse> items, PageInfo pageInfo) {
+public record FridgeIngredientListData(List<IngredientResponse> items, PageInfo pageInfo) {
 }
