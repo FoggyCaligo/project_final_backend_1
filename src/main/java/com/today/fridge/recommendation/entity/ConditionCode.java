@@ -1,4 +1,4 @@
-package com.today.fridge.recipe.entity;
+package com.today.fridge.recommendation.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -15,15 +15,19 @@ public class ConditionCode {
     @Column(name = "condition_id")
     private Long conditionId;
 
-    @Column(name = "condition_code", nullable = false, unique = true, length = 30)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "condition_group", nullable = false, length = 30)
+    private ConditionGroup conditionGroup;
+
+    @Column(name = "condition_code", nullable = false, unique = true, length = 50)
     private String conditionCode;
 
-    @Column(name = "condition_name", length = 50)
+    @Column(name = "condition_name", nullable = false, length = 50)
     private String conditionName;
 
     @Column(name = "description", length = 255)
     private String description;
 
-    @Column(name = "is_active")
-    private Boolean isActive;
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
 }

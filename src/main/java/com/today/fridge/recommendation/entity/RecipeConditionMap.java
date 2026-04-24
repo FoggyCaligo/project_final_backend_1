@@ -1,5 +1,6 @@
-package com.today.fridge.recipe.entity;
+package com.today.fridge.recommendation.entity;
 
+import com.today.fridge.recipe.entity.Recipe;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -9,7 +10,15 @@ import java.math.BigDecimal;
 @Getter
 @NoArgsConstructor
 @Entity
-@Table(name = "recipe_condition_map")
+@Table(
+        name = "recipe_condition_map",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uq_recipe_condition",
+                        columnNames = {"recipe_id", "condition_id"}
+                )
+        }
+)
 public class RecipeConditionMap {
 
     @Id
@@ -23,13 +32,13 @@ public class RecipeConditionMap {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "condition_id", nullable = false)
-    private ConditionCode condition;
+    private ConditionCode conditionCode;
 
     @Column(name = "fit_type", length = 20)
-    private String fitType;
+    private String fitType; // RECOMMENDED, ALLOWED, CAUTION
 
     @Column(name = "source_type", length = 20)
-    private String sourceType;
+    private String sourceType; // MANUAL, RULE, INFERRED
 
     @Column(name = "confidence_score", precision = 5, scale = 2)
     private BigDecimal confidenceScore;
