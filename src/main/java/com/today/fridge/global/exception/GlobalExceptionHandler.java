@@ -42,7 +42,10 @@ public class GlobalExceptionHandler {
         Map<String, Object> data = new HashMap<>();
         data.put("errors", errors);
         ApiResponse<Map<String, Object>> body = ApiResponse.fail(
-                "VALIDATION_ERROR", "입력값이 올바르지 않습니다.", data, requestId);
+                ErrorCode.VALIDATION_ERROR.getCode(),
+                ErrorCode.VALIDATION_ERROR.getDefaultMessage(),
+                data,
+                requestId);
         return ResponseEntity.badRequest().body(body);
     }
 
@@ -74,7 +77,10 @@ public class GlobalExceptionHandler {
         String requestId = (String) request.getAttribute(RequestIdFilter.REQUEST_ID_ATTR);
         log.error("Unhandled exception requestId={} path={}", requestId, request.getRequestURI(), ex);
         ApiResponse<Map<String, Object>> body = ApiResponse.fail(
-                "INTERNAL_ERROR", "서버 오류가 발생했습니다.", null, requestId);
+                ErrorCode.INTERNAL_ERROR.getCode(),
+                ErrorCode.INTERNAL_ERROR.getDefaultMessage(),
+                null,
+                requestId);
         return ResponseEntity.internalServerError().body(body);
     }
 }

@@ -1,6 +1,7 @@
 package com.today.fridge.ingredient.repository;
 
 import com.today.fridge.ingredient.entity.UserIngredient;
+import com.today.fridge.ingredient.type.FreshnessStatus;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -11,7 +12,7 @@ import java.util.Optional;
 
 public interface UserIngredientRepository extends JpaRepository<UserIngredient, Long>, UserIngredientRepositoryCustom {
 
-    @EntityGraph(attributePaths = {"ingredientMaster", "ingredientMaster.category", "category"})
+    @EntityGraph(attributePaths = {"ingredientMaster"})
     @Query("""
             select ui from UserIngredient ui
             where ui.userIngredientId = :id and ui.user.userId = :userId
@@ -20,9 +21,9 @@ public interface UserIngredientRepository extends JpaRepository<UserIngredient, 
 
     long countByUser_UserId(Long userId);
 
-    long countByUser_UserIdAndFreshnessStatus(Long userId, String freshnessStatus);
+    long countByUser_UserIdAndFreshnessStatus(Long userId, FreshnessStatus freshnessStatus);
 
-    @EntityGraph(attributePaths = {"ingredientMaster", "ingredientMaster.category", "category"})
+    @EntityGraph(attributePaths = {"ingredientMaster"})
     List<UserIngredient> findTop5ByUser_UserIdAndFreshnessStatusOrderByExpiresAtAsc(
-            Long userId, String freshnessStatus);
+            Long userId, FreshnessStatus freshnessStatus);
 }

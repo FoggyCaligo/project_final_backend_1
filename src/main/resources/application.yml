@@ -18,8 +18,8 @@ spring:
       hibernate:
         default_schema: today_fridge
     hibernate:
-      # 팀 DDL 적용 후 단일 기준이면 validate 또는 none 권장 (sql/README_스키마적용대기.md)
-      ddl-auto: update
+      # 최종 SQL 기준 운영/개발 스키마 드리프트 방지
+      ddl-auto: validate
   flyway:
     enabled: false
 

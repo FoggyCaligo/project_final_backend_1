@@ -1,5 +1,6 @@
 package com.today.fridge.ingredient.dto;
 
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -16,6 +17,7 @@ public class CreateIngredientRequest {
     @Size(max = 100)
     private String name;
 
+    @DecimalMin(value = "0", inclusive = true)
     private BigDecimal quantity;
 
     @Size(max = 20)

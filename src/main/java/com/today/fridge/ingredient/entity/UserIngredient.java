@@ -3,6 +3,7 @@ package com.today.fridge.ingredient.entity;
 import com.today.fridge.user.entity.User;
 import jakarta.persistence.*;
 import com.today.fridge.ingredient.domain.FreshnessCalculator;
+import com.today.fridge.ingredient.type.FreshnessStatus;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -34,11 +35,6 @@ public class UserIngredient {
     @JoinColumn(name = "ingredient_master_id")
     private IngredientMaster ingredientMaster;
 
-    /** 마스터 미연결 시 사용자가 지정한 카테고리(지침서 categoryId) */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id")
-    private IngredientCategory category;
-
     @Column(name = "raw_name", length = 100)
     private String rawName;
 
@@ -57,8 +53,9 @@ public class UserIngredient {
     @Column(name = "expires_at")
     private LocalDate expiresAt;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "freshness_status", length = 20)
-    private String freshnessStatus;
+    private FreshnessStatus freshnessStatus;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

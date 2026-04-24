@@ -1,9 +1,11 @@
 package com.today.fridge.ingredient.domain;
 
+import com.today.fridge.ingredient.type.FreshnessStatus;
+
 import java.time.LocalDate;
 
 /**
- * 계획서 06_신선도규칙_확정표_초안 — 팀 승인 전 착수용.
+ * 냉장고 CRUD API 작업 시작 문서 v1.0 §6.
  */
 public final class FreshnessCalculator {
 
@@ -12,17 +14,17 @@ public final class FreshnessCalculator {
 
     public static final int SOON_DAYS_INCLUSIVE = 3;
 
-    public static String computeStatus(LocalDate expiresAt, LocalDate today) {
+    public static FreshnessStatus computeStatus(LocalDate expiresAt, LocalDate today) {
         if (expiresAt == null) {
-            return "UNKNOWN";
+            return FreshnessStatus.UNKNOWN;
         }
         if (expiresAt.isBefore(today)) {
-            return "EXPIRED";
+            return FreshnessStatus.EXPIRED;
         }
         LocalDate soonEnd = today.plusDays(SOON_DAYS_INCLUSIVE);
         if (!expiresAt.isAfter(soonEnd)) {
-            return "SOON";
+            return FreshnessStatus.SOON;
         }
-        return "FRESH";
+        return FreshnessStatus.FRESH;
     }
 }

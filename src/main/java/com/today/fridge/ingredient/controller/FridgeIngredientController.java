@@ -1,7 +1,7 @@
 package com.today.fridge.ingredient.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.today.fridge.global.exception.BusinessException;
+import com.today.fridge.global.exception.ErrorCode;
 import com.today.fridge.global.filter.RequestIdFilter;
 import com.today.fridge.global.response.ApiResponse;
 import com.today.fridge.ingredient.dto.CreateIngredientRequest;
@@ -9,7 +9,7 @@ import com.today.fridge.ingredient.dto.DeleteIngredientData;
 import com.today.fridge.ingredient.dto.FridgeIngredientListData;
 import com.today.fridge.ingredient.dto.FridgeSummaryResponse;
 import com.today.fridge.ingredient.dto.IngredientResponse;
-import com.today.fridge.ingredient.service.UserIngredientService;
+import com.today.fridge.ingredient.service.FridgeIngredientService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -25,14 +25,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/v1/fridge")
-public class FridgeController {
+public class FridgeIngredientController {
 
-    private final UserIngredientService userIngredientService;
+    private final FridgeIngredientService fridgeIngredientService;
 
-    public FridgeController(UserIngredientService userIngredientService) {
-        this.userIngredientService = userIngredientService;
+    public FridgeIngredientController(FridgeIngredientService fridgeIngredientService) {
+        this.fridgeIngredientService = fridgeIngredientService;
     }
 
     @GetMapping("/ingredients")
@@ -48,7 +50,7 @@ public class FridgeController {
         long uid = requireUserId(userId);
         String requestId = (String) request.getAttribute(RequestIdFilter.REQUEST_ID_ATTR);
         FridgeIngredientListData data =
-                userIngredientService.list(uid, page, size, sort, freshnessStatus, storageType, keyword);
+                fridgeIngredientService.list(uid, page, size, sort, freshnessStatus, storageType, keyword);
         return ResponseEntity.ok(ApiResponse.ok(data, requestId, "식재료 목록 조회 성공"));
     }
 
@@ -58,7 +60,7 @@ public class FridgeController {
             HttpServletRequest request) {
         long uid = requireUserId(userId);
         String requestId = (String) request.getAttribute(RequestIdFilter.REQUEST_ID_ATTR);
-        FridgeSummaryResponse data = userIngredientService.summary(uid);
+        FridgeSummaryResponse data = fridgeIngredientService.summary(uid);
         return ResponseEntity.ok(ApiResponse.ok(data, requestId));
     }
 
@@ -69,7 +71,7 @@ public class FridgeController {
             HttpServletRequest request) {
         long uid = requireUserId(userId);
         String requestId = (String) request.getAttribute(RequestIdFilter.REQUEST_ID_ATTR);
-        IngredientResponse created = userIngredientService.create(uid, body);
+        IngredientResponse created = fridgeIngredientService.create(uid, body);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok(created, requestId, "식재료 등록 성공"));
     }
@@ -78,11 +80,11 @@ public class FridgeController {
     public ResponseEntity<ApiResponse<IngredientResponse>> patch(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @PathVariable("ingredientId") Long ingredientId,
-            @RequestBody JsonNode body,
+            @RequestBody Map<String, Object> body,
             HttpServletRequest request) {
         long uid = requireUserId(userId);
         String requestId = (String) request.getAttribute(RequestIdFilter.REQUEST_ID_ATTR);
-        IngredientResponse updated = userIngredientService.patch(uid, ingredientId, body);
+        IngredientResponse updated = fridgeIngredientService.patch(uid, ingredientId, body);
         return ResponseEntity.ok(ApiResponse.ok(updated, requestId, "식재료 수정 성공"));
     }
 
@@ -93,16 +95,13 @@ public class FridgeController {
             HttpServletRequest request) {
         long uid = requireUserId(userId);
         String requestId = (String) request.getAttribute(RequestIdFilter.REQUEST_ID_ATTR);
-        DeleteIngredientData data = userIngredientService.delete(uid, ingredientId);
+        DeleteIngredientData data = fridgeIngredientService.delete(uid, ingredientId);
         return ResponseEntity.ok(ApiResponse.ok(data, requestId, "식재료 삭제 성공"));
     }
 
     private static long requireUserId(Long userId) {
         if (userId == null) {
-            throw new BusinessException(
-                    HttpStatus.UNAUTHORIZED,
-                    "UNAUTHORIZED",
-                    "로그인이 필요합니다. (로컬 개발: 요청 헤더 X-User-Id)");
+            throw new BusinessException(ErrorCode.UNAUTHORIZED);
         }
         return userId;
     }

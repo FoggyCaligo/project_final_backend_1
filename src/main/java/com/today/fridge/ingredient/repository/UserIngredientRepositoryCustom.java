@@ -1,6 +1,7 @@
 package com.today.fridge.ingredient.repository;
 
 import com.today.fridge.ingredient.entity.UserIngredient;
+import com.today.fridge.ingredient.type.FreshnessStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -12,7 +13,7 @@ public interface UserIngredientRepositoryCustom {
             Long userId,
             LocalDate today,
             LocalDate soonEnd,
-            String freshnessStatus,
+            FreshnessStatus freshnessStatus,
             String storageType,
             String keyword,
             String sort,

@@ -2,6 +2,7 @@ package com.today.fridge.ingredient.repository;
 
 import com.today.fridge.ingredient.entity.IngredientMaster;
 import com.today.fridge.ingredient.entity.UserIngredient;
+import com.today.fridge.ingredient.type.FreshnessStatus;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
@@ -34,7 +35,7 @@ public class UserIngredientRepositoryImpl implements UserIngredientRepositoryCus
             Long userId,
             LocalDate today,
             LocalDate soonEnd,
-            String freshnessStatus,
+            FreshnessStatus freshnessStatus,
             String storageType,
             String keyword,
             String sort,
@@ -44,14 +45,11 @@ public class UserIngredientRepositoryImpl implements UserIngredientRepositoryCus
         CriteriaQuery<UserIngredient> cq = cb.createQuery(UserIngredient.class);
         Root<UserIngredient> root = cq.from(UserIngredient.class);
 
-        Fetch<UserIngredient, IngredientMaster> masterFetch =
-                root.fetch("ingredientMaster", JoinType.LEFT);
-        masterFetch.fetch("category", JoinType.LEFT);
-        root.fetch("category", JoinType.LEFT);
+        root.fetch("ingredientMaster", JoinType.LEFT);
 
         List<Predicate> predicates = buildPredicates(cb, root, userId, freshnessStatus, storageType, keyword);
         cq.where(predicates.toArray(Predicate[]::new));
-        cq.distinct(true);
+        // DISTINCT + ORDER BY(CASE…) 는 H2에서 거부된다. 본 쿼리는 ManyToOne 페치만 있어 행 중복이 없다.
         applyOrder(cb, cq, root, today, soonEnd, sort);
 
         TypedQuery<UserIngredient> query = em.createQuery(cq);
@@ -67,12 +65,12 @@ public class UserIngredientRepositoryImpl implements UserIngredientRepositoryCus
             CriteriaBuilder cb,
             Root<UserIngredient> root,
             Long userId,
-            String freshnessStatus,
+            FreshnessStatus freshnessStatus,
             String storageType,
             String keyword) {
         List<Predicate> predicates = new ArrayList<>();
         predicates.add(cb.equal(root.get("user").get("userId"), userId));
-        if (StringUtils.hasText(freshnessStatus)) {
+        if (freshnessStatus != null) {
             predicates.add(cb.equal(root.get("freshnessStatus"), freshnessStatus));
         }
         if (StringUtils.hasText(storageType)) {
@@ -137,7 +135,7 @@ public class UserIngredientRepositoryImpl implements UserIngredientRepositoryCus
     private long countMatching(
             CriteriaBuilder cb,
             Long userId,
-            String freshnessStatus,
+            FreshnessStatus freshnessStatus,
             String storageType,
             String keyword) {
         CriteriaQuery<Long> cq = cb.createQuery(Long.class);
