@@ -4,3 +4,4 @@
 .classpath
 .vscode/
 fileHashes.lock
+src/main/resources/application.yml
