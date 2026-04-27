@@ -20,7 +20,9 @@ public class RecommendationService {
     private final RecipeConditionMapRepository recipeConditionMapRepository;
     private final RecommendationScoreService recommendationScoreService;
     private final SubstituteIngredientService substituteIngredientService;
-
+    private final RecommendationReasonService recommendationReasonService;
+    
+    
     private RecipeRecommendationResponse createMockRecipe(
             Long recipeId,
             String title,
@@ -39,7 +41,13 @@ public class RecommendationService {
 
         double totalScore =
                 recommendationScoreService.calculateTotalScore(ingredientScore, conditionScore);
-
+        
+        String reason = recommendationReasonService.buildReason(
+                Math.round(matchRate * 10) / 10.0,
+                conditionTags,
+                missingIngredients
+        );
+        
         return RecipeRecommendationResponse.builder()
                 .recipeId(recipeId)
                 .title(title)
@@ -56,6 +64,7 @@ public class RecommendationService {
                 	        title
                 	    )
                 	)
+                .reason(reason)
                 .build();
     }
     

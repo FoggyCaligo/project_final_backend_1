@@ -26,17 +26,27 @@ public class ChatbotOrchestratorService {
         ChatInterpretResponse parsed =
                 intentParserService.interpret(request);
 
+        Long userId = request.getUserId();
+        boolean isMember = userId != null;
+
+        List<String> includeIngredients = parsed.getIncludeIngredients();
+
+        if (isMember && includeIngredients.isEmpty()) {
+            // TODO: 회원 냉장고 재료 조회 로직으로 교체
+            includeIngredients = List.of("두부", "계란");
+        }
+
         RecommendationQuery query =
                 RecommendationQuery.builder()
-                        .userId(null) // 비회원 고려
+                        .userId(userId)
                         .conditionCodes(parsed.getConditionTags())
-                        .includeIngredients(parsed.getIncludeIngredients())
+                        .includeIngredients(includeIngredients)
                         .excludeIngredients(parsed.getExcludeIngredients())
                         .keywords(parsed.getKeywords())
                         .sortHint(parsed.getSortHint())
                         .source("CHATBOT")
-                        .useUserProfile(false)
-                        .useUserFridge(false)
+                        .useUserProfile(isMember)
+                        .useUserFridge(isMember)
                         .build();
 
         return recommendationService.recommend(query);
