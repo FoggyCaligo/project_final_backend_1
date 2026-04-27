@@ -34,7 +34,6 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 
-
 @Service
 @Transactional(readOnly = true)
 public class FridgeIngredientService {
