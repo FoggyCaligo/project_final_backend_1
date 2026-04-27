@@ -4,15 +4,4 @@
 .classpath
 .vscode/
 fileHashes.lock
-build/
-src/test/
-.gitignore
-gradlew
-gradlew.bat
-sql/
-src/main/resources/sql/
 bin/
-docker-compose.yml
-*.lock
-*.bin
-hs_err_pid*.log
