@@ -14,15 +14,15 @@ public class IngredientMaster {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ingredient_master_id")
+    // 최종 PostgreSQL 스키마(postgre_init) 기준 PK 컬럼은 ingredient_id
+    @Column(name = "ingredient_id")
     private Long ingredientMasterId;
 
     @Column(name = "normalized_name", nullable = false, unique = true, length = 100)
     private String normalizedName;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id")
-    private IngredientCategory category;
+    @Column(name = "category_id")
+    private Integer categoryId;
 
     @Column(name = "alias_text", columnDefinition = "TEXT")
     private String aliasText;
