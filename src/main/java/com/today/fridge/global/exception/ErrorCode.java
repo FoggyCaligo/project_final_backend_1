@@ -30,6 +30,9 @@ public enum ErrorCode {
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."),
     BOOKMARK_NOT_FOUND(HttpStatus.NOT_FOUND, "북마크를 찾을 수 없습니다."),
     FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다."),
+    RECIPE_NUTRITION_NOT_FOUND(HttpStatus.NOT_FOUND, "레시피 영양정보를 찾을 수 없습니다."),
+    RECIPE_STEP_NOT_FOUND(HttpStatus.NOT_FOUND, "레시피 단계정보를 찾을 수 없습니다."),
+    RECIPE_INGREDIENT_NOT_FOUND(HttpStatus.NOT_FOUND, "레시피 재료정보를 찾을 수 없습니다."),
 
     // 409 Conflict
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다."),
