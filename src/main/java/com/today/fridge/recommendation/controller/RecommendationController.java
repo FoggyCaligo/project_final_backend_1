@@ -13,7 +13,7 @@ import com.today.fridge.recommendation.service.RecommendationService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("api/v1/recipes")
+@RequestMapping("/api/v1/recipes")
 @RequiredArgsConstructor
 public class RecommendationController {
 
