@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.today.fridge.global.response.ApiResponse;
 import com.today.fridge.recommendation.dto.response.RecipeRecommendationResponse;
 import com.today.fridge.recommendation.service.RecommendationService;
 
@@ -20,12 +21,12 @@ public class RecommendationController {
 	private final RecommendationService recommendationService;
 	
 	@GetMapping("/recommendations")
-	public ResponseEntity<?> recommend() {
+	public ResponseEntity<ApiResponse<List<RecipeRecommendationResponse>>> recommend() {
 		Long mockUserId = 1L;
 		
 		List<RecipeRecommendationResponse> result =
 	            recommendationService.recommend(mockUserId);
 
-	    return ResponseEntity.ok(result);
+	    return ResponseEntity.ok(ApiResponse.success(result, "추천 레시피 조회 성"));
 	}
 }
