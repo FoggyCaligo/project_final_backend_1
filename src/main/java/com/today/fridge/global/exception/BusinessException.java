@@ -14,15 +14,15 @@ public class BusinessException extends RuntimeException {
     }
 
     public BusinessException(ErrorCode errorCode) {
-        super(errorCode.getDefaultMessage());
+        super(errorCode.getMessage());
         this.status = errorCode.getHttpStatus();
-        this.code = errorCode.getCode();
+        this.code = errorCode.name();
     }
 
     public BusinessException(ErrorCode errorCode, String message) {
         super(message);
         this.status = errorCode.getHttpStatus();
-        this.code = errorCode.getCode();
+        this.code = errorCode.name();
     }
 
     public String getCode() {
