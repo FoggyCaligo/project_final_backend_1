@@ -2,6 +2,8 @@ package com.today.fridge.ingredient.service;
 
 import com.today.fridge.global.exception.BusinessException;
 import com.today.fridge.global.exception.ErrorCode;
+import com.today.fridge.global.external.fastapi.EstimateExpirationResponse;
+import com.today.fridge.global.external.fastapi.FastApiService;
 import com.today.fridge.global.response.PageResponse;
 import com.today.fridge.ingredient.domain.FreshnessCalculator;
 import com.today.fridge.ingredient.domain.StorageTypePolicy;
@@ -47,16 +49,19 @@ public class FridgeIngredientService {
     private final UserRepository userRepository;
     private final IngredientMasterRepository ingredientMasterRepository;
     private final IngredientCategoryRepository ingredientCategoryRepository;
+    private final FastApiService fastApiService;
 
     public FridgeIngredientService(
             UserIngredientRepository userIngredientRepository,
             UserRepository userRepository,
             IngredientMasterRepository ingredientMasterRepository,
-            IngredientCategoryRepository ingredientCategoryRepository) {
+            IngredientCategoryRepository ingredientCategoryRepository,
+            FastApiService fastApiService) {
         this.userIngredientRepository = userIngredientRepository;
         this.userRepository = userRepository;
         this.ingredientMasterRepository = ingredientMasterRepository;
         this.ingredientCategoryRepository = ingredientCategoryRepository;
+        this.fastApiService = fastApiService;
     }
 
     public List<CategoryResponse> listCategories() {
@@ -133,8 +138,22 @@ public class FridgeIngredientService {
         validateUnitLength(req.getUnit());
         e.setUnit(req.getUnit());
         e.setStorageType(storage);
-        e.setExpiresAt(req.getExpirationDate());
-        e.setCategoryId(validateCategoryId(req.getCategoryId()));
+
+        Long catId = validateCategoryId(req.getCategoryId());
+        e.setCategoryId(catId);
+
+        if (req.getExpirationDate() != null) {
+            e.setExpiresAt(req.getExpirationDate());
+        } else {
+            // 유통기한 미입력 → FastAPI 규칙 기반 추정
+            String catCode = resolveCategoryCode(catId);
+            EstimateExpirationResponse est = fastApiService.estimateExpiration(req.getName(), catCode, storage);
+            if (est != null) {
+                e.setExpiresAt(est.estimatedExpirationDate());
+            } else {
+                e.setExpiresAt(FastApiService.fallbackExpiration(storage));
+            }
+        }
 
         tryAttachMaster(e);
         UserIngredient saved = userIngredientRepository.save(e);
@@ -269,6 +288,15 @@ public class FridgeIngredientService {
         }
         return ingredientCategoryRepository.findById(ui.getCategoryId())
                 .map(IngredientCategory::getCategoryName)
+                .orElse(null);
+    }
+
+    private String resolveCategoryCode(Long categoryId) {
+        if (categoryId == null) {
+            return null;
+        }
+        return ingredientCategoryRepository.findById(categoryId)
+                .map(IngredientCategory::getCategoryCode)
                 .orElse(null);
     }
 
