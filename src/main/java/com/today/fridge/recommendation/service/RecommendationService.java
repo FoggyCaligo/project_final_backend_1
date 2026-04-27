@@ -6,10 +6,9 @@ import org.springframework.stereotype.Service;
 
 import com.today.fridge.recommendation.dto.internal.RecommendationQuery;
 import com.today.fridge.recommendation.dto.response.RecipeRecommendationResponse;
-import com.today.fridge.recommendation.entity.RecipeConditionMap;
-import com.today.fridge.recommendation.entity.UserCondition;
 import com.today.fridge.recommendation.repository.RecipeConditionMapRepository;
 import com.today.fridge.recommendation.repository.UserConditionRepository;
+import com.today.fridge.substitution.service.SubstituteIngredientService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -20,6 +19,7 @@ public class RecommendationService {
     private final UserConditionRepository userConditionRepository;
     private final RecipeConditionMapRepository recipeConditionMapRepository;
     private final RecommendationScoreService recommendationScoreService;
+    private final SubstituteIngredientService substituteIngredientService;
 
     private RecipeRecommendationResponse createMockRecipe(
             Long recipeId,
@@ -28,7 +28,8 @@ public class RecommendationService {
             int requiredCount,
             double conditionScore,
             List<String> conditionTags,
-            List<String> missingIngredients
+            List<String> missingIngredients,
+            List<String> ownedIngredients
     ) {
         double ingredientScore =
                 recommendationScoreService.calculateIngredientScore(matchedCount, requiredCount);
@@ -48,6 +49,13 @@ public class RecommendationService {
                 .missingIngredients(missingIngredients)
                 .conditionTags(conditionTags)
                 .reason("보유 재료와 사용자 조건을 기준으로 추천된 레시피입니다.")
+                .substituteSuggestions(
+                	    substituteIngredientService.suggest(
+                	        missingIngredients,
+                	        ownedIngredients,
+                	        title
+                	    )
+                	)
                 .build();
     }
     
@@ -68,14 +76,25 @@ public class RecommendationService {
     }
     
     public List<RecipeRecommendationResponse> recommend(RecommendationQuery query) {
-
+    	List<String> ownedIngredients =
+    	        query.getIncludeIngredients() == null
+    	                ? List.of()
+    	                : query.getIncludeIngredients();
+    	
+    	List<String> conditionCodes =
+    	        query.getConditionCodes() == null
+    	                ? List.of()
+    	                : query.getConditionCodes();
+    	
         List<RecipeRecommendationResponse> mockRecipes = List.of(
-                createMockRecipe(1L, "토마토 파스타", 2, 5, 20.0,
-                        query.getConditionCodes(), List.of("파스타면")),
-                createMockRecipe(2L, "두부 샐러드", 2, 2, 30.0,
-                        query.getConditionCodes(), List.of()),
-                createMockRecipe(3L, "양배추 두부볶음", 2, 3, 25.0,
-                        query.getConditionCodes(), List.of("간장"))
+        		createMockRecipe(1L, "토마토 파스타", 2, 5, 20.0,
+        				conditionCodes, List.of("파스타면"), ownedIngredients),
+
+        		createMockRecipe(2L, "두부 샐러드", 2, 2, 30.0,
+        				conditionCodes, List.of(), ownedIngredients),
+
+        		createMockRecipe(3L, "양배추 두부볶음", 2, 3, 25.0,
+        		        conditionCodes, List.of("간장"), ownedIngredients)
         );
 
         return mockRecipes.stream()
