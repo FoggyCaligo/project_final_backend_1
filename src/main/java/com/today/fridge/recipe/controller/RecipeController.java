@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.today.fridge.global.response.ApiResponse;
 import com.today.fridge.recipe.dto.response.RecipeListResponse;
 import com.today.fridge.recipe.service.RecipeService;
 
@@ -20,7 +21,7 @@ public class RecipeController {
 	private final RecipeService recipeService;
 
 	@GetMapping
-	public ResponseEntity<List<RecipeListResponse>> getRecipes() {
-	    return ResponseEntity.ok(recipeService.getRecipes());
+	public ResponseEntity<ApiResponse<List<RecipeListResponse>>> getRecipes() {
+	    return ResponseEntity.ok(ApiResponse.success(recipeService.getRecipes(), "레시피 목록 조회 성"));
 	}
 }

@@ -20,6 +20,36 @@ public class RecommendationService {
     private final RecipeConditionMapRepository recipeConditionMapRepository;
     private final RecommendationScoreService recommendationScoreService;
 
+    private RecipeRecommendationResponse createMockRecipe(
+            Long recipeId,
+            String title,
+            int matchedCount,
+            int requiredCount,
+            double conditionScore,
+            List<String> conditionTags,
+            List<String> missingIngredients
+    ) {
+        double ingredientScore =
+                recommendationScoreService.calculateIngredientScore(matchedCount, requiredCount);
+
+        double matchRate =
+                recommendationScoreService.calculateMatchRate(matchedCount, requiredCount);
+
+        double totalScore =
+                recommendationScoreService.calculateTotalScore(ingredientScore, conditionScore);
+
+        return RecipeRecommendationResponse.builder()
+                .recipeId(recipeId)
+                .title(title)
+                .matchRate(Math.round(matchRate * 10) / 10.0)
+                .totalScore(Math.round(totalScore * 10) / 10.0)
+                .matchedIngredients(List.of("보유 재료"))
+                .missingIngredients(missingIngredients)
+                .conditionTags(conditionTags)
+                .reason("보유 재료와 사용자 조건을 기준으로 추천된 레시피입니다.")
+                .build();
+    }
+    
     public List<RecipeRecommendationResponse> recommend(Long userId) {
 
     	// TODO : DB seed 이후실제 추천로직 활성화
@@ -59,17 +89,17 @@ public class RecommendationService {
         */
     	
     	// 임시 mock
-    	return List.of(
-                RecipeRecommendationResponse.builder()
-                        .recipeId(1L)
-                        .title("토마토 파스타")
-                        .matchRate(80.0)
-                        .totalScore(86.0)
-                        .matchedIngredients(List.of("토마토","양파"))
-                        .missingIngredients(List.of("파스타면"))
-                        .conditionTags(List.of("다이어트"))
-                        .reason("보유 재료 일치율이 높고 사용자 조건에 적합한 레시피입니다.")
-                        .build()
-        );
+    	List<RecipeRecommendationResponse> mockRecipes = List.of(
+    	        createMockRecipe(1L, "토마토 파스타", 4, 5, 20.0,
+    	                List.of("다이어트"), List.of("파스타면")),
+    	        createMockRecipe(2L, "두부 샐러드", 5, 5, 30.0,
+    	                List.of("다이어트", "저당"), List.of()),
+    	        createMockRecipe(3L, "된장찌개", 3, 6, 10.0,
+    	                List.of("저염"), List.of("두부", "애호박"))
+    	);
+
+    	return mockRecipes.stream()
+    	        .sorted((a, b) -> Double.compare(b.getTotalScore(), a.getTotalScore()))
+    	        .toList();
     }
 }
