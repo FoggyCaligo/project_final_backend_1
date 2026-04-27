@@ -1,27 +1,47 @@
 package com.today.fridge.recipe.service;
 
+/*
+ * RecipeService는 현재 3개의 Method를 제공하고 있습니다.
+ * getRecipes: 목레시피를 반환합니다. (목레시피 데이터를 반환합니다.)
+ * getAllRecipes: 모든 레시피를 반환합니다. (페이징을 고려하지 않았습니다.)
+ * getRecipe: 특정 레시피를 반환합니다.
+ * 
+ * Recipe/DTO/response/RecipeResponse를 사용하여 1개의 레시피 또는 모든 레세피를 제공합니다.
+ * 
+ * RecipeStepDTO 및 RecipeIngredientDTO는 레시피의 재료 및 단계 정보를 제공하기 위한 DTO입니다.
+ * 이것이 없으면 N+1이 발생할 가능성이 있다 판단하여 작성하였습니다.
+ * 이것들은 밑에 존재하는 getRecipeAllSteps와 getRecipeAllIngredients에서 사용됩니다.
+ */
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
-import com.today.fridge.recipe.dto.intermediate.RecipeIngredientDTO;
-import com.today.fridge.recipe.dto.intermediate.RecipeStepDTO;
+// Response DTO
 import com.today.fridge.recipe.dto.response.RecipeListResponse;
 import com.today.fridge.recipe.dto.response.RecipeResponse;
+
+//Intermediate DTO -> Step 및 Ingredient 조회
+import com.today.fridge.recipe.dto.intermediate.RecipeIngredientDTO;
+import com.today.fridge.recipe.dto.intermediate.RecipeStepDTO;
+
+// 각 table의 Entity
 import com.today.fridge.recipe.entity.Recipe;
 import com.today.fridge.recipe.entity.RecipeIngredient;
 import com.today.fridge.recipe.entity.RecipeNutrition;
 import com.today.fridge.recipe.entity.RecipeStep;
+
+// 각 table의 Repository
 import com.today.fridge.recipe.repository.RecipeIngredientRepository;
 import com.today.fridge.recipe.repository.RecipeNutritionRepository;
 import com.today.fridge.recipe.repository.RecipeRepository;
 import com.today.fridge.recipe.repository.RecipeStepRepository;
 
+// Lombok
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+// Global Exception
 import com.today.fridge.global.exception.ErrorCode;
 import com.today.fridge.global.exception.ExceptionTemplate;
 
