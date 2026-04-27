@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.today.fridge.recommendation.dto.internal.RecommendationQuery;
 import com.today.fridge.recommendation.dto.response.RecipeRecommendationResponse;
 import com.today.fridge.recommendation.entity.RecipeConditionMap;
 import com.today.fridge.recommendation.entity.UserCondition;
@@ -51,55 +52,34 @@ public class RecommendationService {
     }
     
     public List<RecipeRecommendationResponse> recommend(Long userId) {
-
-    	// TODO : DB seed 이후실제 추천로직 활성화
-    	/*
-        // 사용자 조건 조회
-        List<UserCondition> userConditions =
-                userConditionRepository
-                        .findByUser_UserIdAndIsActiveTrue(userId);
-
-        // 임시 recipeId
-        Long recipeId = 1L;
-
-        List<RecipeConditionMap> recipeConditions =
-                recipeConditionMapRepository
-                        .findByRecipe_RecipeId(recipeId);
-
-        double conditionScore =
-                recommendationScoreService.calculateConditionScore(
-                        userConditions,
-                        recipeConditions
-                );
-
-        return List.of(
-                RecipeRecommendationResponse.builder()
-                        .recipeId(recipeId)
-                        .title("토마토 파스타")
-                        .matchRate(80.0)
-                        .totalScore(conditionScore + 56.0)
-                        .conditionTags(
-                                recipeConditions.stream()
-                                        .map(rc -> rc.getConditionCode().getConditionName())
-                                        .toList()
-                        )
-                        .reason("사용자 조건 기반 추천 결과입니다.")
+        return recommend(
+                RecommendationQuery.builder()
+                        .userId(userId)
+                        .conditionCodes(List.of())
+                        .includeIngredients(List.of())
+                        .excludeIngredients(List.of())
+                        .keywords(List.of())
+                        .sortHint("ingredient_match")
+                        .source("HOME")
+                        .useUserProfile(true)
+                        .useUserFridge(true)
                         .build()
         );
-        */
-    	
-    	// 임시 mock
-    	List<RecipeRecommendationResponse> mockRecipes = List.of(
-    	        createMockRecipe(1L, "토마토 파스타", 4, 5, 20.0,
-    	                List.of("다이어트"), List.of("파스타면")),
-    	        createMockRecipe(2L, "두부 샐러드", 5, 5, 30.0,
-    	                List.of("다이어트", "저당"), List.of()),
-    	        createMockRecipe(3L, "된장찌개", 3, 6, 10.0,
-    	                List.of("저염"), List.of("두부", "애호박"))
-    	);
+    }
+    
+    public List<RecipeRecommendationResponse> recommend(RecommendationQuery query) {
 
-    	return mockRecipes.stream()
-    	        .sorted((a, b) -> Double.compare(b.getTotalScore(), a.getTotalScore()))
-    	        .toList();
+        List<RecipeRecommendationResponse> mockRecipes = List.of(
+                createMockRecipe(1L, "토마토 파스타", 2, 5, 20.0,
+                        query.getConditionCodes(), List.of("파스타면")),
+                createMockRecipe(2L, "두부 샐러드", 2, 2, 30.0,
+                        query.getConditionCodes(), List.of()),
+                createMockRecipe(3L, "양배추 두부볶음", 2, 3, 25.0,
+                        query.getConditionCodes(), List.of("간장"))
+        );
+
+        return mockRecipes.stream()
+                .sorted((a, b) -> Double.compare(b.getTotalScore(), a.getTotalScore()))
+                .toList();
     }
 }
