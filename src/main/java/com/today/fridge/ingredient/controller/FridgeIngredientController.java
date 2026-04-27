@@ -4,6 +4,7 @@ import com.today.fridge.global.exception.BusinessException;
 import com.today.fridge.global.exception.ErrorCode;
 import com.today.fridge.global.filter.RequestIdFilter;
 import com.today.fridge.global.response.ApiResponse;
+import com.today.fridge.ingredient.dto.CategoryResponse;
 import com.today.fridge.ingredient.dto.CreateIngredientRequest;
 import com.today.fridge.ingredient.dto.DeleteIngredientData;
 import com.today.fridge.ingredient.dto.FridgeIngredientListData;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -35,6 +37,14 @@ public class FridgeIngredientController {
 
     public FridgeIngredientController(FridgeIngredientService fridgeIngredientService) {
         this.fridgeIngredientService = fridgeIngredientService;
+    }
+
+    @GetMapping("/categories")
+    public ResponseEntity<ApiResponse<List<CategoryResponse>>> categories(
+            HttpServletRequest request) {
+        String requestId = (String) request.getAttribute(RequestIdFilter.REQUEST_ID_ATTR);
+        List<CategoryResponse> data = fridgeIngredientService.listCategories();
+        return ResponseEntity.ok(ApiResponse.ok(data, requestId, "카테고리 목록 조회 성공"));
     }
 
     @GetMapping("/ingredients")

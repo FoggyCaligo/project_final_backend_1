@@ -5,13 +5,16 @@ import com.today.fridge.global.exception.ErrorCode;
 import com.today.fridge.global.response.PageResponse;
 import com.today.fridge.ingredient.domain.FreshnessCalculator;
 import com.today.fridge.ingredient.domain.StorageTypePolicy;
+import com.today.fridge.ingredient.dto.CategoryResponse;
 import com.today.fridge.ingredient.dto.CreateIngredientRequest;
 import com.today.fridge.ingredient.dto.DeleteIngredientData;
 import com.today.fridge.ingredient.dto.FridgeIngredientListData;
 import com.today.fridge.ingredient.dto.FridgeSummaryResponse;
 import com.today.fridge.ingredient.dto.IngredientResponse;
 import com.today.fridge.ingredient.dto.SoonItemResponse;
+import com.today.fridge.ingredient.entity.IngredientCategory;
 import com.today.fridge.ingredient.entity.UserIngredient;
+import com.today.fridge.ingredient.repository.IngredientCategoryRepository;
 import com.today.fridge.ingredient.repository.IngredientMasterRepository;
 import com.today.fridge.ingredient.repository.UserIngredientRepository;
 import com.today.fridge.ingredient.type.FreshnessStatus;
@@ -42,14 +45,24 @@ public class FridgeIngredientService {
     private final UserIngredientRepository userIngredientRepository;
     private final UserRepository userRepository;
     private final IngredientMasterRepository ingredientMasterRepository;
+    private final IngredientCategoryRepository ingredientCategoryRepository;
 
     public FridgeIngredientService(
             UserIngredientRepository userIngredientRepository,
             UserRepository userRepository,
-            IngredientMasterRepository ingredientMasterRepository) {
+            IngredientMasterRepository ingredientMasterRepository,
+            IngredientCategoryRepository ingredientCategoryRepository) {
         this.userIngredientRepository = userIngredientRepository;
         this.userRepository = userRepository;
         this.ingredientMasterRepository = ingredientMasterRepository;
+        this.ingredientCategoryRepository = ingredientCategoryRepository;
+    }
+
+    public List<CategoryResponse> listCategories() {
+        return ingredientCategoryRepository.findAllByIsActiveTrueOrderBySortOrderAsc()
+                .stream()
+                .map(c -> new CategoryResponse(c.getCategoryId(), c.getCategoryCode(), c.getCategoryName(), c.getSortOrder()))
+                .toList();
     }
 
     public FridgeIngredientListData list(
@@ -120,6 +133,7 @@ public class FridgeIngredientService {
         e.setUnit(req.getUnit());
         e.setStorageType(storage);
         e.setExpiresAt(req.getExpirationDate());
+        e.setCategoryId(validateCategoryId(req.getCategoryId()));
 
         tryAttachMaster(e);
         UserIngredient saved = userIngredientRepository.save(e);
@@ -188,6 +202,15 @@ public class FridgeIngredientService {
                 e.setExpiresAt(parseLocalDate(v));
             }
         }
+        if (body.containsKey("categoryId")) {
+            Object v = body.get("categoryId");
+            if (v == null) {
+                e.setCategoryId(null);
+            } else {
+                Long catId = v instanceof Number n ? n.longValue() : Long.parseLong(v.toString());
+                e.setCategoryId(validateCategoryId(catId));
+            }
+        }
 
         tryAttachMaster(e);
         UserIngredient saved = userIngredientRepository.save(e);
@@ -230,6 +253,7 @@ public class FridgeIngredientService {
                 ui.getUserIngredientId(),
                 ui.getRawName(),
                 ui.getNormalizedNameSnapshot(),
+                ui.getCategoryId(),
                 resolveCategoryName(ui),
                 ui.getExpiresAt(),
                 ui.getQuantity(),
@@ -239,7 +263,22 @@ public class FridgeIngredientService {
     }
 
     private String resolveCategoryName(UserIngredient ui) {
-        return null;
+        if (ui.getCategoryId() == null) {
+            return null;
+        }
+        return ingredientCategoryRepository.findById(ui.getCategoryId())
+                .map(IngredientCategory::getCategoryName)
+                .orElse(null);
+    }
+
+    private Long validateCategoryId(Long categoryId) {
+        if (categoryId == null) {
+            return null;
+        }
+        if (!ingredientCategoryRepository.existsById(categoryId)) {
+            throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
+        }
+        return categoryId;
     }
 
     private static void validateNameLength(String name) {

@@ -53,6 +53,9 @@ public class UserIngredient {
     @Column(name = "expires_at")
     private LocalDate expiresAt;
 
+    @Column(name = "category_id")
+    private Long categoryId;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "freshness_status", length = 20)
     private FreshnessStatus freshnessStatus;

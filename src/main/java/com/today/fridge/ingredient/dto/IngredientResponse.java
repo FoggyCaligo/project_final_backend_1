@@ -8,6 +8,7 @@ public record IngredientResponse(
         Long ingredientId,
         String name,
         String normalizedName,
+        Long categoryId,
         String category,
         LocalDate expirationDate,
         BigDecimal quantity,
