@@ -1,53 +1,128 @@
 package com.today.fridge.global.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import org.slf4j.MDC;
 
+@Getter
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiResponse<T> {
 
-    private final boolean success;
-    private final String code;
-    private final String message;
-    private final T data;
-    private final String requestId;
+	/*
+	 * success: 성공 여부를 판단합니다.
+	 * code: HTTP 응답 코드를 전달합니다.
+	 * message: 응답 메시지를 전달합니다.
+	 * requestId: 응답 요청 ID를 전달합니다.
+	 * data: 응답 데이터를 전달합니다.
+	 * error: 응답 에러를 전달합니다.
+	 */
+	private Boolean success;
+	private String code;
+	private String message;
+	private String requestId;
+	private T data;
+	private Object error;
 
-    public ApiResponse(boolean success, String code, String message, T data, String requestId) {
-        this.success = success;
-        this.code = code;
-        this.message = message;
-        this.data = data;
-        this.requestId = requestId;
-    }
+	/*
+	 * 성공 시 응답입니다.
+	 * 프론트로 data만 전달하는 method와 data 및 (String) message를 전달하는 method가 존재합니다.
+	 * 성공은 코드가 항상 200으로 전달되고 있습니다. 추가 코드가 필요하시면 그때 추가 method를 생성하도록 하겠습니다.
+	 */
+	public static <T> ApiResponse<T> success(T data) {
+		return ApiResponse.<T>builder()
+				.success(true)
+				.code("200")
+				.message("Success")
+				.requestId(MDC.get("requestId"))
+				.data(data)
+				.build();
+	}
 
-    public static <T> ApiResponse<T> ok(T data, String requestId) {
-        return new ApiResponse<>(true, "OK", "요청이 성공했습니다.", data, requestId);
-    }
+	public static <T> ApiResponse<T> success(T data, String message) {
+		return ApiResponse.<T>builder()
+				.success(true)
+				.code("200")
+				.message(message)
+				.requestId(MDC.get("requestId"))
+				.data(data)
+				.build();
+	}
 
-    public static <T> ApiResponse<T> ok(T data, String requestId, String message) {
-        return new ApiResponse<>(true, "OK", message, data, requestId);
-    }
+	/*
+	 * 실패 시 응답입니다.
+	 * code: ErrorCode Enum의 name() method를 전달합니다.
+	 * message: 프론트에서 표시할 메시지입니다.
+	 * errorDetails: 추가적인 에러 상세 정보입니다.
+	 */
+	public static <T> ApiResponse<T> error(String code, String message, Object errorDetails) {
+		return ApiResponse.<T>builder()
+				.success(false)
+				.code(code)
+				.message(message)
+				.requestId(MDC.get("requestId"))
+				.error(errorDetails)
+				.build();
+	}
 
-    public static <T> ApiResponse<T> fail(String code, String message, T data, String requestId) {
-        return new ApiResponse<>(false, code, message, data, requestId);
-    }
+	public static <T> ApiResponse<T> error(String code, String message) {
+		return ApiResponse.<T>builder()
+				.success(false)
+				.code(code)
+				.message(message)
+				.requestId(MDC.get("requestId"))
+				.build();
+	}
 
-    public boolean isSuccess() {
-        return success;
-    }
+	// ── 냉장고 CRUD 컨트롤러 호환 메서드 (requestId 직접 전달 방식) ────────
 
-    public String getCode() {
-        return code;
-    }
+	public static <T> ApiResponse<T> ok(T data, String requestId) {
+		return ApiResponse.<T>builder()
+				.success(true)
+				.code("OK")
+				.message("요청이 성공했습니다.")
+				.requestId(requestId)
+				.data(data)
+				.build();
+	}
 
-    public String getMessage() {
-        return message;
-    }
+	public static <T> ApiResponse<T> ok(T data, String requestId, String message) {
+		return ApiResponse.<T>builder()
+				.success(true)
+				.code("OK")
+				.message(message)
+				.requestId(requestId)
+				.data(data)
+				.build();
+	}
 
-    public T getData() {
-        return data;
-    }
+	public static <T> ApiResponse<T> fail(String code, String message, T data, String requestId) {
+		return ApiResponse.<T>builder()
+				.success(false)
+				.code(code)
+				.message(message)
+				.requestId(requestId)
+				.data(data)
+				.build();
+	}
 
-    public String getRequestId() {
-        return requestId;
-    }
+	/*
+	 * ====================================================================
+	 * Meta class는 응답 데이터를 구조화하고 프론트와 통신하기 위해 생성하였습니다.
+	 * success: 성공 여부를 판단합니다.
+	 * code: HTTP 응답 코드를 전달합니다.
+	 * message: 응답 메시지를 전달합니다.
+	 * requestId: 응답 요청 ID를 전달합니다.
+	 * ====================================================================
+	 */
+	@Getter
+	@Builder
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public static class Meta {
+
+	}
 }

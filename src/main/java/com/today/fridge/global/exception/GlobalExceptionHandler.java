@@ -3,8 +3,7 @@ package com.today.fridge.global.exception;
 import com.today.fridge.global.filter.RequestIdFilter;
 import com.today.fridge.global.response.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -18,10 +17,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
-    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Map<String, Object>>> handleBusiness(
@@ -30,6 +28,16 @@ public class GlobalExceptionHandler {
         ApiResponse<Map<String, Object>> body = ApiResponse.fail(
                 ex.getCode(), ex.getMessage(), null, requestId);
         return ResponseEntity.status(ex.getStatus()).body(body);
+    }
+
+    @ExceptionHandler(ExceptionTemplate.class)
+    public ResponseEntity<ApiResponse<Object>> handleExceptionTemplate(
+            ExceptionTemplate ex, HttpServletRequest request) {
+        String requestId = (String) request.getAttribute(RequestIdFilter.REQUEST_ID_ATTR);
+        log.error("예외가 발생했습니다 : {}", ex.getMessage(), ex);
+        ApiResponse<Object> body = ApiResponse.fail(
+                ex.getErrorCode().name(), ex.getMessage(), null, requestId);
+        return ResponseEntity.status(ex.getErrorCode().getHttpStatus()).body(body);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -42,8 +50,8 @@ public class GlobalExceptionHandler {
         Map<String, Object> data = new HashMap<>();
         data.put("errors", errors);
         ApiResponse<Map<String, Object>> body = ApiResponse.fail(
-                ErrorCode.VALIDATION_ERROR.getCode(),
-                ErrorCode.VALIDATION_ERROR.getDefaultMessage(),
+                ErrorCode.VALIDATION_ERROR.name(),
+                ErrorCode.VALIDATION_ERROR.getMessage(),
                 data,
                 requestId);
         return ResponseEntity.badRequest().body(body);
@@ -56,10 +64,6 @@ public class GlobalExceptionHandler {
         return m;
     }
 
-    /**
-     * 매핑 없는 경로(예: {@code GET /}, {@code /favicon.ico})는 기본적으로 이 예외가 나며,
-     * {@link Exception} 핸들러에 떨어지면 500으로 보이므로 404로 분리한다.
-     */
     @ExceptionHandler(NoHandlerFoundException.class)
     public ResponseEntity<ApiResponse<Map<String, Object>>> handleNoHandler(
             NoHandlerFoundException ex, HttpServletRequest request) {
@@ -77,8 +81,8 @@ public class GlobalExceptionHandler {
         String requestId = (String) request.getAttribute(RequestIdFilter.REQUEST_ID_ATTR);
         log.error("Unhandled exception requestId={} path={}", requestId, request.getRequestURI(), ex);
         ApiResponse<Map<String, Object>> body = ApiResponse.fail(
-                ErrorCode.INTERNAL_ERROR.getCode(),
-                ErrorCode.INTERNAL_ERROR.getDefaultMessage(),
+                ErrorCode.INTERNAL_ERROR.name(),
+                ErrorCode.INTERNAL_ERROR.getMessage(),
                 null,
                 requestId);
         return ResponseEntity.internalServerError().body(body);
