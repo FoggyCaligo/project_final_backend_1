@@ -53,10 +53,13 @@ public class RecommendationService {
                 .title(title)
                 .matchRate(Math.round(matchRate * 10) / 10.0)
                 .totalScore(Math.round(totalScore * 10) / 10.0)
-                .matchedIngredients(List.of("보유 재료"))
+                .matchedIngredients(
+                		   ownedIngredients.isEmpty()
+                		      ? List.of("추천 재료 기반")
+                		      : ownedIngredients
+                		)
                 .missingIngredients(missingIngredients)
                 .conditionTags(conditionTags)
-                .reason("보유 재료와 사용자 조건을 기준으로 추천된 레시피입니다.")
                 .substituteSuggestions(
                 	    substituteIngredientService.suggest(
                 	        missingIngredients,
