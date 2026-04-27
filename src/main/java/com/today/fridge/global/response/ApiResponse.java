@@ -1,6 +1,7 @@
 package com.today.fridge.global.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,7 +32,7 @@ public class ApiResponse<T> {
 	/*
 	 * 성공 시 응답입니다.
 	 * 프론트로 data만 전달하는 method와 data 및 (String) message를 전달하는 method가 존재합니다.
-	 * 성공은 코드가 항상 200으로 전달되고 있습니다. 추가 코드가 필요하시면 그때 추가 method를 생성하도록 하겠습니다.
+	 * 성공은 코드가 항상 200으로 전달되고 있습니다. 추가 코들가 필요하시면 그때 추가 method를 생성하도록 하겠습니다.
 	 */
 	public static <T> ApiResponse<T> success(T data) {
 		return ApiResponse.<T>builder()
@@ -75,38 +76,6 @@ public class ApiResponse<T> {
 				.code(code)
 				.message(message)
 				.requestId(MDC.get("requestId"))
-				.build();
-	}
-
-	// ── 냉장고 CRUD 컨트롤러 호환 메서드 (requestId 직접 전달 방식) ────────
-
-	public static <T> ApiResponse<T> ok(T data, String requestId) {
-		return ApiResponse.<T>builder()
-				.success(true)
-				.code("OK")
-				.message("요청이 성공했습니다.")
-				.requestId(requestId)
-				.data(data)
-				.build();
-	}
-
-	public static <T> ApiResponse<T> ok(T data, String requestId, String message) {
-		return ApiResponse.<T>builder()
-				.success(true)
-				.code("OK")
-				.message(message)
-				.requestId(requestId)
-				.data(data)
-				.build();
-	}
-
-	public static <T> ApiResponse<T> fail(String code, String message, T data, String requestId) {
-		return ApiResponse.<T>builder()
-				.success(false)
-				.code(code)
-				.message(message)
-				.requestId(requestId)
-				.data(data)
 				.build();
 	}
 

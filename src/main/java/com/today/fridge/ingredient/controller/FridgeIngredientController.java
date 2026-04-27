@@ -2,7 +2,6 @@ package com.today.fridge.ingredient.controller;
 
 import com.today.fridge.global.exception.BusinessException;
 import com.today.fridge.global.exception.ErrorCode;
-import com.today.fridge.global.filter.RequestIdFilter;
 import com.today.fridge.global.response.ApiResponse;
 import com.today.fridge.ingredient.dto.CategoryResponse;
 import com.today.fridge.ingredient.dto.CreateIngredientRequest;
@@ -11,7 +10,6 @@ import com.today.fridge.ingredient.dto.FridgeIngredientListData;
 import com.today.fridge.ingredient.dto.FridgeSummaryResponse;
 import com.today.fridge.ingredient.dto.IngredientResponse;
 import com.today.fridge.ingredient.service.FridgeIngredientService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -40,11 +38,9 @@ public class FridgeIngredientController {
     }
 
     @GetMapping("/categories")
-    public ResponseEntity<ApiResponse<List<CategoryResponse>>> categories(
-            HttpServletRequest request) {
-        String requestId = (String) request.getAttribute(RequestIdFilter.REQUEST_ID_ATTR);
+    public ResponseEntity<ApiResponse<List<CategoryResponse>>> categories() {
         List<CategoryResponse> data = fridgeIngredientService.listCategories();
-        return ResponseEntity.ok(ApiResponse.ok(data, requestId, "카테고리 목록 조회 성공"));
+        return ResponseEntity.ok(ApiResponse.success(data, "카테고리 목록 조회 성공"));
     }
 
     @GetMapping("/ingredients")
@@ -55,58 +51,48 @@ public class FridgeIngredientController {
             @RequestParam(required = false) String sort,
             @RequestParam(required = false) String freshnessStatus,
             @RequestParam(required = false) String storageType,
-            @RequestParam(required = false) String keyword,
-            HttpServletRequest request) {
+            @RequestParam(required = false) String keyword) {
         long uid = requireUserId(userId);
-        String requestId = (String) request.getAttribute(RequestIdFilter.REQUEST_ID_ATTR);
         FridgeIngredientListData data =
                 fridgeIngredientService.list(uid, page, size, sort, freshnessStatus, storageType, keyword);
-        return ResponseEntity.ok(ApiResponse.ok(data, requestId, "식재료 목록 조회 성공"));
+        return ResponseEntity.ok(ApiResponse.success(data, "식재료 목록 조회 성공"));
     }
 
     @GetMapping("/summary")
     public ResponseEntity<ApiResponse<FridgeSummaryResponse>> summary(
-            @RequestHeader(value = "X-User-Id", required = false) Long userId,
-            HttpServletRequest request) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
         long uid = requireUserId(userId);
-        String requestId = (String) request.getAttribute(RequestIdFilter.REQUEST_ID_ATTR);
         FridgeSummaryResponse data = fridgeIngredientService.summary(uid);
-        return ResponseEntity.ok(ApiResponse.ok(data, requestId));
+        return ResponseEntity.ok(ApiResponse.success(data));
     }
 
     @PostMapping("/ingredients")
     public ResponseEntity<ApiResponse<IngredientResponse>> create(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
-            @Valid @RequestBody CreateIngredientRequest body,
-            HttpServletRequest request) {
+            @Valid @RequestBody CreateIngredientRequest body) {
         long uid = requireUserId(userId);
-        String requestId = (String) request.getAttribute(RequestIdFilter.REQUEST_ID_ATTR);
         IngredientResponse created = fridgeIngredientService.create(uid, body);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok(created, requestId, "식재료 등록 성공"));
+                .body(ApiResponse.success(created, "식재료 등록 성공"));
     }
 
     @PatchMapping("/ingredients/{ingredientId}")
     public ResponseEntity<ApiResponse<IngredientResponse>> patch(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @PathVariable("ingredientId") Long ingredientId,
-            @RequestBody Map<String, Object> body,
-            HttpServletRequest request) {
+            @RequestBody Map<String, Object> body) {
         long uid = requireUserId(userId);
-        String requestId = (String) request.getAttribute(RequestIdFilter.REQUEST_ID_ATTR);
         IngredientResponse updated = fridgeIngredientService.patch(uid, ingredientId, body);
-        return ResponseEntity.ok(ApiResponse.ok(updated, requestId, "식재료 수정 성공"));
+        return ResponseEntity.ok(ApiResponse.success(updated, "식재료 수정 성공"));
     }
 
     @DeleteMapping("/ingredients/{ingredientId}")
     public ResponseEntity<ApiResponse<DeleteIngredientData>> delete(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
-            @PathVariable("ingredientId") Long ingredientId,
-            HttpServletRequest request) {
+            @PathVariable("ingredientId") Long ingredientId) {
         long uid = requireUserId(userId);
-        String requestId = (String) request.getAttribute(RequestIdFilter.REQUEST_ID_ATTR);
         DeleteIngredientData data = fridgeIngredientService.delete(uid, ingredientId);
-        return ResponseEntity.ok(ApiResponse.ok(data, requestId, "식재료 삭제 성공"));
+        return ResponseEntity.ok(ApiResponse.success(data, "식재료 삭제 성공"));
     }
 
     private static long requireUserId(Long userId) {
