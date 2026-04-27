@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor
 @Entity
-@Table(name = "post")
+@Table(name = "posts")
 public class Post {
 
     @Id
@@ -19,7 +19,7 @@ public class Post {
     private Long postId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "author_user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private User authorUser;
 
     @Column(name = "title", length = 200)
@@ -29,10 +29,10 @@ public class Post {
     private String content;
 
     @Column(name = "like_count")
-    private Integer likeCount;
+    private Long likeCount;
 
-    @Column(name = "report_count")
-    private Integer reportCount;
+    @Column(name = "view_count")
+    private Long viewCount;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
