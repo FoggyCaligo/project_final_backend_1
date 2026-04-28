@@ -39,6 +39,7 @@ public class PostService {
         post.setContent(request.getContent());
         post.setLikeCount(0L);
         post.setReportCount(0L);
+        post.setViewCount(0L);
         post.setCreatedAt(LocalDateTime.now());
         post.setUpdatedAt(LocalDateTime.now());
         

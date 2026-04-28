@@ -63,8 +63,8 @@ public class DevDataInitializer implements CommandLineRunner {
             setField(user, "status", "ACTIVE");
             setField(user, "createdAt", LocalDateTime.now());
             setField(user, "updatedAt", LocalDateTime.now());
-            userRepository.save(user);
-            log.info("[DevDataInitializer] 테스트 유저 생성 완료 (loginId=testuser)");
+            User savedUser = userRepository.save(user);
+            log.info("[DevDataInitializer] 테스트 유저 생성 완료 (loginId=testuser, userId={})", savedUser.getUserId());
         } else {
             log.info("[DevDataInitializer] 기존 유저 존재, 초기화 생략");
         }
