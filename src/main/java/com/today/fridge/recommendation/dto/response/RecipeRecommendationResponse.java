@@ -14,6 +14,8 @@ public class RecipeRecommendationResponse {
     private Long recipeId;
     private String title;
     private String thumbnailUrl;
+    private String cookTimeText;
+    private String summary;
 
     private double matchRate;
     private double totalScore;
@@ -22,6 +24,8 @@ public class RecipeRecommendationResponse {
     private List<String> missingIngredients;
     private List<String> conditionTags;
     private List<SubstituteSuggestionDto> substituteSuggestions;
+    
+    private List<ConditionWarningDto> warnings;
 
     private String reason;
 }

@@ -26,4 +26,12 @@ public interface UserIngredientRepository extends JpaRepository<UserIngredient, 
     @EntityGraph(attributePaths = {"ingredientMaster"})
     List<UserIngredient> findTop5ByUser_UserIdAndFreshnessStatusOrderByExpiresAtAsc(
             Long userId, FreshnessStatus freshnessStatus);
+    
+    @Query("""
+            select coalesce(im.normalizedName, ui.normalizedNameSnapshot, ui.rawName)
+            from UserIngredient ui
+            left join ui.ingredientMaster im
+            where ui.user.userId = :userId
+        """)
+        List<String> findOwnedIngredientNamesByUserId(@Param("userId") Long userId);
 }
