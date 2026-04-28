@@ -9,6 +9,8 @@ import com.today.fridge.recipe.repository.RecipeIngredientRepository;
 import com.today.fridge.recipe.repository.RecipeRepository;
 import com.today.fridge.recommendation.dto.internal.RecommendationQuery;
 import com.today.fridge.recommendation.dto.response.RecipeRecommendationResponse;
+import com.today.fridge.recommendation.entity.RecipeConditionMap;
+import com.today.fridge.recommendation.entity.UserCondition;
 import com.today.fridge.recommendation.repository.RecipeConditionMapRepository;
 import com.today.fridge.recommendation.repository.UserConditionRepository;
 import com.today.fridge.substitution.service.SubstituteIngredientService;
@@ -104,12 +106,12 @@ public class RecommendationService {
                         ? List.of()
                         : query.getIncludeIngredients();
 
-        List<String> conditionCodes =
-                query.getConditionCodes() == null
-                        ? List.of()
-                        : query.getConditionCodes();
-
         List<Recipe> recipes = recipeRepository.findByIsActiveTrue();
+
+        List<UserCondition> userConditions =
+                query.isUseUserProfile() && query.getUserId() != null
+                        ? userConditionRepository.findByUser_UserIdAndIsActiveTrue(query.getUserId())
+                        : List.of();
 
         return recipes.stream()
                 .map(recipe -> {
@@ -118,11 +120,27 @@ public class RecommendationService {
                                     recipe.getRecipeId()
                             );
 
+                    List<RecipeConditionMap> recipeConditions =
+                            recipeConditionMapRepository.findByRecipe_RecipeId(
+                                    recipe.getRecipeId()
+                            );
+
+                    double conditionScore =
+                            recommendationScoreService.calculateConditionScore(
+                                    userConditions,
+                                    recipeConditions
+                            );
+
+                    List<String> conditionTags = userConditions.stream()
+                            .map(uc -> uc.getConditionCode().getConditionName())
+                            .distinct()
+                            .toList();
+
                     return createRecipeResponse(
                             recipe,
                             requiredIngredients,
-                            20.0, // TODO: condition map 기반 점수로 교체
-                            conditionCodes,
+                            conditionScore,
+                            conditionTags,
                             ownedIngredients
                     );
                 })
