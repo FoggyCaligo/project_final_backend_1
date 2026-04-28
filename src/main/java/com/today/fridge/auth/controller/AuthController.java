@@ -96,7 +96,8 @@ public class AuthController {
             return ApiResponse.error("UNAUTHORIZED", "인증이 필요합니다.");
         }
         String loginId = auth.getName();
-        return ApiResponse.success(Map.of("loginId", loginId), "현재 사용자 정보입니다.");
+        String nickname = userService.getProfile(loginId).getNickname();
+        return ApiResponse.success(Map.of("loginId", loginId, "nickname", nickname), "현재 사용자 정보입니다.");
     }
 
     // 팀 공식 스펙: POST /api/v1/auth/refresh — Refresh Token 재발급

@@ -32,6 +32,9 @@ public class KakaoOAuthService {
     @Value("${app.kakao.redirect-uri}")
     private String redirectUri;
 
+    @Value("${app.kakao.client-secret:}")
+    private String clientSecret;
+
     public KakaoOAuthService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
@@ -46,6 +49,9 @@ public class KakaoOAuthService {
         body.add("client_id", restApiKey);
         body.add("redirect_uri", redirectUri);
         body.add("code", code);
+        if (clientSecret != null && !clientSecret.isBlank()) {
+            body.add("client_secret", clientSecret);
+        }
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
         ResponseEntity<Map> response = restTemplate.exchange(TOKEN_URL, HttpMethod.POST, request, Map.class);

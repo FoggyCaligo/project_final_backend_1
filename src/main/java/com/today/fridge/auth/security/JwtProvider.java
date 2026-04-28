@@ -18,14 +18,17 @@ public class JwtProvider {
     private final SecretKey key;
     private final long accessTokenValidity;
     private final long refreshTokenValidity;
+    private final boolean cookieSecure;
 
     public JwtProvider(
-            @Value("${jwt.secret:defaultSecretKeyWithAtLeast32CharactersForHs256!!}") String secretKey,
-            @Value("${jwt.access-token-validity-in-ms:3600000}") long accessTokenValidity,
-            @Value("${jwt.refresh-token-validity-in-ms:1209600000}") long refreshTokenValidity) {
+            @Value("${app.security.jwt.secret:VG9kYXlGcmlkZ2VQcm9qZWN0QmFja2VuZDFTdGFydGVyU2VjcmV0S2V5Rm9ySldU}") String secretKey,
+            @Value("${app.security.jwt.access-token-validity-seconds:3600}") long accessTokenValiditySeconds,
+            @Value("${app.security.jwt.refresh-token-validity-seconds:1209600}") long refreshTokenValiditySeconds,
+            @Value("${app.security.cookie.secure:false}") boolean cookieSecure) {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
-        this.accessTokenValidity = accessTokenValidity;
-        this.refreshTokenValidity = refreshTokenValidity;
+        this.accessTokenValidity = accessTokenValiditySeconds * 1000;
+        this.refreshTokenValidity = refreshTokenValiditySeconds * 1000;
+        this.cookieSecure = cookieSecure;
     }
 
     public String createAccessToken(String loginId) {
@@ -50,7 +53,7 @@ public class JwtProvider {
     public ResponseCookie createTokenCookie(String cookieName, String token, long maxAgeMs) {
         return ResponseCookie.from(cookieName, token)
                 .httpOnly(true)
-                .secure(true)
+                .secure(cookieSecure)
                 .sameSite("Lax")
                 .path("/")
                 .maxAge(maxAgeMs / 1000)

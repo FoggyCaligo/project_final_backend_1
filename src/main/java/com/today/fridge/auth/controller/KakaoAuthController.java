@@ -68,13 +68,17 @@ public class KakaoAuthController {
 
         try {
             // 1. 인가 코드 → 카카오 액세스 토큰
+            log.info("[KakaoOAuth] 토큰 교환 시작 code={}", code.substring(0, Math.min(code.length(), 10)) + "...");
             String kakaoAccessToken = kakaoOAuthService.getKakaoAccessToken(code);
+            log.info("[KakaoOAuth] 토큰 교환 성공");
 
             // 2. 카카오 액세스 토큰 → 사용자 프로필
             KakaoOAuthService.KakaoUserProfile profile = kakaoOAuthService.getKakaoUserProfile(kakaoAccessToken);
+            log.info("[KakaoOAuth] 프로필 조회 성공 kakaoId={}", profile.kakaoId());
 
             // 3. users 테이블에서 조회 or 신규 생성
             User user = kakaoOAuthService.findOrCreateUser(profile);
+            log.info("[KakaoOAuth] 사용자 확보 loginId={}", user.getLoginId());
 
             // 4. 서비스 JWT 발급
             String accessToken = jwtProvider.createAccessToken(user.getLoginId());
@@ -96,7 +100,7 @@ public class KakaoAuthController {
                     + "&nickname=" + encodedNickname);
 
         } catch (Exception e) {
-            log.error("[KakaoOAuth] 로그인 처리 중 오류", e);
+            log.error("[KakaoOAuth] 로그인 처리 중 오류: {} - {}", e.getClass().getSimpleName(), e.getMessage(), e);
             response.sendRedirect(frontendBaseUrl + "?kakaoError=failed");
         }
     }
