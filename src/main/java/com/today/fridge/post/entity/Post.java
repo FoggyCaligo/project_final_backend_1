@@ -39,6 +39,9 @@ public class Post {
     @Column(name = "view_count")
     private Long viewCount;
 
+    @Column(name = "report_count")
+    private Long reportCount;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
