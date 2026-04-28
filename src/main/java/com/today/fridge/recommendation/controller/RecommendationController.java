@@ -22,6 +22,7 @@ public class RecommendationController {
 	
 	@GetMapping("/recommendations")
 	public ResponseEntity<ApiResponse<List<RecipeRecommendationResponse>>> recommend() {
+		// TODO : user 연결
 		Long mockUserId = 1L;
 		
 		List<RecipeRecommendationResponse> result =

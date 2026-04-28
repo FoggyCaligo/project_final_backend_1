@@ -14,6 +14,8 @@ public class RecipeRecommendationResponse {
     private Long recipeId;
     private String title;
     private String thumbnailUrl;
+    private String cookTimeText;
+    private String summary;
 
     private double matchRate;
     private double totalScore;
