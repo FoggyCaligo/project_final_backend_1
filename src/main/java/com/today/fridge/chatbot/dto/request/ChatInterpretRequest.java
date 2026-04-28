@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 public class ChatInterpretRequest {
+	private Long userId;
     private String text;
     private List<String> ownedIngredients;
     private String locale;

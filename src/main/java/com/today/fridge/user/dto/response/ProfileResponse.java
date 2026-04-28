@@ -4,7 +4,7 @@ import com.today.fridge.user.entity.User;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Getter
 @Builder
@@ -15,8 +15,8 @@ public class ProfileResponse {
     private String nickname;
     private String profileImageUrl;
     private String status;
-    private LocalDateTime lastLoginAt;
-    private LocalDateTime createdAt;
+    private OffsetDateTime createdAt;
+    private OffsetDateTime updatedAt;
 
     public static ProfileResponse from(User user) {
         return ProfileResponse.builder()
@@ -25,8 +25,8 @@ public class ProfileResponse {
                 .nickname(user.getNickname())
                 .profileImageUrl(user.getProfileImageUrl())
                 .status(user.getStatus())
-                .lastLoginAt(user.getLastLoginAt())
                 .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
                 .build();
     }
 }

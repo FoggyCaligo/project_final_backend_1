@@ -1,2 +1,8 @@
 .gradle/
 build/
+.project
+.settings/
+.classpath
+.vscode/
+fileHashes.lock
+bin/

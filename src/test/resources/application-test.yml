@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: project_final_backend1-test
+  datasource:
+    url: jdbc:h2:mem:fridge_it;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: public
+  flyway:
+    enabled: false
+
+app:
+  security:
+    jwt:
+      secret: "VG9kYXlGcmlkZ2VQcm9qZWN0QmFja2VuZDFUZXN0U2VjcmV0S2V5Rm9ySldUMjU2Qml0cw=="
+      access-token-validity-seconds: 3600
+      refresh-token-validity-seconds: 1209600
+    cookie:
+      secure: false
+      same-site: Lax
+  upload:
+    root-path: uploads
+  fastapi:
+    base-url: http://127.0.0.1:59999
+    service-key: test
+    caller-service: spring-backend-test

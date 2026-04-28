@@ -45,9 +45,6 @@ public class User {
     @Column(name = "email_verify_expiry")
     private OffsetDateTime emailVerifyExpiry;
 
-    @Column(name = "last_login_at")
-    private OffsetDateTime lastLoginAt;
-
     @Column(name = "created_at")
     private OffsetDateTime createdAt;
 
@@ -82,23 +79,15 @@ public class User {
         updatedAt = OffsetDateTime.now();
     }
 
-    // 프로필 수정: 닉네임, 프로필 이미지 URL
     public void updateProfile(String nickname, String profileImageUrl) {
         if (nickname != null) this.nickname = nickname;
         if (profileImageUrl != null) this.profileImageUrl = profileImageUrl;
     }
 
-    // 비밀번호 변경
     public void changePassword(String newPasswordHash) {
         this.passwordHash = newPasswordHash;
     }
 
-    // 최근 로그인 시간 갱신
-    public void updateLastLoginAt() {
-        this.lastLoginAt = OffsetDateTime.now();
-    }
-
-    // 이메일 인증 완료
     public void verifyEmail() {
         this.emailVerified = true;
         this.status = "ACTIVE";
@@ -106,13 +95,11 @@ public class User {
         this.emailVerifyExpiry = null;
     }
 
-    // 이메일 인증 토큰 재발급
     public void regenerateEmailVerifyToken() {
         this.emailVerifyToken = UUID.randomUUID().toString();
         this.emailVerifyExpiry = OffsetDateTime.now().plusHours(24);
     }
 
-    // 이메일 인증 토큰 유효성 확인
     public boolean isEmailVerifyTokenValid() {
         return this.emailVerifyToken != null
                 && this.emailVerifyExpiry != null
