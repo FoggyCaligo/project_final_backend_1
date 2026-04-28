@@ -51,6 +51,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/signup").permitAll()
                         .requestMatchers("/api/v1/auth/check-login-id").permitAll()
                         .requestMatchers("/api/v1/auth/refresh").permitAll()
+                        .requestMatchers("/api/v1/auth/verify-email").permitAll()
+                        .requestMatchers("/api/v1/auth/resend-verification").permitAll()
                         .requestMatchers("/api/v1/users/find-loginid").permitAll()
                         // 다른 팀원 API 도 일단 permitAll (추후 개별 설정)
                         .requestMatchers("/api/v1/recipes/**").permitAll()

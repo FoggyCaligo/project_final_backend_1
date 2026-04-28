@@ -17,6 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.net.URI;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -35,6 +36,12 @@ public class AuthController {
     @PostMapping("/login")
     public ApiResponse<Void> login(@RequestBody LoginRequest request, HttpServletResponse response) {
         User user = authService.authenticate(request.getLoginId(), request.getPassword());
+
+        // 이메일 미인증 사용자 로그인 차단
+        if (!Boolean.TRUE.equals(user.getEmailVerified())) {
+            throw new com.today.fridge.global.exception.ExceptionTemplate(
+                    com.today.fridge.global.exception.ErrorCode.EMAIL_NOT_VERIFIED);
+        }
 
         String accessToken = jwtProvider.createAccessToken(user.getLoginId());
         String refreshToken = jwtProvider.createRefreshToken(user.getLoginId());
@@ -116,6 +123,23 @@ public class AuthController {
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
         return ApiResponse.success(null, "토큰이 재발급되었습니다.");
+    }
+
+    // 이메일 인증 확인: GET /api/v1/auth/verify-email?token=xxx
+    @GetMapping("/verify-email")
+    public org.springframework.http.ResponseEntity<Void> verifyEmail(@RequestParam String token) {
+        userService.verifyEmail(token);
+        // 인증 완료 후 프론트엔드 로그인 페이지로 리다이렉트
+        return org.springframework.http.ResponseEntity.status(302)
+                .location(URI.create("http://localhost:3000?emailVerified=true"))
+                .build();
+    }
+
+    // 인증 이메일 재발송: POST /api/v1/auth/resend-verification
+    @PostMapping("/resend-verification")
+    public ApiResponse<Void> resendVerification(@RequestParam String email) {
+        userService.resendVerificationEmail(email);
+        return ApiResponse.success(null, "인증 이메일이 재발송되었습니다.");
     }
 }
 // 레디쉬를 통한 token, refreshtoken 관리, 

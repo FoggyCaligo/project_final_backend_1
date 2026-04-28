@@ -18,6 +18,21 @@ spring:
       ddl-auto: update
   flyway:
     enabled: false
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:your-email@gmail.com}
+    password: ${MAIL_PASSWORD:your-app-password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 3000
+          writetimeout: 5000
 
 server:
   port: 8080
@@ -37,6 +52,9 @@ app:
     base-url: http://localhost:8000
     service-key: change-me
     caller-service: spring-backend
+  mail:
+    from: ${MAIL_FROM:noreply@todayfridge.com}
+    base-url: ${APP_BASE_URL:http://localhost:8080}
 
 logging:
   pattern:

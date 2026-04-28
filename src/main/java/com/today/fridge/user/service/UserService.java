@@ -2,6 +2,7 @@ package com.today.fridge.user.service;
 
 import com.today.fridge.global.exception.ErrorCode;
 import com.today.fridge.global.exception.ExceptionTemplate;
+import com.today.fridge.global.external.EmailService;
 import com.today.fridge.user.dto.request.PasswordChangeRequest;
 import com.today.fridge.user.dto.request.ProfileUpdateRequest;
 import com.today.fridge.user.dto.request.SignupRequest;
@@ -17,13 +18,15 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
     }
 
-    // 회원가입
+    // 회원가입 — 이메일 인증 토큰 생성 후 인증 메일 발송
     @Transactional
     public void signup(SignupRequest request) {
         String normalizedEmail = normalizeEmail(request.getEmail());
@@ -42,6 +45,40 @@ public class UserService {
         String passwordHash = passwordEncoder.encode(request.getPassword());
         User user = User.create(request.getLoginId(), normalizedEmail, passwordHash, request.getNickname());
         userRepository.save(user);
+
+        // 비동기로 인증 이메일 발송
+        emailService.sendVerificationEmail(normalizedEmail, user.getEmailVerifyToken());
+    }
+
+    // 이메일 인증 처리
+    @Transactional
+    public void verifyEmail(String token) {
+        User user = userRepository.findByEmailVerifyToken(token)
+                .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
+
+        if (user.getEmailVerified()) {
+            throw new ExceptionTemplate(ErrorCode.EMAIL_ALREADY_VERIFIED);
+        }
+        if (!user.isEmailVerifyTokenValid()) {
+            throw new ExceptionTemplate(ErrorCode.EMAIL_VERIFY_TOKEN_EXPIRED);
+        }
+
+        user.verifyEmail();
+    }
+
+    // 인증 이메일 재발송
+    @Transactional
+    public void resendVerificationEmail(String email) {
+        String normalizedEmail = normalizeEmail(email);
+        User user = userRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
+
+        if (user.getEmailVerified()) {
+            throw new ExceptionTemplate(ErrorCode.EMAIL_ALREADY_VERIFIED);
+        }
+
+        user.regenerateEmailVerifyToken();
+        emailService.sendVerificationEmail(normalizedEmail, user.getEmailVerifyToken());
     }
 
     // 이메일 정규화: 공백 제거 + 소문자 변환
@@ -118,4 +155,3 @@ public class UserService {
         user.changePassword(newPasswordHash);
     }
 }
-
