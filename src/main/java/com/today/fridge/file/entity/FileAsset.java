@@ -3,11 +3,13 @@ package com.today.fridge.file.entity;
 import com.today.fridge.user.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Getter
+@Setter
 @NoArgsConstructor
 @Entity
 @Table(name = "file_asset")
@@ -39,6 +41,9 @@ public class FileAsset {
 
     @Column(name = "storage_path", length = 500)
     private String storagePath;
+
+    @Column(name = "checksum_value", length = 255)
+    private String checksumValue;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
