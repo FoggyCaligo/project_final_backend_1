@@ -32,9 +32,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ExceptionTemplate.class)
     public ResponseEntity<ApiResponse<Object>> handleException(ExceptionTemplate e) {
         log.error("예외가 발생했습니다 : {}", e.getMessage(), e);
+        Object errorDetails = e.getPayload() != null ? e.getPayload() : e.getErrorCode();
         return ResponseEntity
                 .status(e.getErrorCode().getHttpStatus())
-                .body(ApiResponse.error(e.getErrorCode().name(), e.getMessage(), e.getErrorCode()));
+                .body(ApiResponse.error(e.getErrorCode().name(), e.getMessage(), errorDetails));
     }
 
     @ExceptionHandler(Exception.class)

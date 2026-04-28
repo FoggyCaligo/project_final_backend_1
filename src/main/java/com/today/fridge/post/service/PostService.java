@@ -39,16 +39,15 @@ public class PostService {
         post.setContent(request.getContent());
         post.setLikeCount(0L);
         post.setReportCount(0L);
-        post.setViewCount(0L);
         post.setCreatedAt(LocalDateTime.now());
         post.setUpdatedAt(LocalDateTime.now());
-        
+
         Post savedPost = postRepository.save(post);
 
         // 3. 파일 메타데이터가 있다면 FileAsset 및 PostImage 저장
         if (request.getImageFiles() != null && !request.getImageFiles().isEmpty()) {
             int sortOrder = 1;
-            
+
             for (FileAssetDto fileDto : request.getImageFiles()) {
                 // 3-1. FileAsset 저장
                 FileAsset fileAsset = new FileAsset();
@@ -61,7 +60,7 @@ public class PostService {
                 fileAsset.setStoragePath(fileDto.getStoragePath());
                 fileAsset.setChecksumValue(fileDto.getSha1sum());
                 fileAsset.setCreatedAt(LocalDateTime.now());
-                
+
                 FileAsset savedFileAsset = fileAssetRepository.save(fileAsset);
 
                 // 3-2. PostImage 매핑 테이블 저장
@@ -70,7 +69,7 @@ public class PostService {
                 postImage.setFile(savedFileAsset);
                 postImage.setSortOrder(sortOrder++);
                 postImage.setCreatedAt(LocalDateTime.now());
-                
+
                 postImageRepository.save(postImage);
             }
         }
