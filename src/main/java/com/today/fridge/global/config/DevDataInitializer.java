@@ -2,6 +2,8 @@ package com.today.fridge.global.config;
 
 import com.today.fridge.ingredient.entity.IngredientCategory;
 import com.today.fridge.ingredient.repository.IngredientCategoryRepository;
+import com.today.fridge.recommendation.entity.ConditionCode;
+import com.today.fridge.recommendation.repository.ConditionCodeRepository;
 import com.today.fridge.user.entity.User;
 import com.today.fridge.user.repository.UserRepository;
 import org.slf4j.Logger;
@@ -26,17 +28,21 @@ public class DevDataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final IngredientCategoryRepository ingredientCategoryRepository;
-
+    private final ConditionCodeRepository conditionCodeRepository;
+    
     public DevDataInitializer(UserRepository userRepository,
-                               IngredientCategoryRepository ingredientCategoryRepository) {
+                               IngredientCategoryRepository ingredientCategoryRepository,
+                               ConditionCodeRepository conditionCodeRepository) {
         this.userRepository = userRepository;
         this.ingredientCategoryRepository = ingredientCategoryRepository;
+        this.conditionCodeRepository = conditionCodeRepository;
     }
 
     @Override
     public void run(String... args) throws Exception {
         seedUser();
         seedCategories();
+        seedConditionCodes();
     }
 
     private void seedUser() throws Exception {
@@ -89,5 +95,30 @@ public class DevDataInitializer implements CommandLineRunner {
         Field field = target.getClass().getDeclaredField(fieldName);
         field.setAccessible(true);
         field.set(target, value);
+    }
+    private static ConditionCode condition(
+            String group,
+            String code,
+            String name,
+            String description
+    ) {
+        return ConditionCode.create(group, code, name, description);
+    }
+    private void seedConditionCodes() {
+        if (conditionCodeRepository.count() > 0) {
+            log.info("[DevDataInitializer] condition_code 데이터 존재, 시드 생략");
+            return;
+        }
+
+        List<ConditionCode> conditions = List.of(
+                condition("DIABETES", "DIABETES_LOW_SUGAR", "당뇨/저당", "당류와 정제 탄수화물 섭취를 주의하는 조건"),
+                condition("DIET", "DIET_LOW_CALORIE", "다이어트/저칼로리", "고열량·고지방 식단을 줄이는 조건"),
+                condition("BABY_FOOD", "BABY_FOOD", "이유식", "자극적이거나 고염분 재료를 피해야 하는 조건"),
+                condition("ALLERGY", "ALLERGY_EGG", "계란 알러지", "계란 및 계란 포함 재료 주의"),
+                condition("ALLERGY", "ALLERGY_MILK", "우유 알러지", "우유 및 유제품 주의")
+        );
+
+        conditionCodeRepository.saveAll(conditions);
+        log.info("[DevDataInitializer] condition_code 시드 데이터 {} 건 삽입 완료", conditions.size());
     }
 }
