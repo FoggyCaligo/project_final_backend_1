@@ -28,7 +28,7 @@ public class RecipeController {
 	}
 
 	@GetMapping("/{recipeId}")
-	public ResponseEntity<ApiResponse<RecipeResponse>> getRecipe(@PathVariable Long recipeId) {
+	public ResponseEntity<ApiResponse<RecipeResponse>> getRecipe(@PathVariable("recipeId") Long recipeId) {
 		return ResponseEntity.ok(ApiResponse.success(recipeService.getRecipe(recipeId), "레시피 상세 조회 성공"));
 	}
 }
