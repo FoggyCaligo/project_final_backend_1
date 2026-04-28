@@ -2,7 +2,10 @@ package com.today.fridge.user.service;
 
 import com.today.fridge.global.exception.ErrorCode;
 import com.today.fridge.global.exception.ExceptionTemplate;
+import com.today.fridge.user.dto.request.PasswordChangeRequest;
+import com.today.fridge.user.dto.request.ProfileUpdateRequest;
 import com.today.fridge.user.dto.request.SignupRequest;
+import com.today.fridge.user.dto.response.ProfileResponse;
 import com.today.fridge.user.entity.User;
 import com.today.fridge.user.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -47,7 +50,7 @@ public class UserService {
         return email.trim().toLowerCase();
     }
 
-    // 비밀번호 정규화: 영문+숫자+특수문자 각 1자 이상, 8~30자
+    // 비밀번호 검증: 영문+숫자+특수문자 각 1자 이상, 8~30자
     public void validatePassword(String password) {
         if (password == null || password.length() < 8 || password.length() > 30) {
             throw new ExceptionTemplate(ErrorCode.INVALID_INPUT_VALUE);
@@ -68,4 +71,51 @@ public class UserService {
                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
         return user.getLoginId();
     }
+
+    // 아이디 중복 확인: 사용 가능하면 true, 이미 존재하면 false
+    @Transactional(readOnly = true)
+    public boolean isLoginIdAvailable(String loginId) {
+        return !userRepository.existsByLoginId(loginId);
+    }
+
+    // 마이페이지 조회: loginId로 사용자 프로필 반환
+    @Transactional(readOnly = true)
+    public ProfileResponse getProfile(String loginId) {
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
+        return ProfileResponse.from(user);
+    }
+
+    // 마이페이지 수정: 닉네임, 프로필 이미지 URL 변경
+    @Transactional
+    public ProfileResponse updateProfile(String loginId, ProfileUpdateRequest request) {
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
+
+        // 닉네임 변경 시 중복 체크 (현재 자기 자신의 닉네임은 제외)
+        if (request.getNickname() != null && !request.getNickname().equals(user.getNickname())) {
+            if (userRepository.existsByNickname(request.getNickname())) {
+                throw new ExceptionTemplate(ErrorCode.DUPLICATE_NICKNAME);
+            }
+        }
+
+        user.updateProfile(request.getNickname(), request.getProfileImageUrl());
+        return ProfileResponse.from(user);
+    }
+
+    // 비밀번호 변경: 현재 비밀번호 확인 후 새 비밀번호로 변경
+    @Transactional
+    public void changePassword(String loginId, PasswordChangeRequest request) {
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            throw new ExceptionTemplate(ErrorCode.UNAUTHORIZED);
+        }
+
+        validatePassword(request.getNewPassword());
+        String newPasswordHash = passwordEncoder.encode(request.getNewPassword());
+        user.changePassword(newPasswordHash);
+    }
 }
+

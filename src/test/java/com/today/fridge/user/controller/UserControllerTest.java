@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.today.fridge.global.exception.ErrorCode;
 import com.today.fridge.global.exception.ExceptionTemplate;
 import com.today.fridge.global.exception.GlobalExceptionHandler;
-import com.today.fridge.user.dto.request.SignupRequest;
+import com.today.fridge.user.dto.request.PasswordChangeRequest;
+import com.today.fridge.user.dto.request.ProfileUpdateRequest;
+import com.today.fridge.user.dto.response.ProfileResponse;
 import com.today.fridge.user.service.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,10 +17,12 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.Collections;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
@@ -41,71 +45,8 @@ class UserControllerTest {
     @MockBean
     private UserService userService;
 
-    // ===== POST /signup =====
-
-    @Test
-    @DisplayName("POST /signup: 정상 요청 시 success:true 응답을 반환한다")
-    void signup_validRequest_returnsSuccess() throws Exception {
-        // given
-        Map<String, String> body = validSignupBody();
-        willDoNothing().given(userService).signup(any(SignupRequest.class));
-
-        // when & then
-        mockMvc.perform(post("/api/v1/users/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("회원가입이 완료되었습니다."));
-    }
-
-    @Test
-    @DisplayName("POST /signup: loginId 공백 요청 시 success:false 응답을 반환한다")
-    void signup_blankLoginId_returnsError() throws Exception {
-        // given — loginId 공백
-        Map<String, String> body = validSignupBody();
-        body.put("loginId", "");
-
-        // when & then
-        mockMvc.perform(post("/api/v1/users/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
-                .andExpect(jsonPath("$.success").value(false));
-    }
-
-    @Test
-    @DisplayName("POST /signup: loginId 중복 시 DUPLICATE_LOGIN_ID 에러 코드를 반환한다")
-    void signup_duplicateLoginId_returnsErrorCode() throws Exception {
-        // given
-        Map<String, String> body = validSignupBody();
-        willThrow(new ExceptionTemplate(ErrorCode.DUPLICATE_LOGIN_ID))
-                .given(userService).signup(any(SignupRequest.class));
-
-        // when & then
-        mockMvc.perform(post("/api/v1/users/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.code").value("DUPLICATE_LOGIN_ID"));
-    }
-
-    @Test
-    @DisplayName("POST /signup: email 중복 시 DUPLICATE_EMAIL 에러 코드를 반환한다")
-    void signup_duplicateEmail_returnsErrorCode() throws Exception {
-        // given
-        Map<String, String> body = validSignupBody();
-        willThrow(new ExceptionTemplate(ErrorCode.DUPLICATE_EMAIL))
-                .given(userService).signup(any(SignupRequest.class));
-
-        // when & then
-        mockMvc.perform(post("/api/v1/users/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.code").value("DUPLICATE_EMAIL"));
-    }
-
     // ===== GET /find-loginid =====
+    // (POST /signup 테스트는 AuthControllerTest에 있음)
 
     @Test
     @DisplayName("GET /find-loginid: 등록된 이메일로 아이디를 반환한다")
@@ -135,14 +76,120 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.code").value("USER_NOT_FOUND"));
     }
 
+    // ===== GET /me/profile =====
+
+    @Test
+    @DisplayName("GET /me/profile: 인증된 사용자의 프로필을 반환한다")
+    void getProfile_authenticated_returnsProfile() throws Exception {
+        // given
+        setAuth("testuser1");
+        ProfileResponse profile = ProfileResponse.builder()
+                .loginId("testuser1")
+                .email("test@example.com")
+                .nickname("테스터")
+                .status("ACTIVE")
+                .createdAt(LocalDateTime.now())
+                .build();
+        given(userService.getProfile("testuser1")).willReturn(profile);
+
+        // when & then
+        mockMvc.perform(get("/api/v1/users/me/profile"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.loginId").value("testuser1"))
+                .andExpect(jsonPath("$.data.nickname").value("테스터"));
+    }
+
+    // ===== PATCH /me/profile =====
+
+    @Test
+    @DisplayName("PATCH /me/profile: 닉네임 변경 시 수정된 프로필을 반환한다")
+    void updateProfile_validRequest_returnsUpdatedProfile() throws Exception {
+        // given
+        setAuth("testuser1");
+        ProfileUpdateRequest req = new ProfileUpdateRequest();
+        req.setNickname("새닉네임");
+
+        ProfileResponse updated = ProfileResponse.builder()
+                .loginId("testuser1")
+                .email("test@example.com")
+                .nickname("새닉네임")
+                .status("ACTIVE")
+                .build();
+        given(userService.updateProfile(eq("testuser1"), any(ProfileUpdateRequest.class))).willReturn(updated);
+
+        // when & then
+        mockMvc.perform(patch("/api/v1/users/me/profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.nickname").value("새닉네임"));
+    }
+
+    @Test
+    @DisplayName("PATCH /me/profile: 닉네임 중복 시 DUPLICATE_NICKNAME 에러를 반환한다")
+    void updateProfile_duplicateNickname_returnsError() throws Exception {
+        // given
+        setAuth("testuser1");
+        ProfileUpdateRequest req = new ProfileUpdateRequest();
+        req.setNickname("중복닉네임");
+        willThrow(new ExceptionTemplate(ErrorCode.DUPLICATE_NICKNAME))
+                .given(userService).updateProfile(eq("testuser1"), any(ProfileUpdateRequest.class));
+
+        // when & then
+        mockMvc.perform(patch("/api/v1/users/me/profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value("DUPLICATE_NICKNAME"));
+    }
+
+    // ===== PATCH /me/password =====
+
+    @Test
+    @DisplayName("PATCH /me/password: 정상 요청 시 비밀번호 변경 성공 응답을 반환한다")
+    void changePassword_validRequest_returnsSuccess() throws Exception {
+        // given
+        setAuth("testuser1");
+        PasswordChangeRequest req = new PasswordChangeRequest();
+        req.setCurrentPassword("OldPass1!");
+        req.setNewPassword("NewPass1!");
+        willDoNothing().given(userService).changePassword(eq("testuser1"), any(PasswordChangeRequest.class));
+
+        // when & then
+        mockMvc.perform(patch("/api/v1/users/me/password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("비밀번호가 변경되었습니다."));
+    }
+
+    @Test
+    @DisplayName("PATCH /me/password: 현재 비밀번호 불일치 시 UNAUTHORIZED 에러를 반환한다")
+    void changePassword_wrongCurrentPassword_returnsError() throws Exception {
+        // given
+        setAuth("testuser1");
+        PasswordChangeRequest req = new PasswordChangeRequest();
+        req.setCurrentPassword("WrongPass1!");
+        req.setNewPassword("NewPass1!");
+        willThrow(new ExceptionTemplate(ErrorCode.UNAUTHORIZED))
+                .given(userService).changePassword(eq("testuser1"), any(PasswordChangeRequest.class));
+
+        // when & then
+        mockMvc.perform(patch("/api/v1/users/me/password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
     // ===== helper =====
 
-    private Map<String, String> validSignupBody() {
-        Map<String, String> body = new HashMap<>();
-        body.put("loginId", "testuser1");
-        body.put("email", "test@example.com");
-        body.put("password", "Test1234!");
-        body.put("nickname", "테스터");
-        return body;
+    private void setAuth(String loginId) {
+        UsernamePasswordAuthenticationToken auth =
+                new UsernamePasswordAuthenticationToken(loginId, null, Collections.emptyList());
+        SecurityContextHolder.getContext().setAuthentication(auth);
     }
 }

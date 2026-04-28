@@ -40,6 +40,12 @@ public class AuthService {
         return user;
     }
 
+    // loginId만으로 사용자 조회 (refresh 토큰 재발급 시 사용)
+    public User authenticate(String loginId) {
+        return userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
+    }
+
     @Transactional
     public void createSession(User user, String refreshToken, long validityInMs) {
         String tokenHash = hashToken(refreshToken);
@@ -54,6 +60,25 @@ public class AuthService {
         String tokenHash = hashToken(refreshToken);
         userSessionRepository.findByRefreshTokenHash(tokenHash)
                 .ifPresent(UserSession::revoke);
+    }
+
+    // Refresh Token 검증 + 세션 유효성 확인 → loginId 반환
+    @Transactional
+    public String refreshSession(String refreshToken) {
+        if (refreshToken == null) {
+            throw new ExceptionTemplate(ErrorCode.REFRESH_TOKEN_EXPIRED);
+        }
+        String tokenHash = hashToken(refreshToken);
+        UserSession session = userSessionRepository.findByRefreshTokenHash(tokenHash)
+                .orElseThrow(() -> new ExceptionTemplate(ErrorCode.REFRESH_TOKEN_EXPIRED));
+
+        if (!session.isValid()) {
+            throw new ExceptionTemplate(ErrorCode.REFRESH_TOKEN_EXPIRED);
+        }
+
+        // 기존 세션 revoke (토큰 로테이션)
+        session.revoke();
+        return session.getUser().getLoginId();
     }
 
     private String hashToken(String token) {

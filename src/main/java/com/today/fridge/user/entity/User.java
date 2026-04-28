@@ -67,4 +67,20 @@ public class User {
     private void preUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    // 프로필 수정: 닉네임, 프로필 이미지 URL
+    public void updateProfile(String nickname, String profileImageUrl) {
+        if (nickname != null) this.nickname = nickname;
+        if (profileImageUrl != null) this.profileImageUrl = profileImageUrl;
+    }
+
+    // 비밀번호 변경
+    public void changePassword(String newPasswordHash) {
+        this.passwordHash = newPasswordHash;
+    }
+
+    // 최근 로그인 시간 갱신
+    public void updateLastLoginAt() {
+        this.lastLoginAt = LocalDateTime.now();
+    }
 }

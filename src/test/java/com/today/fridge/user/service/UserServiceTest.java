@@ -2,6 +2,8 @@ package com.today.fridge.user.service;
 
 import com.today.fridge.global.exception.ErrorCode;
 import com.today.fridge.global.exception.ExceptionTemplate;
+import com.today.fridge.user.dto.request.PasswordChangeRequest;
+import com.today.fridge.user.dto.request.ProfileUpdateRequest;
 import com.today.fridge.user.dto.request.SignupRequest;
 import com.today.fridge.user.entity.User;
 import com.today.fridge.user.repository.UserRepository;
@@ -217,4 +219,172 @@ class UserServiceTest {
         assertThat(loginId).isEqualTo("testuser1");
         then(userRepository).should().findByEmail("test@example.com");
     }
+
+    // ===== isLoginIdAvailable =====
+
+    @Test
+    @DisplayName("사용 가능한 아이디를 확인하면 true를 반환한다")
+    void isLoginIdAvailable_available() {
+        // given
+        given(userRepository.existsByLoginId("newuser")).willReturn(false);
+
+        // when
+        boolean result = userService.isLoginIdAvailable("newuser");
+
+        // then
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    @DisplayName("이미 존재하는 아이디를 확인하면 false를 반환한다")
+    void isLoginIdAvailable_duplicate() {
+        // given
+        given(userRepository.existsByLoginId("existing")).willReturn(true);
+
+        // when
+        boolean result = userService.isLoginIdAvailable("existing");
+
+        // then
+        assertThat(result).isFalse();
+    }
+
+    // ===== getProfile =====
+
+    @Test
+    @DisplayName("loginId로 프로필을 정상 조회한다")
+    void getProfile_success() {
+        // given
+        User user = User.create("testuser1", "test@example.com", "hash", "테스터");
+        given(userRepository.findByLoginId("testuser1")).willReturn(Optional.of(user));
+
+        // when
+        var profile = userService.getProfile("testuser1");
+
+        // then
+        assertThat(profile.getLoginId()).isEqualTo("testuser1");
+        assertThat(profile.getNickname()).isEqualTo("테스터");
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 loginId 프로필 조회 시 USER_NOT_FOUND 예외가 발생한다")
+    void getProfile_notFound() {
+        // given
+        given(userRepository.findByLoginId("nobody")).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> userService.getProfile("nobody"))
+                .isInstanceOf(ExceptionTemplate.class)
+                .satisfies(e -> assertThat(((ExceptionTemplate) e).getErrorCode())
+                        .isEqualTo(ErrorCode.USER_NOT_FOUND));
+    }
+
+    // ===== updateProfile =====
+
+    @Test
+    @DisplayName("닉네임 변경 시 프로필이 정상 수정된다")
+    void updateProfile_success() {
+        // given
+        User user = User.create("testuser1", "test@example.com", "hash", "테스터");
+        given(userRepository.findByLoginId("testuser1")).willReturn(Optional.of(user));
+        given(userRepository.existsByNickname("새닉네임")).willReturn(false);
+
+        ProfileUpdateRequest req = new ProfileUpdateRequest();
+        req.setNickname("새닉네임");
+
+        // when
+        var profile = userService.updateProfile("testuser1", req);
+
+        // then
+        assertThat(profile.getNickname()).isEqualTo("새닉네임");
+    }
+
+    @Test
+    @DisplayName("닉네임 중복 시 DUPLICATE_NICKNAME 예외가 발생한다")
+    void updateProfile_duplicateNickname() {
+        // given
+        User user = User.create("testuser1", "test@example.com", "hash", "테스터");
+        given(userRepository.findByLoginId("testuser1")).willReturn(Optional.of(user));
+        given(userRepository.existsByNickname("중복닉")).willReturn(true);
+
+        ProfileUpdateRequest req = new ProfileUpdateRequest();
+        req.setNickname("중복닉");
+
+        // when & then
+        assertThatThrownBy(() -> userService.updateProfile("testuser1", req))
+                .isInstanceOf(ExceptionTemplate.class)
+                .satisfies(e -> assertThat(((ExceptionTemplate) e).getErrorCode())
+                        .isEqualTo(ErrorCode.DUPLICATE_NICKNAME));
+    }
+
+    @Test
+    @DisplayName("자기 자신의 닉네임으로 수정 요청 시 중복 예외가 발생하지 않는다")
+    void updateProfile_sameNickname_noError() {
+        // given
+        User user = User.create("testuser1", "test@example.com", "hash", "테스터");
+        given(userRepository.findByLoginId("testuser1")).willReturn(Optional.of(user));
+
+        ProfileUpdateRequest req = new ProfileUpdateRequest();
+        req.setNickname("테스터"); // 현재 닉네임과 동일
+
+        // when & then
+        assertThatNoException().isThrownBy(() -> userService.updateProfile("testuser1", req));
+    }
+
+    // ===== changePassword =====
+
+    @Test
+    @DisplayName("현재 비밀번호 일치 시 비밀번호를 정상 변경한다")
+    void changePassword_success() {
+        // given
+        User user = User.create("testuser1", "test@example.com", "encodedOld", "테스터");
+        given(userRepository.findByLoginId("testuser1")).willReturn(Optional.of(user));
+        given(passwordEncoder.matches("OldPass1!", "encodedOld")).willReturn(true);
+        given(passwordEncoder.encode("NewPass1!")).willReturn("encodedNew");
+
+        PasswordChangeRequest req = new PasswordChangeRequest();
+        req.setCurrentPassword("OldPass1!");
+        req.setNewPassword("NewPass1!");
+
+        // when & then
+        assertThatNoException().isThrownBy(() -> userService.changePassword("testuser1", req));
+    }
+
+    @Test
+    @DisplayName("현재 비밀번호 불일치 시 UNAUTHORIZED 예외가 발생한다")
+    void changePassword_wrongCurrentPassword() {
+        // given
+        User user = User.create("testuser1", "test@example.com", "encodedOld", "테스터");
+        given(userRepository.findByLoginId("testuser1")).willReturn(Optional.of(user));
+        given(passwordEncoder.matches("WrongPass1!", "encodedOld")).willReturn(false);
+
+        PasswordChangeRequest req = new PasswordChangeRequest();
+        req.setCurrentPassword("WrongPass1!");
+        req.setNewPassword("NewPass1!");
+
+        // when & then
+        assertThatThrownBy(() -> userService.changePassword("testuser1", req))
+                .isInstanceOf(ExceptionTemplate.class)
+                .satisfies(e -> assertThat(((ExceptionTemplate) e).getErrorCode())
+                        .isEqualTo(ErrorCode.UNAUTHORIZED));
+    }
+
+    @Test
+    @DisplayName("새 비밀번호가 검증 규칙에 맞지 않으면 INVALID_INPUT_VALUE 예외가 발생한다")
+    void changePassword_invalidNewPassword() {
+        // given
+        User user = User.create("testuser1", "test@example.com", "encodedOld", "테스터");
+        given(userRepository.findByLoginId("testuser1")).willReturn(Optional.of(user));
+        given(passwordEncoder.matches("OldPass1!", "encodedOld")).willReturn(true);
+
+        PasswordChangeRequest req = new PasswordChangeRequest();
+        req.setCurrentPassword("OldPass1!");
+        req.setNewPassword("short"); // 너무 짧은 비밀번호
+
+        // when & then
+        assertThatThrownBy(() -> userService.changePassword("testuser1", req))
+                .isInstanceOf(ExceptionTemplate.class)
+                .satisfies(e -> assertThat(((ExceptionTemplate) e).getErrorCode())
+                        .isEqualTo(ErrorCode.INVALID_INPUT_VALUE));
+    }
 }
+

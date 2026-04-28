@@ -48,13 +48,13 @@ src/main/java/com/today/fridge/
 
 | 구분 | 팀 공식 경로 | 현행 구현 경로 | 상태 |
 |------|------------|--------------|------|
-| 회원가입 | `POST /api/v1/auth/signup` | `POST /api/v1/users/signup` | ⚠️ 경로 불일치 — 이동 필요 |
+| 회원가입 | `POST /api/v1/auth/signup` | `POST /api/v1/auth/signup` | ✅ 이동 완료 |
 | 로그인 | `POST /api/v1/auth/login` | `POST /api/v1/auth/login` | ✅ |
 | 로그아웃 | `POST /api/v1/auth/logout` | `POST /api/v1/auth/logout` | ✅ |
 | CSRF 토큰 발급 | `GET /api/v1/auth/csrf-token` | 미구현 | ❌ |
-| 아이디 중복 확인 | `GET /api/v1/auth/check-login-id` | 미구현 (Service 메서드만 존재) | ❌ |
+| 아이디 중복 확인 | `GET /api/v1/auth/check-login-id` | `GET /api/v1/auth/check-login-id` | ✅ 구현 완료 |
 | Refresh Token 재발급 | `POST /api/v1/auth/refresh` | 미구현 | ❌ |
-| 현재 사용자 조회 | `GET /api/v1/auth/me` | 미구현 | ❌ |
+| 현재 사용자 조회 | `GET /api/v1/auth/me` | `GET /api/v1/auth/me` | ✅ 구현 완료 |
 | 마이페이지 조회 | `GET /api/v1/users/me/profile` | 미구현 | ❌ |
 | 마이페이지 수정 | `PATCH /api/v1/users/me/profile` | 미구현 | ❌ |
 | 비밀번호 변경 | `PATCH /api/v1/users/me/password` | 미구현 | ❌ |
@@ -206,12 +206,12 @@ src/main/java/com/today/fridge/
 
 | 순서 | 작업 | 파일 | 비고 |
 |------|------|------|------|
-| 1 | `UserSession` 엔티티에 `user_agent`, `last_ip`, `revoked_at` 컬럼 추가 | `auth/entity/UserSession.java` | `revoked_at` NULL 허용 |
-| 2 | 회원가입 API 경로 이동: `UserController` → `AuthController` | `auth/controller/AuthController.java` | `/api/v1/auth/signup` |
-| 3 | `GET /api/v1/auth/check-login-id` 구현 | `auth/controller/AuthController.java` | loginId 중복 확인 |
+| ~~1~~ | ~~`UserSession` 엔티티에 `user_agent`, `last_ip`, `revoked_at` 컬럼 추가~~ | ~~`auth/entity/UserSession.java`~~ | ✅ 완료 |
+| ~~2~~ | ~~회원가입 API 경로 이동: `UserController` → `AuthController`~~ | ~~`auth/controller/AuthController.java`~~ | ✅ 완료 |
+| ~~3~~ | ~~`GET /api/v1/auth/check-login-id` 구현~~ | ~~`auth/controller/AuthController.java`~~ | ✅ 완료 |
 | 4 | `GET /api/v1/auth/csrf-token` 구현 | `auth/controller/AuthController.java` | CSRF 쿠키 동기화 |
 | 5 | `POST /api/v1/auth/refresh` 구현 | `auth/controller/AuthController.java` | refreshToken 해시 검증 + 재발급 |
-| 6 | `GET /api/v1/auth/me` 구현 | `auth/controller/AuthController.java` | SecurityContext에서 loginId 추출 |
+| ~~6~~ | ~~`GET /api/v1/auth/me` 구현~~ | ~~`auth/controller/AuthController.java`~~ | ✅ 완료 |
 | 7 | `GET/PATCH /api/v1/users/me/profile` 구현 | `user/controller/UserController.java` | 마이페이지 |
 | 8 | `PATCH /api/v1/users/me/password` 구현 | `user/controller/UserController.java` | 비밀번호 변경 |
 | 9 | `SecurityConfig` 인증 분기 적용 | `global/config/SecurityConfig.java` | 인증 필요 API 보호 |
@@ -275,7 +275,7 @@ X-Request-Id:       {UUID}
 
 ---
 
-### 3-5. 카카오 로그인 (KakaoAuthController) — 미구현
+### 5-5. 카카오 로그인 (KakaoAuthController) — 미구현
 
 - 팀 내 카카오 개발자 계정 생성 필요
 - RestApiKey `.env` 설정 필요
@@ -284,7 +284,7 @@ X-Request-Id:       {UUID}
 
 ---
 
-### 3-6. AuthController 추후 개선 항목
+### 5-6. AuthController 추후 개선 항목
 
 - Redis 기반 token / refreshToken 관리로 교체
 - refreshToken 30분마다 재발급 로직 추가
