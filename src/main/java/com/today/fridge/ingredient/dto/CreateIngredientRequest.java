@@ -1,0 +1,32 @@
+package com.today.fridge.ingredient.dto;
+
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
+@Getter
+@Setter
+public class CreateIngredientRequest {
+
+    @NotBlank
+    @Size(max = 100)
+    private String name;
+
+    @DecimalMin(value = "0", inclusive = true)
+    private BigDecimal quantity;
+
+    @Size(max = 20)
+    private String unit;
+
+    @Size(max = 30)
+    private String storageType;
+
+    private LocalDate expirationDate;
+
+    private Long categoryId;
+}

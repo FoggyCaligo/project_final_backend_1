@@ -20,6 +20,9 @@ public class User {
     @Column(name = "login_id", nullable = false, unique = true, length = 50)
     private String loginId;
 
+    @Column(name = "email", nullable = false, unique = true, length = 100)
+    private String email;
+
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
