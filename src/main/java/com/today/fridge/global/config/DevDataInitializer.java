@@ -14,11 +14,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -35,15 +37,18 @@ public class DevDataInitializer implements CommandLineRunner {
     private final IngredientCategoryRepository ingredientCategoryRepository;
     private final IngredientMasterRepository ingredientMasterRepository;
     private final ObjectMapper objectMapper;
+    private final PasswordEncoder passwordEncoder;
 
     public DevDataInitializer(UserRepository userRepository,
                               IngredientCategoryRepository ingredientCategoryRepository,
                               IngredientMasterRepository ingredientMasterRepository,
-                              ObjectMapper objectMapper) {
+                              ObjectMapper objectMapper,
+                              PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.ingredientCategoryRepository = ingredientCategoryRepository;
         this.ingredientMasterRepository = ingredientMasterRepository;
         this.objectMapper = objectMapper;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -53,18 +58,20 @@ public class DevDataInitializer implements CommandLineRunner {
         seedIngredientMasterFromCanonicalGroceryFile();
     }
 
+    // testuser 계정 비밀번호: Test@1234
     private void seedUser() throws Exception {
         if (userRepository.count() == 0) {
             User user = new User();
             setField(user, "loginId", "testuser");
             setField(user, "email", "testuser@test.com");
-            setField(user, "passwordHash", "$2a$10$devtesthashplaceholderonly00000");
+            setField(user, "passwordHash", passwordEncoder.encode("Test@1234"));
             setField(user, "nickname", "테스트유저");
             setField(user, "status", "ACTIVE");
-            setField(user, "createdAt", LocalDateTime.now());
-            setField(user, "updatedAt", LocalDateTime.now());
+            setField(user, "emailVerified", true);
+            setField(user, "createdAt", OffsetDateTime.now());
+            setField(user, "updatedAt", OffsetDateTime.now());
             userRepository.save(user);
-            log.info("[DevDataInitializer] 테스트 유저 생성 완료 (loginId=testuser)");
+            log.info("[DevDataInitializer] 테스트 유저 생성 완료 (loginId=testuser, password=Test@1234)");
         } else {
             log.info("[DevDataInitializer] 기존 유저 존재, 초기화 생략");
         }
