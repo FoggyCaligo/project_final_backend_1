@@ -15,6 +15,7 @@ import com.today.fridge.ingredient.dto.FridgeSummaryResponse;
 import com.today.fridge.ingredient.dto.IngredientResponse;
 import com.today.fridge.ingredient.dto.SoonItemResponse;
 import com.today.fridge.ingredient.entity.IngredientCategory;
+import com.today.fridge.ingredient.entity.IngredientMaster;
 import com.today.fridge.ingredient.entity.UserIngredient;
 import com.today.fridge.ingredient.repository.IngredientCategoryRepository;
 import com.today.fridge.ingredient.repository.IngredientMasterRepository;
@@ -35,6 +36,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 
 @Service
@@ -139,7 +141,15 @@ public class FridgeIngredientService {
         e.setUnit(req.getUnit());
         e.setStorageType(storage);
 
-        Long catId = validateCategoryId(req.getCategoryId());
+        tryAttachMaster(e);
+
+        Long catId = null;
+        if (req.getCategoryId() != null) {
+            catId = validateCategoryId(req.getCategoryId());
+        }
+        if (catId == null) {
+            catId = categoryIdFromLinkedMaster(e.getIngredientMaster());
+        }
         e.setCategoryId(catId);
 
         if (req.getExpirationDate() != null) {
@@ -155,7 +165,6 @@ public class FridgeIngredientService {
             }
         }
 
-        tryAttachMaster(e);
         UserIngredient saved = userIngredientRepository.save(e);
         return toResponse(saved);
     }
@@ -233,6 +242,7 @@ public class FridgeIngredientService {
         }
 
         tryAttachMaster(e);
+        tryFillCategoryFromMasterWhenUnset(e, body.containsKey("categoryId"));
         UserIngredient saved = userIngredientRepository.save(e);
         return toResponse(saved);
     }
@@ -265,7 +275,61 @@ public class FridgeIngredientService {
         if (!StringUtils.hasText(norm)) {
             return;
         }
-        ingredientMasterRepository.findByNormalizedNameIgnoreCase(norm).ifPresent(e::setIngredientMaster);
+        resolveMaster(norm).ifPresent(e::setIngredientMaster);
+    }
+
+    /**
+     * 표준명 일치 → {@code ingredient_master} 연결.
+     * 없으면 {@code alias_text}(예: {@code ko:당근,…}) 부분 일치로 후보 검색 (시스템설계서: 정규화·카테고리 분류 보조).
+     */
+    private Optional<IngredientMaster> resolveMaster(String rawOrNormalized) {
+        String q = sanitizeForMasterLookup(rawOrNormalized);
+        if (!StringUtils.hasText(q)) {
+            return Optional.empty();
+        }
+        Optional<IngredientMaster> exact = ingredientMasterRepository.findByNormalizedNameIgnoreCase(q);
+        if (exact.isPresent()) {
+            return exact;
+        }
+        List<IngredientMaster> candidates = ingredientMasterRepository.findCandidatesByNormalizedNameOrAlias(
+                q, PageRequest.of(0, 5));
+        return candidates.stream().findFirst();
+    }
+
+    private static String sanitizeForMasterLookup(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        String s = raw.replace("%", "").replace("_", "").trim();
+        if (s.length() > 100) {
+            return s.substring(0, 100);
+        }
+        return s;
+    }
+
+    /** {@code ingredient_master.category_id}를 {@code ingredient_category} PK로 변환 (존재할 때만). */
+    private Long categoryIdFromLinkedMaster(IngredientMaster master) {
+        if (master == null || master.getCategoryId() == null) {
+            return null;
+        }
+        long cid = master.getCategoryId().longValue();
+        return ingredientCategoryRepository.existsById(cid) ? cid : null;
+    }
+
+    /**
+     * PATCH에서 {@code categoryId} 키가 없고 현재 값이 비어 있으면 마스터 기준 자동 분류.
+     */
+    private void tryFillCategoryFromMasterWhenUnset(UserIngredient e, boolean categoryFieldPresentInPatch) {
+        if (categoryFieldPresentInPatch) {
+            return;
+        }
+        if (e.getCategoryId() != null) {
+            return;
+        }
+        Long cid = categoryIdFromLinkedMaster(e.getIngredientMaster());
+        if (cid != null) {
+            e.setCategoryId(cid);
+        }
     }
 
     private IngredientResponse toResponse(UserIngredient ui) {

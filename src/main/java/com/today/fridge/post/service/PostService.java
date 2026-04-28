@@ -37,8 +37,8 @@ public class PostService {
         post.setRecipeId(request.getRecipe()); // 프론트에서 넘어온 레시피 ID 세팅
         post.setTitle(request.getTitle());
         post.setContent(request.getContent());
-        post.setLikeCount(0);
-        post.setReportCount(0);
+        post.setLikeCount(0L);
+        post.setReportCount(0L);
         post.setCreatedAt(LocalDateTime.now());
         post.setUpdatedAt(LocalDateTime.now());
         
