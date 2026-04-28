@@ -24,6 +24,8 @@ public class RecipeRecommendationResponse {
     private List<String> missingIngredients;
     private List<String> conditionTags;
     private List<SubstituteSuggestionDto> substituteSuggestions;
+    
+    private List<ConditionWarningDto> warnings;
 
     private String reason;
 }

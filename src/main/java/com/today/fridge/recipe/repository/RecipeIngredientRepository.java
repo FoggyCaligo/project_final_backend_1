@@ -11,10 +11,10 @@ import com.today.fridge.recipe.entity.RecipeIngredient;
 public interface RecipeIngredientRepository extends JpaRepository<RecipeIngredient, Long> {
 
 	@Query("""
-		    select ri.normalizedNameSnapshot
+		    select coalesce(im.normalizedName, ri.normalizedNameSnapshot, ri.rawText)
 		    from RecipeIngredient ri
+		    left join ri.ingredientMaster im
 		    where ri.recipe.recipeId = :recipeId
-		      and ri.normalizedNameSnapshot is not null
 		      and (ri.isOptional = false or ri.isOptional is null)
 		    order by ri.sortOrder asc
 		""")

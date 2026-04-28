@@ -4,10 +4,12 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.today.fridge.ingredient.repository.UserIngredientRepository;
 import com.today.fridge.recipe.entity.Recipe;
 import com.today.fridge.recipe.repository.RecipeIngredientRepository;
 import com.today.fridge.recipe.repository.RecipeRepository;
 import com.today.fridge.recommendation.dto.internal.RecommendationQuery;
+import com.today.fridge.recommendation.dto.response.ConditionWarningDto;
 import com.today.fridge.recommendation.dto.response.RecipeRecommendationResponse;
 import com.today.fridge.recommendation.entity.RecipeConditionMap;
 import com.today.fridge.recommendation.entity.UserCondition;
@@ -28,13 +30,15 @@ public class RecommendationService {
     private final RecommendationReasonService recommendationReasonService;
     private final RecipeRepository recipeRepository;
     private final RecipeIngredientRepository recipeIngredientRepository;
+    private final UserIngredientRepository userIngredientRepository;
     
     private RecipeRecommendationResponse createRecipeResponse(
             Recipe recipe,
             List<String> requiredIngredients,
             double conditionScore,
             List<String> conditionTags,
-            List<String> ownedIngredients
+            List<String> ownedIngredients,
+            List<ConditionWarningDto> warnings
     ) {
         List<String> matchedIngredients = requiredIngredients.stream()
                 .filter(ownedIngredients::contains)
@@ -73,6 +77,7 @@ public class RecommendationService {
                 .matchedIngredients(matchedIngredients)
                 .missingIngredients(missingIngredients)
                 .conditionTags(conditionTags)
+                .warnings(warnings)
                 .substituteSuggestions(
                         substituteIngredientService.suggest(
                                 missingIngredients,
@@ -83,7 +88,29 @@ public class RecommendationService {
                 .reason(reason)
                 .build();
     }
-    
+    private List<ConditionWarningDto> buildWarnings(
+            List<UserCondition> userConditions,
+            List<RecipeConditionMap> recipeConditions
+    ) {
+        List<Long> userConditionIds = userConditions.stream()
+                .map(uc -> uc.getConditionCode().getConditionId())
+                .toList();
+
+        return recipeConditions.stream()
+                .filter(rc -> userConditionIds.contains(
+                        rc.getConditionCode().getConditionId()
+                ))
+                .filter(rc -> "CAUTION".equals(rc.getFitType()))
+                .map(rc -> ConditionWarningDto.builder()
+                        .conditionCode(rc.getConditionCode().getConditionCode())
+                        .conditionName(rc.getConditionCode().getConditionName())
+                        .warningMessage(
+                                rc.getConditionCode().getConditionName()
+                                        + " 조건에 주의가 필요한 레시피입니다."
+                        )
+                        .build())
+                .toList();
+    }
     public List<RecipeRecommendationResponse> recommend(Long userId) {
         return recommend(
                 RecommendationQuery.builder()
@@ -101,10 +128,12 @@ public class RecommendationService {
     }
     
     public List<RecipeRecommendationResponse> recommend(RecommendationQuery query) {
-        List<String> ownedIngredients =
-                query.getIncludeIngredients() == null
-                        ? List.of()
-                        : query.getIncludeIngredients();
+    	List<String> ownedIngredients =
+    	        query.isUseUserFridge() && query.getUserId() != null
+    	                ? userIngredientRepository.findOwnedIngredientNamesByUserId(query.getUserId())
+    	                : query.getIncludeIngredients() == null
+    	                        ? List.of()
+    	                        : query.getIncludeIngredients();
 
         List<Recipe> recipes = recipeRepository.findByIsActiveTrue();
 
@@ -135,13 +164,17 @@ public class RecommendationService {
                             .map(uc -> uc.getConditionCode().getConditionName())
                             .distinct()
                             .toList();
-
+                    List<ConditionWarningDto> warnings = buildWarnings(
+                            userConditions,
+                            recipeConditions
+                    );
                     return createRecipeResponse(
                             recipe,
                             requiredIngredients,
                             conditionScore,
                             conditionTags,
-                            ownedIngredients
+                            ownedIngredients,
+                            warnings
                     );
                 })
                 .sorted((a, b) -> Double.compare(b.getTotalScore(), a.getTotalScore()))
