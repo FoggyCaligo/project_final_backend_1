@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.HexFormat;
 
 @Service
@@ -49,7 +49,7 @@ public class AuthService {
     @Transactional
     public void createSession(User user, String refreshToken, long validityInMs) {
         String tokenHash = hashToken(refreshToken);
-        LocalDateTime expiresAt = LocalDateTime.now().plusNanos(validityInMs * 1_000_000);
+        OffsetDateTime expiresAt = OffsetDateTime.now().plusNanos(validityInMs * 1_000_000);
         UserSession session = UserSession.create(user, tokenHash, expiresAt);
         userSessionRepository.save(session);
     }

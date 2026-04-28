@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Getter
@@ -43,16 +43,16 @@ public class User {
     private String emailVerifyToken;
 
     @Column(name = "email_verify_expiry")
-    private LocalDateTime emailVerifyExpiry;
+    private OffsetDateTime emailVerifyExpiry;
 
     @Column(name = "last_login_at")
-    private LocalDateTime lastLoginAt;
+    private OffsetDateTime lastLoginAt;
 
     @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    private OffsetDateTime updatedAt;
 
     public static User create(String loginId, String email, String passwordHash, String nickname) {
         User user = new User();
@@ -63,23 +63,23 @@ public class User {
         user.status = "PENDING_VERIFICATION";
         user.emailVerified = false;
         user.emailVerifyToken = UUID.randomUUID().toString();
-        user.emailVerifyExpiry = LocalDateTime.now().plusHours(24);
-        user.createdAt = LocalDateTime.now();
-        user.updatedAt = LocalDateTime.now();
+        user.emailVerifyExpiry = OffsetDateTime.now().plusHours(24);
+        user.createdAt = OffsetDateTime.now();
+        user.updatedAt = OffsetDateTime.now();
         return user;
     }
 
     @PrePersist
     private void prePersist() {
-        if (createdAt == null) createdAt = LocalDateTime.now();
-        if (updatedAt == null) updatedAt = LocalDateTime.now();
+        if (createdAt == null) createdAt = OffsetDateTime.now();
+        if (updatedAt == null) updatedAt = OffsetDateTime.now();
         if (status == null) status = "PENDING_VERIFICATION";
         if (emailVerified == null) emailVerified = false;
     }
 
     @PreUpdate
     private void preUpdate() {
-        updatedAt = LocalDateTime.now();
+        updatedAt = OffsetDateTime.now();
     }
 
     // 프로필 수정: 닉네임, 프로필 이미지 URL
@@ -95,7 +95,7 @@ public class User {
 
     // 최근 로그인 시간 갱신
     public void updateLastLoginAt() {
-        this.lastLoginAt = LocalDateTime.now();
+        this.lastLoginAt = OffsetDateTime.now();
     }
 
     // 이메일 인증 완료
@@ -109,13 +109,13 @@ public class User {
     // 이메일 인증 토큰 재발급
     public void regenerateEmailVerifyToken() {
         this.emailVerifyToken = UUID.randomUUID().toString();
-        this.emailVerifyExpiry = LocalDateTime.now().plusHours(24);
+        this.emailVerifyExpiry = OffsetDateTime.now().plusHours(24);
     }
 
     // 이메일 인증 토큰 유효성 확인
     public boolean isEmailVerifyTokenValid() {
         return this.emailVerifyToken != null
                 && this.emailVerifyExpiry != null
-                && LocalDateTime.now().isBefore(this.emailVerifyExpiry);
+                && OffsetDateTime.now().isBefore(this.emailVerifyExpiry);
     }
 }
