@@ -6,3 +6,9 @@ build/
 .vscode/
 fileHashes.lock
 bin/
+
+# 개인 환경 설정 (팀원마다 다름)
+.env
+
+# AI 에이전트 문서 (개인용)
+.ai/
