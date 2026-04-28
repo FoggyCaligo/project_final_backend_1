@@ -45,6 +45,9 @@ public class User {
     @Column(name = "email_verify_expiry")
     private OffsetDateTime emailVerifyExpiry;
 
+    @Column(name = "last_login_at")
+    private OffsetDateTime lastLoginAt;
+
     @Column(name = "created_at")
     private OffsetDateTime createdAt;
 
@@ -86,6 +89,11 @@ public class User {
 
     public void changePassword(String newPasswordHash) {
         this.passwordHash = newPasswordHash;
+    }
+
+    // 최근 로그인 시간 갱신
+    public void updateLastLoginAt() {
+        this.lastLoginAt = OffsetDateTime.now();
     }
 
     public void verifyEmail() {
