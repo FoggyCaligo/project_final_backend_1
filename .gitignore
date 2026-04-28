@@ -1,9 +1,2 @@
 .gradle/
-.project
-.settings/
-.classpath
-.vscode/
-fileHashes.lock
-src/main/resources/application.yml
-src/main/resources/application-local.yml
-bin/
+build/

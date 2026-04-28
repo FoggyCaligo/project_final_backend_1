@@ -39,4 +39,29 @@ public class UserSession {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    public static UserSession create(User user, String refreshTokenHash, LocalDateTime expiresAt) {
+        UserSession session = new UserSession();
+        session.user = user;
+        session.refreshTokenHash = refreshTokenHash;
+        session.expiresAt = expiresAt;
+        session.createdAt = LocalDateTime.now();
+        return session;
+    }
+
+    public void revoke() {
+        this.revokedAt = LocalDateTime.now();
+    }
+
+    public boolean isRevoked() {
+        return this.revokedAt != null;
+    }
+
+    public boolean isExpired() {
+        return LocalDateTime.now().isAfter(this.expiresAt);
+    }
+
+    public boolean isValid() {
+        return !isRevoked() && !isExpired();
+    }
 }
