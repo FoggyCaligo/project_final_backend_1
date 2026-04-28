@@ -88,7 +88,7 @@ public class RecipeService {
                 .orElseThrow(() -> {
                     log.error("레시피를 찾을 수 없습니다. recipeId: {}", recipeId);
                     log.error("RecipeService.getRecipe에서 에러가 발생하였습니다.");
-                    return new ExceptionTemplate(ErrorCode.RECIPE_NOT_FOUND);
+                    return new ExceptionTemplate(ErrorCode.RECIPE_NOT_FOUND, java.util.Map.of("recipeId", recipeId));
                 });
 
         // 레시피 영양정보 조회
@@ -96,7 +96,8 @@ public class RecipeService {
                 .orElseThrow(() -> {
                     log.error("레시피 영양정보를 찾을 수 없습니다. recipeId: {}", recipeId);
                     log.error("RecipeService.getRecipe에서 에러가 발생하였습니다.");
-                    return new ExceptionTemplate(ErrorCode.RECIPE_NUTRITION_NOT_FOUND);
+                    return new ExceptionTemplate(ErrorCode.RECIPE_NUTRITION_NOT_FOUND,
+                            java.util.Map.of("recipeId", recipeId));
                 });
 
         // 레시피 단계 조회
@@ -120,7 +121,7 @@ public class RecipeService {
         if (recipeSteps.isEmpty()) {
             log.error("레시피 단계 정보가 없습니다. recipeId: {}", recipeId);
             log.error("RecipeService.getRecipeAllSteps에서 에러가 발생하였습니다.");
-            throw new ExceptionTemplate(ErrorCode.RECIPE_STEP_NOT_FOUND);
+            throw new ExceptionTemplate(ErrorCode.RECIPE_STEP_NOT_FOUND, java.util.Map.of("recipeId", recipeId));
         }
 
         return recipeSteps.stream()
@@ -134,7 +135,7 @@ public class RecipeService {
         if (recipeIngredients.isEmpty()) {
             log.error("레시피 재료 정보가 없습니다. recipeId: {}", recipeId);
             log.error("RecipeService.getRecipeAllIngredients에서 에러가 발생하였습니다.");
-            throw new ExceptionTemplate(ErrorCode.RECIPE_INGREDIENT_NOT_FOUND);
+            throw new ExceptionTemplate(ErrorCode.RECIPE_INGREDIENT_NOT_FOUND, java.util.Map.of("recipeId", recipeId));
         }
 
         return recipeIngredients.stream()
