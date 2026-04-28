@@ -44,7 +44,7 @@ server:
 app:
   security:
     jwt:
-      secret: 'VG9kYXlGcmlkZ2VQcm9qZWN0QmFja2VuZDFTdGFydGVyU2VjcmV0S2V5Rm9ySldU'
+      secret: "VG9kYXlGcmlkZ2VQcm9qZWN0QmFja2VuZDFTdGFydGVyU2VjcmV0S2V5Rm9ySldU"
       access-token-validity-seconds: 3600
       refresh-token-validity-seconds: 1209600
     cookie:
@@ -59,8 +59,13 @@ app:
   mail:
     from: ${MAIL_FROM:noreply@todayfridge.com}
     base-url: ${APP_BASE_URL:http://localhost:8080}
+  kakao:
+    rest-api-key: ${KAKAO_REST_API_KEY:75029a3464f13bd358978e6ed88f9efd}
+    redirect-uri: ${KAKAO_REDIRECT_URI:http://localhost:8080/api/v1/auth/kakao/callback}
+    frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
 
 logging:
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{requestId}] %-5level %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{requestId}] %-5level
+      %logger{36} - %msg%n"
     #file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{requestId}] %-5level %logger{36} - %msg%n"

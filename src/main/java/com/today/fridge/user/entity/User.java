@@ -54,6 +54,21 @@ public class User {
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
 
+    // 카카오 소셜 로그인 사용자 생성 (비밀번호 로그인 불가 - 랜덤 UUID 저장)
+    public static User createFromKakao(String kakaoId, String email, String nickname, String profileImageUrl) {
+        User user = new User();
+        user.loginId = "kakao_" + kakaoId;
+        user.email = (email != null && !email.isBlank()) ? email : "kakao_" + kakaoId + "@kakao.oauth";
+        user.passwordHash = UUID.randomUUID().toString();
+        user.nickname = nickname;
+        user.profileImageUrl = profileImageUrl;
+        user.status = "ACTIVE";
+        user.emailVerified = true;
+        user.createdAt = OffsetDateTime.now();
+        user.updatedAt = OffsetDateTime.now();
+        return user;
+    }
+
     public static User create(String loginId, String email, String passwordHash, String nickname) {
         User user = new User();
         user.loginId = loginId;

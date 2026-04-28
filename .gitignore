@@ -5,7 +5,7 @@ build/
 .classpath
 .vscode/
 fileHashes.lock
-bin/
+bin/*
 
 # 개인 환경 설정 (팀원마다 다름)
 .env
