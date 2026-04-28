@@ -66,12 +66,12 @@ src/main/java/com/today/fridge/
 |------|-----------|----------|------|
 | `session_id` | BIGINT PK | ✅ | |
 | `user_id` | BIGINT FK | ✅ | |
-| `refresh_token_hash` | VARCHAR(255) | ✅ (refreshToken 컬럼명 확인 필요) | 원문 아닌 해시 저장 원칙 |
-| `user_agent` | VARCHAR(255) | ❌ 미추가 | 클라이언트 식별 보조 |
-| `last_ip` | VARCHAR(64) | ❌ 미추가 | 최근 접속 IP |
-| `expires_at` | TIMESTAMPTZ | ✅ | |
-| `revoked_at` | TIMESTAMPTZ NULL | ❌ 미추가 | 무효화 시각 (로그아웃) |
-| `created_at` | TIMESTAMPTZ | ✅ | |
+| `refresh_token_hash` | VARCHAR(255) | ✅ | SHA-256 해시 저장 |
+| `user_agent` | VARCHAR(255) | ✅ 추가 완료 | 클라이언트 식별 보조 |
+| `last_ip` | VARCHAR(64) | ✅ 추가 완료 | 최근 접속 IP |
+| `expires_at` | TIMESTAMPTZ | ✅ OffsetDateTime | |
+| `revoked_at` | TIMESTAMPTZ NULL | ✅ 추가 완료, OffsetDateTime | 무효화 시각 (로그아웃) |
+| `created_at` | TIMESTAMPTZ | ✅ OffsetDateTime | |
 
 ### 2-0-2. 인증·보안 정책 팀 확정 사항
 
@@ -81,23 +81,61 @@ src/main/java/com/today/fridge/
 - **토큰 저장 금지**: 브라우저 `localStorage` / `sessionStorage` 에 JWT 원문 저장 금지 (현행 AuthContext는 loginId+loginType 요약 정보만 저장 — 정책 준수)
 - **refreshToken**: 원문 저장 금지, `user_session.refresh_token_hash`에 해시만 저장
 
-### 2-0-3. users 테이블 팀 공식 스펙
+### 2-0-3. users 테이블 실제 구조 (이메일 인증 포함, 2026-04-28 확정)
 
 | 컬럼 | 타입 | 비고 |
 |------|------|------|
 | `user_id` | BIGINT PK | |
 | `login_id` | VARCHAR(50) UNIQUE | |
+| `email` | VARCHAR(255) UNIQUE | 아이디 찾기 및 이메일 인증에 사용 |
 | `password_hash` | VARCHAR(255) | |
-| `nickname` | VARCHAR(50) | |
-| `status` | VARCHAR(20) | ACTIVE / INACTIVE |
-| `created_at` | TIMESTAMPTZ | |
-| `updated_at` | TIMESTAMPTZ | |
+| `nickname` | VARCHAR(50) UNIQUE | |
+| `profile_image_url` | VARCHAR(2048) NULL | |
+| `status` | VARCHAR(20) | PENDING_VERIFICATION / ACTIVE / INACTIVE |
+| `email_verified` | BOOLEAN NOT NULL DEFAULT false | |
+| `email_verify_token` | VARCHAR(255) NULL | 24시간 유효 UUID |
+| `email_verify_expiry` | TIMESTAMPTZ NULL | |
+| `last_login_at` | TIMESTAMPTZ NULL | |
+| `created_at` | TIMESTAMPTZ NOT NULL | |
+| `updated_at` | TIMESTAMPTZ NOT NULL | |
 
-⚠️ 팀 공식 스펙에 `email` 컬럼이 없음. 현행 User 엔티티에는 email 존재. **팀 내 확인 필요** (아이디 찾기 기능에 email 사용 중).
+> ✅ `email` 컬럼 팀 내 확정 — 이메일 인증 및 아이디 찾기 기능에 필수.
+> ✅ 모든 timestamp 컬럼은 TIMESTAMPTZ (Java `OffsetDateTime`) 사용 — LocalDateTime 불일치 해소.
 
 ---
 
 ## 3. 작업 이력
+
+---
+
+### [2026-04-28] DB 타입 불일치 수정: LocalDateTime → OffsetDateTime
+
+**문제**: DB의 `users`, `user_session` 테이블은 TIMESTAMPTZ(timestamp with time zone)를 사용하지만 Java 엔티티는 `LocalDateTime`(타임존 없음)을 사용하여 데이터 정합성 오류 발생 가능.
+
+**수정 파일 및 내용**:
+
+| 파일 | 변경 내용 |
+|------|---------|
+| `user/entity/User.java` | `LocalDateTime` → `OffsetDateTime` (4개 필드: `createdAt`, `updatedAt`, `lastLoginAt`, `emailVerifyExpiry`) |
+| `auth/entity/UserSession.java` | `LocalDateTime` → `OffsetDateTime` (3개 필드: `expiresAt`, `revokedAt`, `createdAt`), `create()` 파라미터 타입 변경 |
+| `auth/service/AuthService.java` | `createSession()` 내부 `LocalDateTime` → `OffsetDateTime` |
+
+**DB ALTER 필요**: DB 컬럼이 `timestamp without time zone`인 경우 아래 SQL 실행 필요 (별도 섹션 참고).
+
+---
+
+### [2026-04-28] 이메일 인증 로직 구현
+
+**구현 완료 항목**:
+
+| 기능 | 파일 | 설명 |
+|------|------|------|
+| 이메일 발송 | `global/external/EmailService.java` | `@Async` HTML 이메일 발송, 24시간 유효 |
+| 이메일 인증 확인 | `GET /api/v1/auth/verify-email?token=` | 토큰 검증 → 인증 완료 → `http://localhost:3000?emailVerified=true` 리다이렉트 |
+| 인증 이메일 재발송 | `POST /api/v1/auth/resend-verification?email=` | 토큰 재생성 후 재발송 |
+| 로그인 차단 | `AuthController.login()` | `emailVerified=false` 사용자 로그인 불가 |
+
+**User 상태 흐름**: `PENDING_VERIFICATION` (가입) → 이메일 인증 링크 클릭 → `ACTIVE` (인증 완료) → 로그인 가능
 
 ---
 
@@ -210,12 +248,13 @@ src/main/java/com/today/fridge/
 | ~~2~~ | ~~회원가입 API 경로 이동: `UserController` → `AuthController`~~ | ~~`auth/controller/AuthController.java`~~ | ✅ 완료 |
 | ~~3~~ | ~~`GET /api/v1/auth/check-login-id` 구현~~ | ~~`auth/controller/AuthController.java`~~ | ✅ 완료 |
 | 4 | `GET /api/v1/auth/csrf-token` 구현 | `auth/controller/AuthController.java` | CSRF 쿠키 동기화 |
-| 5 | `POST /api/v1/auth/refresh` 구현 | `auth/controller/AuthController.java` | refreshToken 해시 검증 + 재발급 |
+| ~~5~~ | ~~`POST /api/v1/auth/refresh` 구현~~ | ~~`auth/controller/AuthController.java`~~ | ✅ 완료 |
 | ~~6~~ | ~~`GET /api/v1/auth/me` 구현~~ | ~~`auth/controller/AuthController.java`~~ | ✅ 완료 |
-| 7 | `GET/PATCH /api/v1/users/me/profile` 구현 | `user/controller/UserController.java` | 마이페이지 |
-| 8 | `PATCH /api/v1/users/me/password` 구현 | `user/controller/UserController.java` | 비밀번호 변경 |
-| 9 | `SecurityConfig` 인증 분기 적용 | `global/config/SecurityConfig.java` | 인증 필요 API 보호 |
-| 10 | users 테이블 email 컬럼 여부 팀 확인 후 처리 | — | 아이디 찾기 기능 영향 |
+| ~~7~~ | ~~`LocalDateTime` → `OffsetDateTime` 전환 (`User`, `UserSession`, `AuthService`)~~ | ~~엔티티/서비스~~ | ✅ 완료 — DB ALTER 필요 |
+| 8 | `GET/PATCH /api/v1/users/me/profile` 구현 | `user/controller/UserController.java` | 마이페이지 |
+| 9 | `PATCH /api/v1/users/me/password` 구현 | `user/controller/UserController.java` | 비밀번호 변경 |
+| 10 | `SecurityConfig` 인증 분기 적용 | `global/config/SecurityConfig.java` | 인증 필요 API 보호 |
+| 11 | DB ALTER 실행 — timestamp without time zone → TIMESTAMPTZ | DB 직접 | 아래 SQL 섹션 참고 |
 
 ---
 
@@ -288,3 +327,74 @@ X-Request-Id:       {UUID}
 
 - Redis 기반 token / refreshToken 관리로 교체
 - refreshToken 30분마다 재발급 로직 추가
+
+---
+
+## 6. DB DDL — 테이블 생성 / 수정
+
+### 6-1. users 테이블 CREATE 전체문
+
+```sql
+CREATE TABLE users (
+    user_id             BIGSERIAL PRIMARY KEY,
+    login_id            VARCHAR(50)   NOT NULL UNIQUE,
+    email               VARCHAR(255)  NOT NULL UNIQUE,
+    password_hash       VARCHAR(255)  NOT NULL,
+    nickname            VARCHAR(50)   NOT NULL UNIQUE,
+    profile_image_url   VARCHAR(2048),
+    status              VARCHAR(20)   NOT NULL DEFAULT 'PENDING_VERIFICATION',
+    email_verified      BOOLEAN       NOT NULL DEFAULT FALSE,
+    email_verify_token  VARCHAR(255),
+    email_verify_expiry TIMESTAMPTZ,
+    last_login_at       TIMESTAMPTZ,
+    created_at          TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+);
+```
+
+### 6-2. user_session 테이블 CREATE 전체문
+
+```sql
+CREATE TABLE user_session (
+    session_id          BIGSERIAL PRIMARY KEY,
+    user_id             BIGINT        NOT NULL REFERENCES users(user_id),
+    refresh_token_hash  VARCHAR(255),
+    user_agent          VARCHAR(255),
+    last_ip             VARCHAR(64),
+    expires_at          TIMESTAMPTZ   NOT NULL,
+    revoked_at          TIMESTAMPTZ,
+    created_at          TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+);
+```
+
+### 6-3. ALTER — 기존 테이블 컬럼 타입 수정 (timestamp without time zone → TIMESTAMPTZ)
+
+> ⚠️ 기존 테이블이 `timestamp without time zone`으로 생성된 경우 아래 ALTER 실행 필요.
+> PostgreSQL은 USING 절 없이 자동 캐스팅 가능 (UTC 기준으로 변환됨).
+
+```sql
+-- users 테이블
+ALTER TABLE users
+    ALTER COLUMN created_at          TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC',
+    ALTER COLUMN updated_at          TYPE TIMESTAMPTZ USING updated_at AT TIME ZONE 'UTC',
+    ALTER COLUMN last_login_at       TYPE TIMESTAMPTZ USING last_login_at AT TIME ZONE 'UTC',
+    ALTER COLUMN email_verify_expiry TYPE TIMESTAMPTZ USING email_verify_expiry AT TIME ZONE 'UTC';
+
+-- user_session 테이블
+ALTER TABLE user_session
+    ALTER COLUMN expires_at  TYPE TIMESTAMPTZ USING expires_at AT TIME ZONE 'UTC',
+    ALTER COLUMN revoked_at  TYPE TIMESTAMPTZ USING revoked_at AT TIME ZONE 'UTC',
+    ALTER COLUMN created_at  TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC';
+```
+
+### 6-4. users 테이블 이메일 인증 컬럼 추가 (기존 테이블에 컬럼 없는 경우)
+
+```sql
+ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS email_verified      BOOLEAN      NOT NULL DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS email_verify_token  VARCHAR(255),
+    ADD COLUMN IF NOT EXISTS email_verify_expiry TIMESTAMPTZ;
+
+-- status 기본값 설정
+ALTER TABLE users ALTER COLUMN status SET DEFAULT 'PENDING_VERIFICATION';
+```
