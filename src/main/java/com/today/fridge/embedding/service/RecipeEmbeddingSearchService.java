@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.today.fridge.embedding.client.EmbeddingClient;
+import com.today.fridge.embedding.dto.SemanticSearchResult;
 import com.today.fridge.embedding.repository.RecipeEmbeddingRepository;
 import com.today.fridge.embedding.util.VectorUtils;
 
@@ -19,7 +20,7 @@ public class RecipeEmbeddingSearchService {
     private final RecipeEmbeddingRepository recipeEmbeddingRepository;
     private static final String MODEL_NAME = "all-MiniLM-L6-v2";
     
-    public List<Long> searchSimilarRecipeIds(
+    public List<SemanticSearchResult> searchSimilarRecipes(
             String queryText,
             int limit
     ) {
@@ -41,11 +42,10 @@ public class RecipeEmbeddingSearchService {
                 VectorUtils.toVectorLiteral(vector);
 
         // 3. similarity search
-        return recipeEmbeddingRepository
-                .findSimilarRecipeIds(
-                        queryVector,
-                        MODEL_NAME,
-                        limit
-                );
+        return recipeEmbeddingRepository.findSimilarRecipes(
+                queryVector,
+                MODEL_NAME,
+                limit
+        );
     }
   }

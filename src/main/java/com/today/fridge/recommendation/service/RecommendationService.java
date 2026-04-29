@@ -1,10 +1,13 @@
 package com.today.fridge.recommendation.service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.today.fridge.embedding.service.RecipeEmbeddingSearchService;
 import com.today.fridge.ingredient.repository.UserIngredientRepository;
 import com.today.fridge.recipe.entity.Recipe;
 import com.today.fridge.recipe.repository.RecipeIngredientRepository;
@@ -34,6 +37,8 @@ public class RecommendationService {
     private final RecipeIngredientRepository recipeIngredientRepository;
     private final UserIngredientRepository userIngredientRepository;
     private final AllergyFilterService allergyFilterService;
+    private final RecipeEmbeddingSearchService recipeEmbeddingSearchService;
+    private final HybridRankingService hybridRankingService;
     
     private RecipeRecommendationResponse createRecipeResponse(
             Recipe recipe,
@@ -41,7 +46,8 @@ public class RecommendationService {
             double conditionScore,
             List<String> conditionTags,
             List<String> ownedIngredients,
-            List<ConditionWarningDto> warnings
+            List<ConditionWarningDto> warnings,
+            double semanticScore
     ) {
         List<String> matchedIngredients = requiredIngredients.stream()
                 .filter(ownedIngredients::contains)
@@ -62,7 +68,13 @@ public class RecommendationService {
 
         double totalScore =
                 recommendationScoreService.calculateTotalScore(ingredientScore, conditionScore);
-
+        
+        double hybridScore =
+                hybridRankingService.calculateHybridScore(
+                        totalScore,
+                        semanticScore
+                );
+        
         String reason = recommendationReasonService.buildReason(
                 Math.round(matchRate * 10) / 10.0,
                 conditionTags,
@@ -89,6 +101,12 @@ public class RecommendationService {
                         )
                 )
                 .reason(reason)
+                .semanticScore(
+                	    Math.round(semanticScore * 1000) / 1000.0
+                	)
+                	.hybridScore(
+                	    Math.round(hybridScore * 10) / 10.0
+                	)
                 .build();
     }
     private List<ConditionWarningDto> buildWarnings(
@@ -169,7 +187,37 @@ public class RecommendationService {
                     })
                     .toList();
         }
-        
+        boolean useHybridRanking =
+                "CHATBOT".equalsIgnoreCase(query.getSource());
+
+        final Map<Long, Double> semanticScoreMap;
+
+        if (useHybridRanking) {
+
+            String semanticQuery =
+                    String.join(" ", query.getKeywords());
+
+            if (semanticQuery.isBlank()) {
+                semanticQuery = String.join(" ", ownedIngredients);
+            }
+
+            var semanticResults =
+                    recipeEmbeddingSearchService.searchSimilarRecipes(
+                            semanticQuery,
+                            50
+                    );
+
+            semanticScoreMap =
+                    semanticResults.stream()
+                            .collect(Collectors.toMap(
+                                    r -> r.getRecipeId(),
+                                    r -> hybridRankingService.toSemanticScore(
+                                            r.getDistance()
+                                    )
+                            ));
+        } else {
+            semanticScoreMap = Map.of();
+        }
         return recipes.stream()
                 .map(recipe -> {
                     List<String> requiredIngredients =
@@ -196,16 +244,27 @@ public class RecommendationService {
                             userConditions,
                             recipeConditions
                     );
+                    double semanticScore =
+                            semanticScoreMap.getOrDefault(
+                                    recipe.getRecipeId(),
+                                    0.0
+                            );
                     return createRecipeResponse(
                             recipe,
                             requiredIngredients,
                             conditionScore,
                             conditionTags,
                             ownedIngredients,
-                            warnings
+                            warnings,
+                            semanticScore
                     );
                 })
-                .sorted((a, b) -> Double.compare(b.getTotalScore(), a.getTotalScore()))
+                .sorted((a, b) -> {
+                    if (useHybridRanking) {
+                        return Double.compare(b.getHybridScore(), a.getHybridScore());
+                    }
+                    return Double.compare(b.getTotalScore(), a.getTotalScore());
+                })
                 .toList();
     }
 }

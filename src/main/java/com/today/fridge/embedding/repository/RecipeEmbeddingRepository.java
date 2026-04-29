@@ -7,21 +7,23 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.today.fridge.embedding.dto.SemanticSearchResult;
 import com.today.fridge.embedding.entity.RecipeEmbedding;
 
 public interface RecipeEmbeddingRepository
         extends JpaRepository<RecipeEmbedding, Long> {
 
 	@Query(value = """
-		    select recipe_id
+		    select recipe_id as recipeId,
+		           embedding <=> cast(:queryVector as vector) as distance
 		    from recipe_embedding
 		    where is_active = true
 		      and model_name = :modelName
-		    order by embedding <=> cast(:queryVector as vector)
+		    order by distance
 		    limit :limit
 		    """,
 		    nativeQuery = true)
-		List<Long> findSimilarRecipeIds(
+		List<SemanticSearchResult> findSimilarRecipes(
 		        @Param("queryVector") String queryVector,
 		        @Param("modelName") String modelName,
 		        @Param("limit") Integer limit
