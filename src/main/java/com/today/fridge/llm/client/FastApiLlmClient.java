@@ -4,7 +4,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import com.today.fridge.llm.config.LlmClientProperties;
-import com.today.fridge.llm.dto.request.RecommendationExplainRequest;
+import com.today.fridge.llm.dto.request.RecommendationExplanationContext;
 import com.today.fridge.llm.dto.response.RecommendationExplainResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -16,7 +16,7 @@ public class FastApiLlmClient {
     private final RestClient.Builder restClientBuilder;
     private final LlmClientProperties properties;
 
-    public RecommendationExplainResponse explainRecommendation(RecommendationExplainRequest request) {
+    public RecommendationExplainResponse explainRecommendation(RecommendationExplanationContext request) {
         return restClientBuilder
                 .baseUrl(properties.baseUrl())
                 .build()

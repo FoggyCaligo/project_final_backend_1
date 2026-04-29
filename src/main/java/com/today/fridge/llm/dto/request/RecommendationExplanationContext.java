@@ -2,7 +2,8 @@ package com.today.fridge.llm.dto.request;
 
 import java.util.List;
 
-public record RecommendationExplainRequest(
+// FastApi 내부호출용
+public record RecommendationExplanationContext(
         Long recipeId,
         String title,
         List<String> matchedIngredients,
