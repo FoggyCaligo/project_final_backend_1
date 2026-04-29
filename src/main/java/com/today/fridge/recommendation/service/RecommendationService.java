@@ -238,7 +238,7 @@ public class RecommendationService {
         } else {
             semanticScoreMap = Map.of();
         }
-        return recipes.stream()
+        List<RecipeRecommendationResponse> responses = recipes.stream()
                 .map(recipe -> {
                     List<String> requiredIngredients =
                             recipeIngredientRepository.findRequiredIngredientNamesByRecipeId(
@@ -277,7 +277,7 @@ public class RecommendationService {
                             ownedIngredients,
                             warnings,
                             semanticScore,
-                            useHybridRanking
+                            false
                     );
                 })
                 .sorted((a, b) -> {
@@ -285,6 +285,45 @@ public class RecommendationService {
                         return Double.compare(b.getHybridScore(), a.getHybridScore());
                     }
                     return Double.compare(b.getTotalScore(), a.getTotalScore());
+                })
+                .toList();
+        
+        if (useHybridRanking) {
+            return attachLlmExplanationToTopN(responses, 3);
+        }
+
+        return responses;
+    }
+    private List<RecipeRecommendationResponse> attachLlmExplanationToTopN(
+            List<RecipeRecommendationResponse> responses,
+            int limit
+    ) {
+        return java.util.stream.IntStream.range(0, responses.size())
+                .mapToObj(i -> {
+                    RecipeRecommendationResponse response = responses.get(i);
+
+                    if (i >= limit) {
+                        return response;
+                    }
+
+                    String explanation = recommendationExplanationService.generateExplanation(
+                            new RecommendationExplanationContext(
+                                    response.getRecipeId(),
+                                    response.getTitle(),
+                                    response.getMatchedIngredients(),
+                                    response.getMissingIngredients(),
+                                    response.getConditionTags(),
+                                    response.getMatchRate(),
+                                    response.getTotalScore(),
+                                    response.getSemanticScore(),
+                                    response.getHybridScore(),
+                                    response.getReason()
+                            )
+                    );
+
+                    return response.toBuilder()
+                            .llmExplanation(explanation)
+                            .build();
                 })
                 .toList();
     }

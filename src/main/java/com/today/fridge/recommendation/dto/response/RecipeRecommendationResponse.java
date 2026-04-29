@@ -7,7 +7,7 @@ import com.today.fridge.substitution.dto.SubstituteSuggestionDto;
 import lombok.Builder;
 import lombok.Getter;
 
-@Builder
+@Builder(toBuilder = true)
 @Getter
 public class RecipeRecommendationResponse {
 
