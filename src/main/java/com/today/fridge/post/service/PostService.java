@@ -4,6 +4,8 @@ import com.today.fridge.file.entity.FileAsset;
 import com.today.fridge.file.repository.FileAssetRepository;
 import com.today.fridge.file.dto.FileAssetDto;
 import com.today.fridge.post.dto.PostCreateRequest;
+import com.today.fridge.post.dto.PostDetailResponse;
+import com.today.fridge.post.dto.PostImageDto;
 import com.today.fridge.post.dto.PostSummaryResponse;
 import com.today.fridge.post.entity.Post;
 import com.today.fridge.post.entity.PostImage;
@@ -85,4 +87,27 @@ public class PostService {
     public List<PostSummaryResponse> getAllPosts() {
         return postRepository.findAllRecentPosts();
     }
+
+    @Transactional(readOnly = true)
+    public PostDetailResponse getPostDetail(Long postId) {
+        Post post = postRepository.findPostWithAuthor(postId)
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+    
+        // 이미지 목록 조회 및 DTO 변환 로직 (생략 가능 시 간단히 구현)
+        List<PostImageDto> imageDtos = postImageRepository.findByPost(post).stream()
+                .map(img -> new PostImageDto(img.getFile().getStoragePath(), img.getFile().getStoredName()))
+                .toList();
+    
+        return new PostDetailResponse(
+                post.getPostId(), post.getTitle(), post.getContent(),
+                post.getAuthorUser().getLoginId(), post.getAuthorUser().getUserId(),
+                post.getCreatedAt(), post.getRecipeId(), imageDtos
+        );
+    }
+    
+    @Transactional
+    public void deletePost(Long postId) {
+        postRepository.deleteById(postId);
+    }
+    
 }

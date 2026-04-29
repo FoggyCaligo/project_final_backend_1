@@ -1,6 +1,7 @@
 package com.today.fridge.post.controller;
 
 import com.today.fridge.post.dto.PostCreateRequest;
+import com.today.fridge.post.dto.PostDetailResponse;
 import com.today.fridge.post.service.PostService;
 import com.today.fridge.post.dto.PostSummaryResponse;
 import java.util.List;
@@ -42,5 +43,16 @@ public class PostController {
     public ResponseEntity<List<PostSummaryResponse>> getAllPosts() {
         List<PostSummaryResponse> response = postService.getAllPosts();
         return ResponseEntity.ok(response);
+    }
+    
+    @GetMapping("/{postId}")
+    public ResponseEntity<PostDetailResponse> getPostDetail(@PathVariable Long postId) {
+        return ResponseEntity.ok(postService.getPostDetail(postId));
+    }
+    
+    @DeleteMapping("/{postId}")
+    public ResponseEntity<Void> deletePost(@PathVariable Long postId) {
+        postService.deletePost(postId);
+        return ResponseEntity.noContent().build();
     }
 }
