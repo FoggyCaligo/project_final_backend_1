@@ -48,7 +48,7 @@ public class PostService {
         post.setReportCount(0L);
         post.setCreatedAt(LocalDateTime.now());
         post.setUpdatedAt(LocalDateTime.now());
-        
+
         Post savedPost = postRepository.save(post);
 
         if (request.getImageFiles() != null && !request.getImageFiles().isEmpty()) {
@@ -64,7 +64,7 @@ public class PostService {
                 fileAsset.setStoragePath(fileDto.getStoragePath());
                 fileAsset.setChecksumValue(fileDto.getSha1sum());
                 fileAsset.setCreatedAt(LocalDateTime.now());
-                
+
                 FileAsset savedFileAsset = fileAssetRepository.save(fileAsset);
 
                 PostImage postImage = new PostImage();
@@ -72,7 +72,7 @@ public class PostService {
                 postImage.setFile(savedFileAsset);
                 postImage.setSortOrder(sortOrder++);
                 postImage.setCreatedAt(LocalDateTime.now());
-                
+
                 postImageRepository.save(postImage);
             }
         }
