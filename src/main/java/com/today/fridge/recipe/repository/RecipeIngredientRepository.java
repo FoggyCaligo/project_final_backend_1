@@ -21,4 +21,10 @@ public interface RecipeIngredientRepository extends JpaRepository<RecipeIngredie
 		List<String> findRequiredIngredientNamesByRecipeId(
 		    @Param("recipeId") Long recipeId
 		);
+	@Query("""
+			select distinct ri.normalizedNameSnapshot
+			from RecipeIngredient ri
+			where ri.normalizedNameSnapshot is not null
+			""")
+			List<String> findDistinctIngredientNames();
 }

@@ -10,6 +10,7 @@ import com.today.fridge.embedding.entity.RecipeEmbedding;
 import com.today.fridge.embedding.repository.RecipeEmbeddingRepository;
 import com.today.fridge.embedding.util.VectorUtils;
 import com.today.fridge.recipe.entity.Recipe;
+import com.today.fridge.recipe.repository.RecipeIngredientRepository;
 import com.today.fridge.recipe.repository.RecipeRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class RecipeEmbeddingBulkService {
     private final RecipeRepository recipeRepository;
     private final RecipeEmbeddingRepository recipeEmbeddingRepository;
     private final EmbeddingClient embeddingClient;
+    private final RecipeIngredientRepository recipeIngredientRepository;
 
     public int generateMissingEmbeddings() {
 
@@ -64,16 +66,29 @@ public class RecipeEmbeddingBulkService {
         return generatedCount;
     }
 
-    private String buildEmbeddingText(Recipe recipe) {
+    private String buildEmbeddingText(
+            Recipe recipe
+    ) {
+
+        List<String> ingredients =
+                recipeIngredientRepository
+                        .findRequiredIngredientNamesByRecipeId(
+                                recipe.getRecipeId()
+                        );
+
+        String ingredientText =
+                String.join(", ", ingredients);
 
         return """
             레시피명: %s
             요약: %s
+            재료: %s
             인분: %s
             조리시간: %s
             """.formatted(
                 safe(recipe.getTitle()),
                 safe(recipe.getSummary()),
+                safe(ingredientText),
                 safe(recipe.getServingsText()),
                 safe(recipe.getCookTimeText())
         );

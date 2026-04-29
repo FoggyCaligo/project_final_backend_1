@@ -39,6 +39,11 @@ public class ChatbotOrchestratorService {
         List<String> conditionCodes =
                 parsed.getConditionTags() == null ? List.of() : parsed.getConditionTags();
         
+        List<String> keywords =
+                parsed.getKeywords() == null || parsed.getKeywords().isEmpty()
+                        ? List.of(request.getText())
+                        : parsed.getKeywords();
+        
         if (isMember && includeIngredients.isEmpty()) {
             // TODO: 회원 냉장고 재료 조회 로직으로 교체
             includeIngredients = List.of("두부", "계란");
@@ -61,7 +66,7 @@ public class ChatbotOrchestratorService {
                         .conditionCodes(conditionCodes)
                         .includeIngredients(includeIngredients)
                         .excludeIngredients(parsed.getExcludeIngredients())
-                        .keywords(parsed.getKeywords())
+                        .keywords(keywords)
                         .sortHint(parsed.getSortHint())
                         .source("CHATBOT")
                         .useUserProfile(isMember)
