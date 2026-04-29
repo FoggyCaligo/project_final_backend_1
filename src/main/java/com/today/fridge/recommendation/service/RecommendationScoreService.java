@@ -16,14 +16,22 @@ public class RecommendationScoreService {
     private static final double CONDITION_MATCH_SCORE = 10.0;
     private static final double MAX_CONDITION_SCORE = 30.0;
     private static final double CAUTION_PENALTY = -30.0;
+    private static final double MISSING_PENALTY = 2.0;
 
     public double calculateIngredientScore(int matchedCount, int requiredCount) {
         if (requiredCount <= 0) {
             return 0.0;
         }
 
-        double matchRate = (double) matchedCount / requiredCount;
-        return matchRate * MAX_INGREDIENT_SCORE;
+        double matchRate =
+        	      (double) matchedCount / requiredCount;
+
+        	   int missingCount =
+        	      requiredCount - matchedCount;
+
+        	   return
+        	      (matchRate * MAX_INGREDIENT_SCORE)
+        	      - (missingCount * MISSING_PENALTY);
     }
 
     public double calculateMatchRate(int matchedCount, int requiredCount) {

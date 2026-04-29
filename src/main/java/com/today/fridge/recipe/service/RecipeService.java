@@ -15,11 +15,20 @@ package com.today.fridge.recipe.service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 // Response DTO
 import com.today.fridge.recipe.dto.response.RecipeListResponse;
 import com.today.fridge.recipe.dto.response.RecipeResponse;
+import com.today.fridge.global.response.PageResponse;
+import com.today.fridge.global.response.PageResult;
+import com.today.fridge.recipe.dto.response.RecipeListResponse;
+import com.today.fridge.recipe.entity.Recipe;
+import com.today.fridge.recipe.repository.RecipeRepository;
+
+import lombok.RequiredArgsConstructor;
 
 //Intermediate DTO -> Step 및 Ingredient 조회
 import com.today.fridge.recipe.dto.intermediate.RecipeIngredientDTO;
@@ -48,38 +57,13 @@ import com.today.fridge.global.exception.ExceptionTemplate;
 @Slf4j
 @RequiredArgsConstructor
 @Service
+@RequiredArgsConstructor
 public class RecipeService {
 
     private final RecipeRepository recipeRepository;
     private final RecipeNutritionRepository recipeNutritionRepository;
     private final RecipeStepRepository recipeStepRepository;
     private final RecipeIngredientRepository recipeIngredientRepository;
-
-    public List<RecipeListResponse> getRecipes() {
-        return List.of(
-                RecipeListResponse.builder()
-                        .recipeId(1L)
-                        .title("토마토 파스타")
-                        .summary("간단 파스타")
-                        .cookTime("20분")
-                        .build());
-    }
-
-    public List<RecipeListResponse> getAllRecipes() {
-        List<Recipe> recipes = recipeRepository.findAll();
-        if (recipes.isEmpty()) {
-            throw new ExceptionTemplate(ErrorCode.RECIPE_NOT_FOUND);
-        }
-        return recipes.stream()
-                .map(r -> RecipeListResponse.builder()
-                        .recipeId(r.getRecipeId())
-                        .title(r.getTitle())
-                        .thumbnailUrl(r.getThumbnailUrl())
-                        .summary(r.getSummary())
-                        .cookTime(r.getCookTimeText())
-                        .build())
-                .collect(Collectors.toList());
-    }
 
     public RecipeResponse getRecipe(Long recipeId) {
 
@@ -141,5 +125,25 @@ public class RecipeService {
         return recipeIngredients.stream()
                 .map(RecipeIngredientDTO::of)
                 .collect(Collectors.toList());
+
+    public PageResult<RecipeListResponse> getRecipes(Pageable pageable) {
+
+        Page<Recipe> recipePage =
+                recipeRepository.findByIsActiveTrue(pageable);
+
+        List<RecipeListResponse> content =
+                recipePage.getContent()
+                        .stream()
+                        .map(RecipeListResponse::from)
+                        .toList();
+
+        PageResponse pageInfo = new PageResponse(
+                recipePage.getTotalElements(),
+                recipePage.getTotalPages(),
+                recipePage.getNumber(),
+                recipePage.getSize()
+        );
+
+        return new PageResult<>(content, pageInfo);
     }
 }

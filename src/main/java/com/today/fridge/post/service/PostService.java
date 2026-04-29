@@ -4,6 +4,7 @@ import com.today.fridge.file.entity.FileAsset;
 import com.today.fridge.file.repository.FileAssetRepository;
 import com.today.fridge.file.dto.FileAssetDto;
 import com.today.fridge.post.dto.PostCreateRequest;
+import com.today.fridge.post.dto.PostSummaryResponse;
 import com.today.fridge.post.entity.Post;
 import com.today.fridge.post.entity.PostImage;
 import com.today.fridge.post.repository.PostImageRepository;
@@ -13,7 +14,7 @@ import com.today.fridge.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import java.util.List;
 import java.time.LocalDateTime;
 
 @Service
@@ -73,5 +74,10 @@ public class PostService {
                 postImageRepository.save(postImage);
             }
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<PostSummaryResponse> getUserPosts(Long userId) {
+        return postRepository.findRecentPostsByUserId(userId);
     }
 }
