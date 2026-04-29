@@ -25,13 +25,6 @@ public class RecipeController {
 
 	private final RecipeService recipeService;
 
-	
-
-
-	@GetMapping("/{recipeId}")
-	public ResponseEntity<ApiResponse<RecipeResponse>> getRecipe(@PathVariable("recipeId") Long recipeId) {
-		return ResponseEntity.ok(ApiResponse.success(recipeService.getRecipe(recipeId), "레시피 상세 조회 성공"));
-    
 	@GetMapping
   public ResponseEntity<ApiResponse<PageResult<RecipeListResponse>>> getRecipes(
 	        @PageableDefault(size = 12)

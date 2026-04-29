@@ -46,6 +46,7 @@ public class DevDataInitializer implements CommandLineRunner {
     private final ObjectMapper objectMapper;
     private final AllergenGroupRepository allergenGroupRepository;
     private final AllergenIngredientMapRepository allergenIngredientMapRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public DevDataInitializer(UserRepository userRepository,
                               IngredientCategoryRepository ingredientCategoryRepository,
@@ -53,7 +54,8 @@ public class DevDataInitializer implements CommandLineRunner {
                               ObjectMapper objectMapper,
                               ConditionCodeRepository conditionCodeRepository,
                               AllergenGroupRepository allergenGroupRepository,
-                              AllergenIngredientMapRepository allergenIngredientMapRepository) {
+                              AllergenIngredientMapRepository allergenIngredientMapRepository,
+                              PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.ingredientCategoryRepository = ingredientCategoryRepository;
         this.ingredientMasterRepository = ingredientMasterRepository;
@@ -61,7 +63,7 @@ public class DevDataInitializer implements CommandLineRunner {
         this.conditionCodeRepository = conditionCodeRepository;
         this.allergenGroupRepository = allergenGroupRepository;
         this.allergenIngredientMapRepository = allergenIngredientMapRepository;
-
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override

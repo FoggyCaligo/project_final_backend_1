@@ -57,7 +57,6 @@ import com.today.fridge.global.exception.ExceptionTemplate;
 @Slf4j
 @RequiredArgsConstructor
 @Service
-@RequiredArgsConstructor
 public class RecipeService {
 
     private final RecipeRepository recipeRepository;
@@ -125,6 +124,7 @@ public class RecipeService {
         return recipeIngredients.stream()
                 .map(RecipeIngredientDTO::of)
                 .collect(Collectors.toList());
+    }
 
     public PageResult<RecipeListResponse> getRecipes(Pageable pageable) {
 

@@ -5,13 +5,13 @@ build/
 .classpath
 .vscode/
 fileHashes.lock
-bin/*
+bin/
+.DS_Store
 
-# 개인 환경 설정 (팀원마다 다름)
+# 개인 환경 설정
 .env
-
-# AI 에이전트 문서 (개인용)
-.ai/
-# 개인 로컬 설정 파일 추가
 application-local.yml
 src/main/resources/application-local.yml
+
+# AI 에이전트 문서
+.ai/
