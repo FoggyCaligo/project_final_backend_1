@@ -15,10 +15,10 @@ import com.today.fridge.user.entity.User;
 import com.today.fridge.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -78,12 +78,13 @@ public class PostService {
         }
     }
 
-    // ==========================================
-    // 2. 커뮤니티 메인: 모든 유저의 최신 게시글 조회
+// ==========================================
+    // 2. 커뮤니티 메인: 모든 유저의 최신 게시글 조회 (페이징 적용)
     // ==========================================
     @Transactional(readOnly = true)
-    public List<PostSummaryResponse> getAllPosts() {
-        return postRepository.findAllRecentPosts();
+    public Page<PostSummaryResponse> getAllPosts(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return postRepository.findAllRecentPosts(pageable);
     }
 
     // ==========================================

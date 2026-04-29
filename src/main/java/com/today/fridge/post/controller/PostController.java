@@ -8,6 +8,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,9 +41,10 @@ public class PostController {
     // 새로 추가: 커뮤니티 메인 전체 게시글 조회 API
     // ==========================================
     @GetMapping
-    public ResponseEntity<List<PostSummaryResponse>> getAllPosts() {
-        List<PostSummaryResponse> response = postService.getAllPosts();
-        return ResponseEntity.ok(response);
+    public ResponseEntity<Page<PostSummaryResponse>> getAllPosts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(postService.getAllPosts(page, size));
     }
     
     @GetMapping("/{postId}")
