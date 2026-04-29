@@ -24,11 +24,6 @@ import com.today.fridge.recipe.dto.response.RecipeListResponse;
 import com.today.fridge.recipe.dto.response.RecipeResponse;
 import com.today.fridge.global.response.PageResponse;
 import com.today.fridge.global.response.PageResult;
-import com.today.fridge.recipe.dto.response.RecipeListResponse;
-import com.today.fridge.recipe.entity.Recipe;
-import com.today.fridge.recipe.repository.RecipeRepository;
-
-import lombok.RequiredArgsConstructor;
 
 //Intermediate DTO -> Step 및 Ingredient 조회
 import com.today.fridge.recipe.dto.intermediate.RecipeIngredientDTO;
@@ -64,6 +59,7 @@ public class RecipeService {
     private final RecipeStepRepository recipeStepRepository;
     private final RecipeIngredientRepository recipeIngredientRepository;
 
+    // 레시피 1개 조회
     public RecipeResponse getRecipe(Long recipeId) {
 
         // 레시피 정보 조회
@@ -90,6 +86,25 @@ public class RecipeService {
         List<RecipeIngredientDTO> recipeIngredients = getRecipeAllIngredients(recipeId);
 
         return RecipeResponse.of(recipe, nutrition, recipeSteps, recipeIngredients);
+    }
+
+    // 전체 레시피 조회(페이징 처리됨)
+    public PageResult<RecipeListResponse> getRecipes(Pageable pageable) {
+
+        Page<Recipe> recipePage = recipeRepository.findByIsActiveTrue(pageable);
+
+        List<RecipeListResponse> content = recipePage.getContent()
+                .stream()
+                .map(RecipeListResponse::from)
+                .toList();
+
+        PageResponse pageInfo = new PageResponse(
+                recipePage.getTotalElements(),
+                recipePage.getTotalPages(),
+                recipePage.getNumber(),
+                recipePage.getSize());
+
+        return new PageResult<>(content, pageInfo);
     }
 
     // ============================================================================================
@@ -124,26 +139,5 @@ public class RecipeService {
         return recipeIngredients.stream()
                 .map(RecipeIngredientDTO::of)
                 .collect(Collectors.toList());
-    }
-
-    public PageResult<RecipeListResponse> getRecipes(Pageable pageable) {
-
-        Page<Recipe> recipePage =
-                recipeRepository.findByIsActiveTrue(pageable);
-
-        List<RecipeListResponse> content =
-                recipePage.getContent()
-                        .stream()
-                        .map(RecipeListResponse::from)
-                        .toList();
-
-        PageResponse pageInfo = new PageResponse(
-                recipePage.getTotalElements(),
-                recipePage.getTotalPages(),
-                recipePage.getNumber(),
-                recipePage.getSize()
-        );
-
-        return new PageResult<>(content, pageInfo);
     }
 }
