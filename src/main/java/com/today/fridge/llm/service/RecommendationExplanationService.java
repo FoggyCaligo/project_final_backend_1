@@ -14,11 +14,9 @@ public class RecommendationExplanationService {
 
     private final FastApiLlmClient fastApiLlmClient;
 
-    public String generateExplanation(
-            RecommendationExplanationContext request
-    ) {
+    public String generateExplanation(RecommendationExplanationContext context) {
         RecommendationExplainResponse response =
-                fastApiLlmClient.explainRecommendation(request);
+                fastApiLlmClient.explainRecommendation(context);
 
         return response.explanation();
     }

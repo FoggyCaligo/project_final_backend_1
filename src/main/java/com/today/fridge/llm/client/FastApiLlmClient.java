@@ -16,13 +16,15 @@ public class FastApiLlmClient {
     private final RestClient.Builder restClientBuilder;
     private final LlmClientProperties properties;
 
-    public RecommendationExplainResponse explainRecommendation(RecommendationExplanationContext request) {
+    public RecommendationExplainResponse explainRecommendation(
+            RecommendationExplanationContext context
+    ) {
         return restClientBuilder
                 .baseUrl(properties.baseUrl())
                 .build()
                 .post()
-                .uri("/internal/v1/llm/recommendation/explain")
-                .body(request)
+                .uri("/api/v1/internal/llm/recommendation/explain")
+                .body(context)
                 .retrieve()
                 .body(RecommendationExplainResponse.class);
     }

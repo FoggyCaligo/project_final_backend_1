@@ -36,4 +36,5 @@ public class RecipeRecommendationResponse {
     private List<ConditionWarningDto> warnings;
 
     private String reason;
+	private String llmExplanation;
 }
