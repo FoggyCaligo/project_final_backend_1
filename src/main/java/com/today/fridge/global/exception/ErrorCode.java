@@ -37,6 +37,9 @@ public enum ErrorCode {
     // 409 Conflict
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다."),
 
+    // 502 Bad Gateway
+    AI_RECOGNITION_FAILED(HttpStatus.BAD_GATEWAY, "이미지 인식 서비스 호출에 실패했습니다."),
+
     // 500 Internal Server Error
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다."),
     FILE_UPLOAD_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드 중 오류가 발생했습니다."),
