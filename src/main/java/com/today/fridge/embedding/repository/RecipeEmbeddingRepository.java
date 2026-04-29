@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.today.fridge.embedding.entity.RecipeEmbedding;
 
@@ -19,7 +20,7 @@ public interface RecipeEmbeddingRepository
         """,
         nativeQuery = true)
     List<Long> findSimilarRecipeIds(
-            String queryVector,
-            int limit
+            @Param("queryVector") String queryVector,
+            @Param("limit") Integer limit
     );
 }
