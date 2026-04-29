@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.today.fridge.chatbot.dto.request.ChatInterpretRequest;
 import com.today.fridge.chatbot.dto.response.ChatInterpretResponse;
+import com.today.fridge.recipe.repository.RecipeIngredientRepository;
 import com.today.fridge.recommendation.entity.ConditionCode;
 import com.today.fridge.recommendation.repository.ConditionCodeRepository;
 
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 public class IntentParserService {
 
     private final ConditionCodeRepository conditionCodeRepository;
+    private final RecipeIngredientRepository recipeIngredientRepository;
 
     public ChatInterpretResponse interpret(ChatInterpretRequest request) {
 
@@ -23,10 +25,7 @@ public class IntentParserService {
 
         List<String> conditionTags = extractConditionTags(text);
 
-        List<String> includeIngredients = extractIncludeIngredients(
-                text,
-                request.getOwnedIngredients()
-        );
+        List<String> includeIngredients = extractIncludeIngredients(text);
 
         List<String> keywords = extractKeywords(text);
 
@@ -59,14 +58,10 @@ public class IntentParserService {
     }
 
     private List<String> extractIncludeIngredients(
-            String text,
-            List<String> ownedIngredients
+            String text
     ) {
-        if (ownedIngredients == null || ownedIngredients.isEmpty()) {
-            return List.of();
-        }
-
-        return ownedIngredients.stream()
+        return recipeIngredientRepository.findDistinctIngredientNames()
+                .stream()
                 .filter(text::contains)
                 .distinct()
                 .toList();

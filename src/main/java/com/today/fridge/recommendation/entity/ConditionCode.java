@@ -30,4 +30,19 @@ public class ConditionCode {
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
+    
+    public static ConditionCode create(
+            String conditionGroup,
+            String conditionCode,
+            String conditionName,
+            String description
+    ) {
+        ConditionCode code = new ConditionCode();
+        code.conditionGroup = ConditionGroup.valueOf(conditionGroup);
+        code.conditionCode = conditionCode;
+        code.conditionName = conditionName;
+        code.description = description;
+        code.isActive = true;
+        return code;
+    }
 }
