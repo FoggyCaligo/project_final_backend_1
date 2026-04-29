@@ -4,7 +4,11 @@ import lombok.Getter;
 import lombok.AllArgsConstructor;
 
 @Getter
-@AllArgsConstructor
 public class ExceptionTemplate extends RuntimeException {
     private final ErrorCode errorCode;
+
+    public ExceptionTemplate(ErrorCode errorCode) {
+        super(errorCode.getMessage());
+        this.errorCode = errorCode;
+    }
 }
