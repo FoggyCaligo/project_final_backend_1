@@ -17,7 +17,8 @@ public class RecipeEmbeddingSearchService {
 
     private final EmbeddingClient embeddingClient;
     private final RecipeEmbeddingRepository recipeEmbeddingRepository;
-
+    private static final String MODEL_NAME = "all-MiniLM-L6-v2";
+    
     public List<Long> searchSimilarRecipeIds(
             String queryText,
             int limit
@@ -43,6 +44,7 @@ public class RecipeEmbeddingSearchService {
         return recipeEmbeddingRepository
                 .findSimilarRecipeIds(
                         queryVector,
+                        MODEL_NAME,
                         limit
                 );
     }
