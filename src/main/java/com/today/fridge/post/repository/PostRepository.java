@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional; // 💡 Optional을 사용하기 위한 필수 import 추가
+import org.springframework.data.domain.Pageable;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
 
@@ -31,6 +32,17 @@ public interface PostRepository extends JpaRepository<Post, Long> {
            "LEFT JOIN pi.file f " +
            "ORDER BY p.createdAt DESC")
     List<PostSummaryResponse> findAllRecentPosts();
+    
+       // 특정 유저의 게시글 조회 (💡 파라미터에 Pageable 추가)
+    @Query("SELECT new com.today.fridge.post.dto.PostSummaryResponse(" +
+           "p.postId, p.title, u.loginId, p.createdAt, p.content, f.storagePath, f.storedName) " +
+           "FROM Post p " +
+           "JOIN p.authorUser u " +
+           "LEFT JOIN PostImage pi ON pi.post.postId = p.postId AND pi.sortOrder = 1 " + 
+           "LEFT JOIN pi.file f " +
+           "WHERE u.userId = :userId " +
+           "ORDER BY p.createdAt DESC")
+    List<PostSummaryResponse> findRecentPostsByUserId(@Param("userId") Long userId, Pageable pageable);
 
     // 상세 조회를 위한 쿼리
     @Query("SELECT p FROM Post p JOIN FETCH p.authorUser WHERE p.postId = :postId")
