@@ -1,7 +1,17 @@
 .gradle/
+build/
 .project
 .settings/
 .classpath
 .vscode/
 fileHashes.lock
 bin/
+.DS_Store
+
+# 개인 환경 설정
+.env
+application-local.yml
+src/main/resources/application-local.yml
+
+# AI 에이전트 문서
+.ai/

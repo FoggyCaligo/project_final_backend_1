@@ -33,9 +33,20 @@ public enum ErrorCode {
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."),
     BOOKMARK_NOT_FOUND(HttpStatus.NOT_FOUND, "북마크를 찾을 수 없습니다."),
     FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다."),
+    RECIPE_NUTRITION_NOT_FOUND(HttpStatus.NOT_FOUND, "레시피 영양정보를 찾을 수 없습니다."),
+    RECIPE_STEP_NOT_FOUND(HttpStatus.NOT_FOUND, "레시피 단계정보를 찾을 수 없습니다."),
+    RECIPE_INGREDIENT_NOT_FOUND(HttpStatus.NOT_FOUND, "레시피 재료정보를 찾을 수 없습니다."),
 
     // 409 Conflict
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다."),
+    DUPLICATE_LOGIN_ID(HttpStatus.CONFLICT, "이미 사용 중인 아이디입니다."),
+    DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다."),
+
+    // 이메일 인증 관련
+    EMAIL_NOT_VERIFIED(HttpStatus.FORBIDDEN, "이메일 인증이 완료되지 않았습니다."),
+    EMAIL_VERIFY_TOKEN_EXPIRED(HttpStatus.BAD_REQUEST, "이메일 인증 토큰이 만료되었습니다."),
+    EMAIL_ALREADY_VERIFIED(HttpStatus.BAD_REQUEST, "이미 인증된 이메일입니다."),
+    EMAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "인증 이메일 발송에 실패했습니다."),
 
     // 502 Bad Gateway
     AI_RECOGNITION_FAILED(HttpStatus.BAD_GATEWAY, "이미지 인식 서비스 호출에 실패했습니다."),

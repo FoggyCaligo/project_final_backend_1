@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Getter
 @NoArgsConstructor
@@ -32,11 +32,36 @@ public class UserSession {
     private String lastIp;
 
     @Column(name = "expires_at")
-    private LocalDateTime expiresAt;
+    private OffsetDateTime expiresAt;
 
     @Column(name = "revoked_at")
-    private LocalDateTime revokedAt;
+    private OffsetDateTime revokedAt;
 
     @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    private OffsetDateTime createdAt;
+
+    public static UserSession create(User user, String refreshTokenHash, OffsetDateTime expiresAt) {
+        UserSession session = new UserSession();
+        session.user = user;
+        session.refreshTokenHash = refreshTokenHash;
+        session.expiresAt = expiresAt;
+        session.createdAt = OffsetDateTime.now();
+        return session;
+    }
+
+    public void revoke() {
+        this.revokedAt = OffsetDateTime.now();
+    }
+
+    public boolean isRevoked() {
+        return this.revokedAt != null;
+    }
+
+    public boolean isExpired() {
+        return OffsetDateTime.now().isAfter(this.expiresAt);
+    }
+
+    public boolean isValid() {
+        return !isRevoked() && !isExpired();
+    }
 }

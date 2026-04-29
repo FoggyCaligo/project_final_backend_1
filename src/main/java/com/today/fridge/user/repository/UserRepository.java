@@ -1,9 +1,21 @@
 package com.today.fridge.user.repository;
 
+import com.today.fridge.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.today.fridge.user.entity.User;
+import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
+    Optional<User> findByLoginId(String loginId);
+
+    Optional<User> findByEmail(String email);
+
+    Optional<User> findByEmailVerifyToken(String token);
+
+    boolean existsByLoginId(String loginId);
+
+    boolean existsByEmail(String email);
+
+    boolean existsByNickname(String nickname);
 }
