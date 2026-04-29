@@ -1,21 +1,41 @@
 package com.today.fridge.recipe.controller;
 
-import java.util.List;
+/*
+ * 상세 레시피와 관련된 Controller
+ * 기능:
+ * 1. 모든 레시피 조회
+ *      - 페이징을 사용하여 현재 12개씩 조회 (변경 가능)
+ *      - @PageableDefault 사용
+ *      - 성공 시 "전체 레시피 조회 성공"
+ * 2. 상세 레시피 조회
+ *      - 레시피 ID를 사용하여 조회
+ *      - @PathVariable 사용
+ *      - 성공 시 "상세 레시피 조회 성공"
+ */
 
+// Pageable
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+
+// Response Entity & API Response
 import org.springframework.http.ResponseEntity;
+import com.today.fridge.global.response.ApiResponse;
+import com.today.fridge.global.response.PageResult;
+
+// Spring Framework
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.today.fridge.global.response.ApiResponse;
-import com.today.fridge.global.response.PageResult;
+// DTO
 import com.today.fridge.recipe.dto.response.RecipeListResponse;
 import com.today.fridge.recipe.dto.response.RecipeResponse;
+
+// Service
 import com.today.fridge.recipe.service.RecipeService;
 
+// Lombok
 import lombok.RequiredArgsConstructor;
 
 @RestController
