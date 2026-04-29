@@ -80,4 +80,9 @@ public class PostService {
     public List<PostSummaryResponse> getUserPosts(Long userId) {
         return postRepository.findRecentPostsByUserId(userId);
     }
+
+    @Transactional(readOnly = true)
+    public List<PostSummaryResponse> getAllPosts() {
+        return postRepository.findAllRecentPosts();
+    }
 }

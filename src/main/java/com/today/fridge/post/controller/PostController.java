@@ -34,4 +34,13 @@ public class PostController {
         
         return ResponseEntity.ok(response);
     }
+
+    // ==========================================
+    // 새로 추가: 커뮤니티 메인 전체 게시글 조회 API
+    // ==========================================
+    @GetMapping
+    public ResponseEntity<List<PostSummaryResponse>> getAllPosts() {
+        List<PostSummaryResponse> response = postService.getAllPosts();
+        return ResponseEntity.ok(response);
+    }
 }

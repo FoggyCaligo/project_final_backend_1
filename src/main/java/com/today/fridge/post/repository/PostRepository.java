@@ -19,4 +19,14 @@ public interface PostRepository extends JpaRepository<Post, Long> {
            "WHERE u.userId = :userId " +
            "ORDER BY p.createdAt DESC")
     List<PostSummaryResponse> findRecentPostsByUserId(@Param("userId") Long userId);
+
+    // 모든 유저의 게시글을 최신순으로 조회하는 쿼리 추가
+    @Query("SELECT new com.today.fridge.post.dto.PostSummaryResponse(" +
+           "p.title, u.loginId, p.createdAt, p.content, f.storagePath, f.storedName) " +
+           "FROM Post p " +
+           "JOIN p.authorUser u " +
+           "LEFT JOIN PostImage pi ON pi.post.postId = p.postId AND pi.sortOrder = 1 " +
+           "LEFT JOIN pi.file f " +
+           "ORDER BY p.createdAt DESC")
+    List<PostSummaryResponse> findAllRecentPosts();
 }
