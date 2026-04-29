@@ -3,6 +3,7 @@ package com.today.fridge.recommendation.service;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.today.fridge.ingredient.repository.UserIngredientRepository;
 import com.today.fridge.recipe.entity.Recipe;
@@ -21,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class RecommendationService {
 
     private final UserConditionRepository userConditionRepository;
@@ -31,6 +33,7 @@ public class RecommendationService {
     private final RecipeRepository recipeRepository;
     private final RecipeIngredientRepository recipeIngredientRepository;
     private final UserIngredientRepository userIngredientRepository;
+    private final AllergyFilterService allergyFilterService;
     
     private RecipeRecommendationResponse createRecipeResponse(
             Recipe recipe,
@@ -141,7 +144,32 @@ public class RecommendationService {
                 query.isUseUserProfile() && query.getUserId() != null
                         ? userConditionRepository.findByUser_UserIdAndIsActiveTrue(query.getUserId())
                         : List.of();
+        // 사용자 알러지 코드 추출 (condition_code reuse 중이면)
+        List<String> userAllergenCodes =
+                userConditions.stream()
+                        .map(uc -> uc.getConditionCode().getConditionCode())
+                        .filter(code -> code.startsWith("ALLERGY"))
+                        .map(code -> code.replace("ALLERGY_", ""))
+                        .toList();
 
+
+        // hard filter
+        if (!userAllergenCodes.isEmpty()) {
+            recipes = recipes.stream()
+                    .filter(recipe -> {
+                        List<String> recipeIngredients =
+                                recipeIngredientRepository.findRequiredIngredientNamesByRecipeId(
+                                        recipe.getRecipeId()
+                                );
+
+                        return !allergyFilterService.containsAllergen(
+                                recipeIngredients,
+                                userAllergenCodes
+                        );
+                    })
+                    .toList();
+        }
+        
         return recipes.stream()
                 .map(recipe -> {
                     List<String> requiredIngredients =

@@ -6,7 +6,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.today.fridge.ingredient.entity.IngredientCategory;
 import com.today.fridge.ingredient.entity.IngredientMaster;
 import com.today.fridge.ingredient.repository.IngredientCategoryRepository;
+import com.today.fridge.recommendation.entity.AllergenGroup;
+import com.today.fridge.recommendation.entity.AllergenIngredientMap;
 import com.today.fridge.recommendation.entity.ConditionCode;
+import com.today.fridge.recommendation.repository.AllergenGroupRepository;
+import com.today.fridge.recommendation.repository.AllergenIngredientMapRepository;
 import com.today.fridge.recommendation.repository.ConditionCodeRepository;
 import com.today.fridge.ingredient.repository.IngredientMasterRepository;
 import com.today.fridge.user.entity.User;
@@ -38,17 +42,23 @@ public class DevDataInitializer implements CommandLineRunner {
     private final ConditionCodeRepository conditionCodeRepository;
     private final IngredientMasterRepository ingredientMasterRepository;
     private final ObjectMapper objectMapper;
+    private final AllergenGroupRepository allergenGroupRepository;
+    private final AllergenIngredientMapRepository allergenIngredientMapRepository;
 
     public DevDataInitializer(UserRepository userRepository,
                               IngredientCategoryRepository ingredientCategoryRepository,
                               IngredientMasterRepository ingredientMasterRepository,
                               ObjectMapper objectMapper,
-                              ConditionCodeRepository conditionCodeRepository) {
+                              ConditionCodeRepository conditionCodeRepository,
+                              AllergenGroupRepository allergenGroupRepository,
+                              AllergenIngredientMapRepository allergenIngredientMapRepository) {
         this.userRepository = userRepository;
         this.ingredientCategoryRepository = ingredientCategoryRepository;
         this.ingredientMasterRepository = ingredientMasterRepository;
         this.objectMapper = objectMapper;
         this.conditionCodeRepository = conditionCodeRepository;
+        this.allergenGroupRepository = allergenGroupRepository;
+        this.allergenIngredientMapRepository = allergenIngredientMapRepository;
 
     }
 
@@ -57,6 +67,7 @@ public class DevDataInitializer implements CommandLineRunner {
         seedUser();
         seedCategories();
         seedConditionCodes();
+        seedAllergenGroups();
         seedIngredientMasterFromCanonicalGroceryFile();
     }
 
@@ -191,6 +202,67 @@ public class DevDataInitializer implements CommandLineRunner {
 
         conditionCodeRepository.saveAll(conditions);
         log.info("[DevDataInitializer] condition_code 시드 데이터 {} 건 삽입 완료", conditions.size());
+    }
+    private AllergenGroup allergen(
+    	    String code,
+    	    String name,
+    	    String desc
+    	){
+    	    return AllergenGroup.create(
+    	        code,
+    	        name,
+    	        desc
+    	    );
+    	}
+    private void seedAllergenGroups() {
+
+        if (allergenGroupRepository.count() > 0) {
+            log.info("[DevDataInitializer] allergen 데이터 존재, 시드 생략");
+            return;
+        }
+
+        AllergenGroup soy =
+                allergenGroupRepository.save(
+                    allergen("SOY","대두","대두 유발 물질")
+                );
+
+        AllergenGroup wheat =
+                allergenGroupRepository.save(
+                    allergen("WHEAT","밀","밀 유발 물질")
+                );
+
+        AllergenGroup egg =
+                allergenGroupRepository.save(
+                    allergen("EGG","난류","계란 유발 물질")
+                );
+
+        saveAllergenIngredients(
+            soy,
+            List.of("콩","대두","두부","간장","된장","고추장","유부")
+        );
+
+        saveAllergenIngredients(
+            wheat,
+            List.of("밀","밀가루","면","국수","빵","부침가루")
+        );
+
+        saveAllergenIngredients(
+            egg,
+            List.of("계란","달걀","난백","난황")
+        );
+
+        log.info("[DevDataInitializer] allergen seed 완료");
+    }
+    private void saveAllergenIngredients(
+            AllergenGroup group,
+            List<String> ingredients
+    ){
+        List<AllergenIngredientMap> maps =
+            ingredients.stream()
+                .map(i -> AllergenIngredientMap.create(group, i))
+                .toList();
+
+        allergenIngredientMapRepository.saveAll(maps);
     }
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record IngredientMasterSeedRow(
