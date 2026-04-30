@@ -16,4 +16,7 @@ public class IngredientImageCandidateDto {
 
     @JsonProperty("modelLabel")
     private String modelLabel;
+
+    /** When the label map was exported from DB (ing_XXXXX keys). Optional. */
+    private Long ingredientMasterId;
 }
