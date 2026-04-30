@@ -59,6 +59,9 @@ public class Recipe {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "difficulty_level", length = 20)
+    private String difficultyLevel;
+
     @OneToOne(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = false)
     private RecipeNutrition recipeNutrition;
 }

@@ -11,6 +11,10 @@ package com.today.fridge.recipe.controller;
  *      - 레시피 ID를 사용하여 조회
  *      - @PathVariable 사용
  *      - 성공 시 "상세 레시피 조회 성공"
+ * 3. 레시피 조리 완료
+ *      - 레시피 ID를 사용하여 조회
+ *      - @PathVariable 사용
+ *      - 성공 시 "레시피 조리 완료"
  */
 
 // Pageable
@@ -26,6 +30,7 @@ import com.today.fridge.global.response.PageResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 // DTO
@@ -56,11 +61,24 @@ public class RecipeController {
 	}
 
 	@GetMapping("/{recipeId}")
-	public ResponseEntity<ApiResponse<RecipeResponse>> getRecipe(@PathVariable("recipeId") Long recipeId) {
+	public ResponseEntity<ApiResponse<RecipeResponse>> getRecipe(
+			@PathVariable("recipeId") Long recipeId,
+			@RequestParam(value = "userId", required = false) Long userId) {
 		return ResponseEntity.ok(
 				ApiResponse.success(
-						recipeService.getRecipe(recipeId),
+						recipeService.getRecipe(recipeId, userId),
 						"상세 레시피 조회 성공"));
+	}
+
+	@GetMapping("/{recipeId}/cooked")
+	public ResponseEntity<ApiResponse<Void>> ateRecipe(
+			@PathVariable("recipeId") Long recipeId,
+			@RequestParam(value = "userId", required = false) Long userId) {
+		recipeService.ateRecipe(recipeId, userId);
+		return ResponseEntity.ok(
+				ApiResponse.success(
+						null,
+						"레시피 재료 소진"));
 	}
 
 }

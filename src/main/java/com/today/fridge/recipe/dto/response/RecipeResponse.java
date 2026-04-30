@@ -35,6 +35,7 @@ public class RecipeResponse {
         private String summary;
         private String servingsText;
         private String cookTimeText;
+        private String difficultyLevel;
         private String sourceUrl;
         private Boolean isActive;
         private LocalDateTime createdAt;
@@ -69,6 +70,7 @@ public class RecipeResponse {
                                 .summary(recipe.getSummary())
                                 .servingsText(recipe.getServingsText())
                                 .cookTimeText(recipe.getCookTimeText())
+                                .difficultyLevel(recipe.getDifficultyLevel())
                                 .sourceUrl(recipe.getSourceUrl())
                                 .isActive(recipe.getIsActive())
                                 .createdAt(recipe.getCreatedAt())
