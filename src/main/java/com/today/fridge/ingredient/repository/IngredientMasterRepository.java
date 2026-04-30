@@ -13,6 +13,8 @@ public interface IngredientMasterRepository extends JpaRepository<IngredientMast
 
     Optional<IngredientMaster> findByNormalizedNameIgnoreCase(String normalizedName);
 
+    Optional<IngredientMaster> findByCanonicalNameIgnoreCase(String canonicalName);
+
     /**
      * 표준명 일치 우선, 그다음 {@code alias_text}(한글 별칭 등) 부분 일치.
      * {@code q}에는 와일드카드 문자를 넣지 말 것(서비스에서 제거).
