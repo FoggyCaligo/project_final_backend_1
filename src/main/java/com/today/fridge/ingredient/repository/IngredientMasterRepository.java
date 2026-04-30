@@ -12,6 +12,7 @@ import java.util.Optional;
 public interface IngredientMasterRepository extends JpaRepository<IngredientMaster, Long> {
 
     Optional<IngredientMaster> findByNormalizedNameIgnoreCase(String normalizedName);
+    Optional<IngredientMaster> findByCanonicalNameIgnoreCase(String canonicalName);
 
     /**
      * 표준명 일치 우선, 그다음 {@code alias_text}(한글 별칭 등) 부분 일치.

@@ -137,7 +137,8 @@ public class DevDataInitializer implements CommandLineRunner {
                 if (normalized.length() > 100) {
                     normalized = normalized.substring(0, 100);
                 }
-                if (ingredientMasterRepository.findByNormalizedNameIgnoreCase(normalized).isPresent()) {
+                if (ingredientMasterRepository.findByNormalizedNameIgnoreCase(normalized).isPresent()
+                        || ingredientMasterRepository.findByCanonicalNameIgnoreCase(normalized).isPresent()) {
                     continue;
                 }
                 Integer categoryId = ingredientCategoryRepository.findByCategoryCode(row.categoryCode())
