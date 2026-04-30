@@ -37,7 +37,7 @@ public class AuthController {
             @RequestBody @Valid SignupRequest request) {
         authService.signup(request);
         return ResponseEntity.ok(
-                ApiResponse.<Void>success(null, "회원가입이 완료되었습니다")
+                ApiResponse.success("회원가입이 완료되었습니다", null)
         );
     }
 
@@ -54,7 +54,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> sendVerificationCode(
             @RequestParam String email) {
         emailService.sendVerificationCode(email);
-        return ResponseEntity.ok(ApiResponse.<Void>success(null, "인증 코드가 발송되었습니다"));
+        return ResponseEntity.ok(ApiResponse.success("인증 코드가 발송되었습니다", null));
     }
 
     /** 이메일 인증 코드 확인 */
@@ -63,6 +63,6 @@ public class AuthController {
             @RequestParam String email,
             @RequestParam String code) {
         emailService.verifyCode(email, code);
-        return ResponseEntity.ok(ApiResponse.<Void>success(null, "이메일 인증이 완료되었습니다"));
+        return ResponseEntity.ok(ApiResponse.success("이메일 인증이 완료되었습니다", null));
     }
 }
