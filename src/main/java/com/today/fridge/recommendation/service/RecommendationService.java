@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.today.fridge.embedding.service.RecipeEmbeddingSearchService;
 import com.today.fridge.ingredient.repository.UserIngredientRepository;
+import com.today.fridge.llm.service.RecommendationExplanationService;
 import com.today.fridge.recipe.entity.Recipe;
 import com.today.fridge.recipe.repository.RecipeIngredientRepository;
 import com.today.fridge.recipe.repository.RecipeRepository;
@@ -20,7 +21,7 @@ import com.today.fridge.recommendation.entity.UserCondition;
 import com.today.fridge.recommendation.repository.RecipeConditionMapRepository;
 import com.today.fridge.recommendation.repository.UserConditionRepository;
 import com.today.fridge.substitution.service.SubstituteIngredientService;
-
+import com.today.fridge.llm.dto.request.RecommendationExplanationContext;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -39,6 +40,7 @@ public class RecommendationService {
     private final AllergyFilterService allergyFilterService;
     private final RecipeEmbeddingSearchService recipeEmbeddingSearchService;
     private final HybridRankingService hybridRankingService;
+    private final RecommendationExplanationService recommendationExplanationService;
     
     private RecipeRecommendationResponse createRecipeResponse(
             Recipe recipe,
@@ -47,7 +49,8 @@ public class RecommendationService {
             List<String> conditionTags,
             List<String> ownedIngredients,
             List<ConditionWarningDto> warnings,
-            double semanticScore
+            double semanticScore,
+            boolean useLlmExplanation
     ) {
         List<String> matchedIngredients = requiredIngredients.stream()
                 .filter(ownedIngredients::contains)
@@ -80,7 +83,22 @@ public class RecommendationService {
                 conditionTags,
                 missingIngredients
         );
-
+        String llmExplanation = useLlmExplanation
+                ? recommendationExplanationService.generateExplanation(
+                        new RecommendationExplanationContext(
+                                recipe.getRecipeId(),
+                                recipe.getTitle(),
+                                matchedIngredients,
+                                missingIngredients,
+                                conditionTags,
+                                Math.round(matchRate * 10) / 10.0,
+                                Math.round(totalScore * 10) / 10.0,
+                                Math.round(semanticScore * 1000) / 1000.0,
+                                Math.round(hybridScore * 10) / 10.0,
+                                reason
+                        )
+                )
+                : null;
         return RecipeRecommendationResponse.builder()
                 .recipeId(recipe.getRecipeId())
                 .title(recipe.getTitle())
@@ -101,12 +119,14 @@ public class RecommendationService {
                         )
                 )
                 .reason(reason)
+                .llmExplanation(llmExplanation)
                 .semanticScore(
                 	    Math.round(semanticScore * 1000) / 1000.0
                 	)
                 	.hybridScore(
                 	    Math.round(hybridScore * 10) / 10.0
                 	)
+                	
                 .build();
     }
     private List<ConditionWarningDto> buildWarnings(
@@ -218,7 +238,7 @@ public class RecommendationService {
         } else {
             semanticScoreMap = Map.of();
         }
-        return recipes.stream()
+        List<RecipeRecommendationResponse> responses = recipes.stream()
                 .map(recipe -> {
                     List<String> requiredIngredients =
                             recipeIngredientRepository.findRequiredIngredientNamesByRecipeId(
@@ -256,7 +276,8 @@ public class RecommendationService {
                             conditionTags,
                             ownedIngredients,
                             warnings,
-                            semanticScore
+                            semanticScore,
+                            false
                     );
                 })
                 .sorted((a, b) -> {
@@ -264,6 +285,45 @@ public class RecommendationService {
                         return Double.compare(b.getHybridScore(), a.getHybridScore());
                     }
                     return Double.compare(b.getTotalScore(), a.getTotalScore());
+                })
+                .toList();
+        
+        if (useHybridRanking) {
+            return attachLlmExplanationToTopN(responses, 3);
+        }
+
+        return responses;
+    }
+    private List<RecipeRecommendationResponse> attachLlmExplanationToTopN(
+            List<RecipeRecommendationResponse> responses,
+            int limit
+    ) {
+        return java.util.stream.IntStream.range(0, responses.size())
+                .mapToObj(i -> {
+                    RecipeRecommendationResponse response = responses.get(i);
+
+                    if (i >= limit) {
+                        return response;
+                    }
+
+                    String explanation = recommendationExplanationService.generateExplanation(
+                            new RecommendationExplanationContext(
+                                    response.getRecipeId(),
+                                    response.getTitle(),
+                                    response.getMatchedIngredients(),
+                                    response.getMissingIngredients(),
+                                    response.getConditionTags(),
+                                    response.getMatchRate(),
+                                    response.getTotalScore(),
+                                    response.getSemanticScore(),
+                                    response.getHybridScore(),
+                                    response.getReason()
+                            )
+                    );
+
+                    return response.toBuilder()
+                            .llmExplanation(explanation)
+                            .build();
                 })
                 .toList();
     }

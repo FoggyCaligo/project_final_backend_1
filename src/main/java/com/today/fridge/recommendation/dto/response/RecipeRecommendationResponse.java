@@ -7,7 +7,7 @@ import com.today.fridge.substitution.dto.SubstituteSuggestionDto;
 import lombok.Builder;
 import lombok.Getter;
 
-@Builder
+@Builder(toBuilder = true)
 @Getter
 public class RecipeRecommendationResponse {
 
@@ -36,4 +36,5 @@ public class RecipeRecommendationResponse {
     private List<ConditionWarningDto> warnings;
 
     private String reason;
+	private String llmExplanation;
 }
