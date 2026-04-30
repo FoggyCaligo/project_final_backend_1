@@ -53,8 +53,28 @@ public class IntentParserService {
     }
 
     private boolean containsCondition(String text, ConditionCode condition) {
-        return text.contains(condition.getConditionName())
-                || text.contains(condition.getConditionCode());
+        String code = condition.getConditionCode();
+
+        if (text.contains(condition.getConditionName())
+                || text.contains(code)) {
+            return true;
+        }
+
+        if ("LOW_SODIUM".equals(code)) {
+            return text.contains("저염")
+                    || text.contains("저염식")
+                    || text.contains("싱겁")
+                    || text.contains("나트륨");
+        }
+
+        if ("DIET_LOW_CALORIE".equals(code)) {
+            return text.contains("다이어트")
+                    || text.contains("저칼로리")
+                    || text.contains("가벼운")
+                    || text.contains("살 안찌는");
+        }
+
+        return false;
     }
 
     private List<String> extractIncludeIngredients(
@@ -68,10 +88,14 @@ public class IntentParserService {
     }
 
     private List<String> extractKeywords(String text) {
-        return List.of("간단", "빠른", "든든", "저녁", "아침", "점심")
-                .stream()
-                .filter(text::contains)
-                .toList();
+        return List.of(
+                "간단", "빠른", "든든", "저녁", "아침", "점심",
+                "국", "찌개", "탕", "반찬", "볶음", "덮밥",
+                "저염", "저염식", "다이어트", "가벼운"
+        )
+        .stream()
+        .filter(text::contains)
+        .toList();
     }
 
     private String resolveIntent(String text) {

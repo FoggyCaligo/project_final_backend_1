@@ -1,5 +1,10 @@
 package com.today.fridge.recipe.entity;
 
+/*
+ * @OneToMany는 작성하지 않았음.
+ * RecipeIngredients 및 RecipeStep은
+ * 각 Entity에서 @ManyToOne으로 매핑됨.
+ */
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -53,4 +58,10 @@ public class Recipe {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "difficulty_level", length = 20)
+    private String difficultyLevel;
+
+    @OneToOne(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = false)
+    private RecipeNutrition recipeNutrition;
 }
