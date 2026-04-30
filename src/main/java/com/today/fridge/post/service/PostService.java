@@ -5,6 +5,7 @@ import com.today.fridge.file.repository.FileAssetRepository;
 import com.today.fridge.file.dto.FileAssetDto;
 import com.today.fridge.post.dto.PostCreateRequest;
 import com.today.fridge.post.dto.PostSummaryResponse;
+import com.today.fridge.post.dto.PostUpdateRequest;
 import com.today.fridge.post.dto.PostDetailResponse;
 import com.today.fridge.post.dto.PostImageDto;
 import com.today.fridge.post.entity.Post;
@@ -20,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -122,5 +124,59 @@ public class PostService {
     @Transactional
     public void deletePost(Long postId) {
         postRepository.deleteById(postId);
+    }
+
+    // ==========================================
+    // 6. 게시글 수정 로직 (PATCH)
+    // ==========================================
+    @Transactional
+    public void updatePost(Long postId, PostUpdateRequest request) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+
+        post.setTitle(request.getTitle());
+        post.setContent(request.getContent());
+        if (request.getRecipe() != null) post.setRecipeId(request.getRecipe());
+        post.setUpdatedAt(LocalDateTime.now());
+
+        // 💡 1. 기존 이미지 삭제 및 유지 처리
+        List<PostImage> currentImages = postImageRepository.findByPost(post);
+        List<String> retainedNames = request.getRetained_images() != null ? request.getRetained_images() : new ArrayList<>();
+
+        int sortOrder = 1;
+        for (PostImage pi : currentImages) {
+            // 프론트엔드에서 유지하겠다고 보낸 목록에 없는 이미지는 DB에서 매핑 삭제
+            if (!retainedNames.contains(pi.getFile().getStoredName())) {
+                postImageRepository.delete(pi); 
+            } else {
+                // 살아남은 이미지는 순서를 1번부터 차례대로 재배치
+                pi.setSortOrder(sortOrder++); 
+            }
+        }
+
+        // 💡 2. 새 이미지 추가
+        if (request.getImage_files() != null && !request.getImage_files().isEmpty()) {
+            for (FileAssetDto fileDto : request.getImage_files()) {
+                FileAsset fileAsset = new FileAsset();
+                fileAsset.setUploaderUser(post.getAuthorUser());
+                fileAsset.setStorageType("LOCAL");
+                fileAsset.setOriginalName(fileDto.getOriginalName());
+                fileAsset.setStoredName(fileDto.getUuidName());
+                fileAsset.setMimeType(fileDto.getMimeType());
+                fileAsset.setFileSize(fileDto.getFileSize());
+                fileAsset.setStoragePath(fileDto.getStoragePath());
+                fileAsset.setChecksumValue(fileDto.getSha1sum());
+                fileAsset.setCreatedAt(LocalDateTime.now());
+                FileAsset savedFileAsset = fileAssetRepository.save(fileAsset);
+
+                PostImage postImage = new PostImage();
+                postImage.setPost(post);
+                postImage.setFile(savedFileAsset);
+                // 기존 살아남은 이미지들의 다음 순서(sortOrder)를 이어받아 저장
+                postImage.setSortOrder(sortOrder++);
+                postImage.setCreatedAt(LocalDateTime.now());
+                postImageRepository.save(postImage);
+            }
+        }
     }
 }
