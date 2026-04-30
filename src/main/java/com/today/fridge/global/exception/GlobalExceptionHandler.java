@@ -30,14 +30,19 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(ExceptionTemplate.class)
-    public <T> ApiResponse<T> handleException(ExceptionTemplate e) {
+    public ResponseEntity<ApiResponse<Object>> handleException(ExceptionTemplate e) {
         log.error("예외가 발생했습니다 : {}", e.getMessage(), e);
-        return ApiResponse.error(e.getErrorCode().name(), e.getMessage(), e.getErrorCode());
+        Object errorDetails = e.getPayload() != null ? e.getPayload() : e.getErrorCode();
+        return ResponseEntity
+                .status(e.getErrorCode().getHttpStatus())
+                .body(ApiResponse.error(e.getErrorCode().name(), e.getMessage(), errorDetails));
     }
 
     @ExceptionHandler(Exception.class)
-    public <T> ApiResponse<T> handleInternalServerException(Exception e) {
+    public ResponseEntity<ApiResponse<Object>> handleInternalServerException(Exception e) {
         log.error("서버 내부 오류가 발생했습니다 : {}", e.getMessage(), e);
-        return ApiResponse.error("INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다.", ErrorCode.INTERNAL_SERVER_ERROR);
+        return ResponseEntity
+                .status(ErrorCode.INTERNAL_SERVER_ERROR.getHttpStatus())
+                .body(ApiResponse.error("INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다.", ErrorCode.INTERNAL_SERVER_ERROR));
     }
 }

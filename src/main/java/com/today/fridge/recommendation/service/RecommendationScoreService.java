@@ -16,6 +16,8 @@ public class RecommendationScoreService {
     private static final double CONDITION_MATCH_SCORE = 10.0;
     private static final double MAX_CONDITION_SCORE = 30.0;
     private static final double CAUTION_PENALTY = -30.0;
+    private static final double MISSING_PENALTY = 1.0;
+    private static final double MANY_MISSING_EXTRA_PENALTY = 5.0;
 
     public double calculateIngredientScore(int matchedCount, int requiredCount) {
         if (requiredCount <= 0) {
@@ -23,7 +25,15 @@ public class RecommendationScoreService {
         }
 
         double matchRate = (double) matchedCount / requiredCount;
-        return matchRate * MAX_INGREDIENT_SCORE;
+        int missingCount = requiredCount - matchedCount;
+
+        double penalty = missingCount * MISSING_PENALTY;
+
+        if (missingCount >= 5) {
+            penalty += MANY_MISSING_EXTRA_PENALTY;
+        }
+
+        return (matchRate * MAX_INGREDIENT_SCORE) - penalty;
     }
 
     public double calculateMatchRate(int matchedCount, int requiredCount) {

@@ -14,6 +14,7 @@ import com.today.fridge.ingredient.dto.FridgeIngredientListData;
 import com.today.fridge.ingredient.dto.FridgeSummaryResponse;
 import com.today.fridge.ingredient.dto.IngredientResponse;
 import com.today.fridge.ingredient.dto.SoonItemResponse;
+import com.today.fridge.ingredient.dto.vision.VisionRecognizeDataDto;
 import com.today.fridge.ingredient.entity.IngredientCategory;
 import com.today.fridge.ingredient.entity.IngredientMaster;
 import com.today.fridge.ingredient.entity.UserIngredient;
@@ -27,9 +28,11 @@ import com.today.fridge.user.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -80,16 +83,20 @@ public class FridgeIngredientService {
             String sort,
             String freshnessStatus,
             String storageType,
-            String keyword) {
+            String keyword,
+            Long categoryId) {
         FreshnessStatus freshness = parseFreshnessFilter(freshnessStatus);
         if (StringUtils.hasText(storageType)) {
             StorageTypePolicy.validateOrThrow(storageType);
+        }
+        if (categoryId != null) {
+            validateCategoryId(categoryId);
         }
         LocalDate today = LocalDate.now(KST);
         LocalDate soonEnd = today.plusDays(FreshnessCalculator.SOON_DAYS_INCLUSIVE);
         Pageable pageable = PageRequest.of(Math.max(page, 0), clampSize(size));
         Page<UserIngredient> result = userIngredientRepository.searchFridgePage(
-                userId, today, soonEnd, freshness, storageType, keyword, sort, pageable);
+                userId, today, soonEnd, freshness, storageType, keyword, categoryId, sort, pageable);
         List<IngredientResponse> items = result.getContent().stream()
                 .map(this::toResponse)
                 .toList();
@@ -102,23 +109,32 @@ public class FridgeIngredientService {
     }
 
     public FridgeSummaryResponse summary(Long userId) {
+        LocalDate today = LocalDate.now(KST);
+        LocalDate soonEnd = today.plusDays(FreshnessCalculator.SOON_DAYS_INCLUSIVE);
         long total = userIngredientRepository.countByUser_UserId(userId);
-        long expired = userIngredientRepository.countByUser_UserIdAndFreshnessStatus(userId, FreshnessStatus.EXPIRED);
-        long soon = userIngredientRepository.countByUser_UserIdAndFreshnessStatus(userId, FreshnessStatus.SOON);
+        long expired = userIngredientRepository.countByUser_UserIdAndExpiresAtBefore(userId, today);
+        long soon = userIngredientRepository.countByUser_UserIdAndExpiresAtSoonWindow(userId, today, soonEnd);
         long fresh = total - expired - soon;
         if (fresh < 0) {
             fresh = 0;
         }
-        List<UserIngredient> soonRows =
-                userIngredientRepository.findTop5ByUser_UserIdAndFreshnessStatusOrderByExpiresAtAsc(
-                        userId, FreshnessStatus.SOON);
-        List<SoonItemResponse> soonItems = soonRows.stream()
-                .map(ui -> new SoonItemResponse(
-                        ui.getUserIngredientId(),
-                        ui.getRawName(),
-                        ui.getExpiresAt(),
-                        ui.getFreshnessStatus() != null ? ui.getFreshnessStatus().name() : FreshnessStatus.UNKNOWN.name()))
-                .toList();
+        Page<UserIngredient> soonPage =
+                userIngredientRepository.findSoonPageForSummary(
+                        userId,
+                        today,
+                        soonEnd,
+                        PageRequest.of(0, 5, Sort.by(Sort.Direction.ASC, "expiresAt")));
+        List<SoonItemResponse> soonItems =
+                soonPage.getContent().stream()
+                        .map(
+                                ui ->
+                                        new SoonItemResponse(
+                                                ui.getUserIngredientId(),
+                                                ui.getRawName(),
+                                                ui.getExpiresAt(),
+                                                FreshnessCalculator.computeStatus(ui.getExpiresAt(), today)
+                                                        .name()))
+                        .toList();
         return new FridgeSummaryResponse(total, fresh, soon, expired, soonItems);
     }
 
@@ -145,10 +161,17 @@ public class FridgeIngredientService {
 
         Long catId = null;
         if (req.getCategoryId() != null) {
-            catId = validateCategoryId(req.getCategoryId());
+            Long validated = validateCategoryId(req.getCategoryId());
+            // 미분류(UNKNOWN)는 "카테고리 미선택"과 동일 취급 → 마스터·휴리스틱 적용
+            if (!isUnknownCategoryId(validated)) {
+                catId = validated;
+            }
         }
         if (catId == null) {
             catId = categoryIdFromLinkedMaster(e.getIngredientMaster());
+        }
+        if (catId == null) {
+            catId = inferCategoryFromNameHeuristic(e.getRawName());
         }
         e.setCategoryId(catId);
 
@@ -236,8 +259,9 @@ public class FridgeIngredientService {
             if (v == null) {
                 e.setCategoryId(null);
             } else {
-                Long catId = v instanceof Number n ? n.longValue() : Long.parseLong(v.toString());
-                e.setCategoryId(validateCategoryId(catId));
+                Long rawCat = v instanceof Number n ? n.longValue() : Long.parseLong(v.toString());
+                Long validated = validateCategoryId(rawCat);
+                e.setCategoryId(isUnknownCategoryId(validated) ? null : validated);
             }
         }
 
@@ -329,10 +353,17 @@ public class FridgeIngredientService {
         Long cid = categoryIdFromLinkedMaster(e.getIngredientMaster());
         if (cid != null) {
             e.setCategoryId(cid);
+            return;
+        }
+        Long inferred = inferCategoryFromNameHeuristic(e.getRawName());
+        if (inferred != null) {
+            e.setCategoryId(inferred);
         }
     }
 
     private IngredientResponse toResponse(UserIngredient ui) {
+        LocalDate today = LocalDate.now(KST);
+        FreshnessStatus status = FreshnessCalculator.computeStatus(ui.getExpiresAt(), today);
         return new IngredientResponse(
                 ui.getUserIngredientId(),
                 ui.getRawName(),
@@ -343,7 +374,7 @@ public class FridgeIngredientService {
                 ui.getQuantity(),
                 ui.getUnit(),
                 ui.getStorageType(),
-                ui.getFreshnessStatus() != null ? ui.getFreshnessStatus().name() : FreshnessStatus.UNKNOWN.name());
+                status.name());
     }
 
     private String resolveCategoryName(UserIngredient ui) {
@@ -373,6 +404,57 @@ public class FridgeIngredientService {
         }
         return categoryId;
     }
+
+    /**
+     * {@code ingredient_master}에 없는 한글 등 입력 시에도 대표 키워드로 카테고리를 추론한다.
+     * 마스터 매칭이 우선이며, 이 메서드는 보조용이다.
+     */
+    private Long inferCategoryFromNameHeuristic(String rawName) {
+        if (!StringUtils.hasText(rawName)) {
+            return null;
+        }
+        String n = rawName.trim();
+        for (String[] row : HEURISTIC_CATEGORY_KEYWORDS) {
+            String code = row[0];
+            for (int i = 1; i < row.length; i++) {
+                if (n.contains(row[i])) {
+                    return categoryIdByCategoryCode(code);
+                }
+            }
+        }
+        return null;
+    }
+
+    private Long categoryIdByCategoryCode(String categoryCode) {
+        return ingredientCategoryRepository.findByCategoryCode(categoryCode)
+                .map(IngredientCategory::getCategoryId)
+                .orElse(null);
+    }
+
+    /** {@code ingredient_category.category_code == UNKNOWN} 인 경우 자동 분류 대상으로 본다. */
+    private boolean isUnknownCategoryId(Long categoryId) {
+        if (categoryId == null) {
+            return false;
+        }
+        return ingredientCategoryRepository.findById(categoryId)
+                .map(c -> "UNKNOWN".equalsIgnoreCase(c.getCategoryCode()))
+                .orElse(false);
+    }
+
+    /**
+     * 각 행: {@code [category_code, keyword1, keyword2, ...]} — 위에서 아래로, 행 안에서는 앞 키워드 우선.
+     * 채소(VEGETABLE)를 육류(MEAT)보다 먼저 두어 "고추" 등과 충돌을 줄인다.
+     */
+    private static final String[][] HEURISTIC_CATEGORY_KEYWORDS = {
+            {"VEGETABLE", "당근", "양파", "감자", "토마토", "마늘", "오이", "배추", "상추", "브로콜리", "버섯",
+                    "피망", "파프리카", "시금치", "무", "순무", "깻잎", "쪽파", "대파", "아스파라거스", "가지",
+                    "애호박", "생강", "양배추", "케일", "청경채", "콩나물", "숙주", "미나리", "시래기"},
+            {"MEAT", "돼지고기", "돼지", "삼겹살", "목살", "소고기", "쇠고기", "한우", "닭고기", "닭", "오리고기",
+                    "양고기", "베이컨", "햄", "소세지", "소시지", "육류"},
+            {"SEAFOOD", "생선", "연어", "고등어", "새우", "게", "조개", "멸치", "참치", "오징어", "문어", "해산물"},
+            {"DAIRY", "우유", "치즈", "버터", "요거트", "요구르트", "두유", "크림"},
+            {"GRAIN", "쌀", "밀가루", "빵", "면", "파스타", "라면"},
+    };
 
     private static void validateNameLength(String name) {
         if (name.length() > NAME_MAX_LEN) {
@@ -414,5 +496,17 @@ public class FridgeIngredientService {
             return 20;
         }
         return Math.min(size, 100);
+    }
+
+    /**
+     * 식재료 이미지 인식 — FastAPI 비전 파이프라인 프록시 (공개 API 계약 잠금 경로).
+     */
+    public VisionRecognizeDataDto recognizeIngredientImage(Long userId, MultipartFile file, int topK) {
+        userRepository.findById(userId).orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        if (file == null || file.isEmpty()) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "이미지 파일이 필요합니다.");
+        }
+        FastApiService.validateVisionImageContentType(file.getContentType());
+        return fastApiService.recognizeIngredientImage(file, topK);
     }
 }

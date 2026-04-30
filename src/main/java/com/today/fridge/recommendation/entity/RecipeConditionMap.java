@@ -42,4 +42,30 @@ public class RecipeConditionMap {
 
     @Column(name = "confidence_score", precision = 5, scale = 2)
     private BigDecimal confidenceScore;
+    
+    public static RecipeConditionMap create(
+            Recipe recipe,
+            ConditionCode conditionCode,
+            String fitType,
+            String sourceType,
+            BigDecimal confidenceScore
+    ) {
+        RecipeConditionMap map = new RecipeConditionMap();
+        map.recipe = recipe;
+        map.conditionCode = conditionCode;
+        map.fitType = fitType;
+        map.sourceType = sourceType;
+        map.confidenceScore = confidenceScore;
+        return map;
+    }
+
+    public void updateAnalysis(
+            String fitType,
+            String sourceType,
+            BigDecimal confidenceScore
+    ) {
+        this.fitType = fitType;
+        this.sourceType = sourceType;
+        this.confidenceScore = confidenceScore;
+    }
 }

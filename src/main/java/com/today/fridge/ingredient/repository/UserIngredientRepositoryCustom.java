@@ -16,6 +16,7 @@ public interface UserIngredientRepositoryCustom {
             FreshnessStatus freshnessStatus,
             String storageType,
             String keyword,
+            Long categoryId,
             String sort,
             Pageable pageable);
 }

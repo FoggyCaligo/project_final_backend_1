@@ -6,11 +6,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.today.fridge.ingredient.entity.IngredientCategory;
 import com.today.fridge.ingredient.entity.IngredientMaster;
 import com.today.fridge.ingredient.repository.IngredientCategoryRepository;
+import com.today.fridge.recommendation.entity.AllergenGroup;
+import com.today.fridge.recommendation.entity.AllergenIngredientMap;
+import com.today.fridge.recommendation.entity.ConditionCode;
+import com.today.fridge.recommendation.repository.AllergenGroupRepository;
+import com.today.fridge.recommendation.repository.AllergenIngredientMapRepository;
+import com.today.fridge.recommendation.repository.ConditionCodeRepository;
 import com.today.fridge.ingredient.repository.IngredientMasterRepository;
 import com.today.fridge.user.entity.User;
 import com.today.fridge.user.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.ClassPathResource;
@@ -35,27 +42,45 @@ public class DevDataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final IngredientCategoryRepository ingredientCategoryRepository;
+    private final ConditionCodeRepository conditionCodeRepository;
     private final IngredientMasterRepository ingredientMasterRepository;
     private final ObjectMapper objectMapper;
+    private final AllergenGroupRepository allergenGroupRepository;
+    private final AllergenIngredientMapRepository allergenIngredientMapRepository;
     private final PasswordEncoder passwordEncoder;
+    private final boolean seedGroceryIngredientMaster;
 
     public DevDataInitializer(UserRepository userRepository,
                               IngredientCategoryRepository ingredientCategoryRepository,
                               IngredientMasterRepository ingredientMasterRepository,
                               ObjectMapper objectMapper,
-                              PasswordEncoder passwordEncoder) {
+                              ConditionCodeRepository conditionCodeRepository,
+                              AllergenGroupRepository allergenGroupRepository,
+                              AllergenIngredientMapRepository allergenIngredientMapRepository,
+                              PasswordEncoder passwordEncoder,
+                              @Value("${app.dev.seed-grocery-ingredient-master:false}") boolean seedGroceryIngredientMaster) {
         this.userRepository = userRepository;
         this.ingredientCategoryRepository = ingredientCategoryRepository;
         this.ingredientMasterRepository = ingredientMasterRepository;
         this.objectMapper = objectMapper;
+        this.conditionCodeRepository = conditionCodeRepository;
+        this.allergenGroupRepository = allergenGroupRepository;
+        this.allergenIngredientMapRepository = allergenIngredientMapRepository;
         this.passwordEncoder = passwordEncoder;
+        this.seedGroceryIngredientMaster = seedGroceryIngredientMaster;
     }
 
     @Override
     public void run(String... args) throws Exception {
         seedUser();
         seedCategories();
-        seedIngredientMasterFromCanonicalGroceryFile();
+        seedConditionCodes();
+        seedAllergenGroups();
+        if (seedGroceryIngredientMaster) {
+            seedIngredientMasterFromCanonicalGroceryFile();
+        } else {
+            log.info("[DevDataInitializer] ingredient_master grocery JSON 시드 생략 (app.dev.seed-grocery-ingredient-master=false)");
+        }
     }
 
     // testuser 계정 비밀번호: Test@1234
@@ -104,7 +129,8 @@ public class DevDataInitializer implements CommandLineRunner {
      *   <li>{@code category_id}: {@code ingredient_category.category_code}로 조회한 FK</li>
      *   <li>{@code alias_text}: {@code ko:한글별칭…|src:mapping_grocery_dataset|key:원본키|type:원본분류}</li>
      * </ul>
-     * 동일 {@code normalized_name}이 이미 있으면 건너뜁니다.
+     * 동일 {@code normalized_name} 또는 {@code canonical_name}(시드에서는 동일 문자열)이 이미 있으면 건너뜁니다.
+     * DB에만 canonical이 겹치는 행이 있어도 유니크 제약으로 기동이 실패하지 않도록 합니다.
      */
     private void seedIngredientMasterFromCanonicalGroceryFile() throws Exception {
         ClassPathResource resource = new ClassPathResource("data/grocery_ingredient_master_seed.json");
@@ -120,7 +146,8 @@ public class DevDataInitializer implements CommandLineRunner {
                 if (normalized.length() > 100) {
                     normalized = normalized.substring(0, 100);
                 }
-                if (ingredientMasterRepository.findByNormalizedNameIgnoreCase(normalized).isPresent()) {
+                if (ingredientMasterRepository.findByNormalizedNameIgnoreCase(normalized).isPresent()
+                        || ingredientMasterRepository.findByCanonicalNameIgnoreCase(normalized).isPresent()) {
                     continue;
                 }
                 Integer categoryId = ingredientCategoryRepository.findByCategoryCode(row.categoryCode())
@@ -167,7 +194,91 @@ public class DevDataInitializer implements CommandLineRunner {
         field.setAccessible(true);
         field.set(target, value);
     }
+    private static ConditionCode condition(
+            String group,
+            String code,
+            String name,
+            String description
+    ) {
+        return ConditionCode.create(group, code, name, description);
+    }
+    private void seedConditionCodes() {
+        if (conditionCodeRepository.count() > 0) {
+            log.info("[DevDataInitializer] condition_code 데이터 존재, 시드 생략");
+            return;
+        }
 
+        List<ConditionCode> conditions = List.of(
+                condition("DIET", "DIET_LOW_CALORIE", "다이어트/저칼로리", "저칼로리, 저지방, 채소 중심, 두부, 버섯, 닭가슴살 등 가벼운 식단에 적합한 레시피"),
+                condition("HEALTH", "LOW_SODIUM", "저염식", "짜지 않고 나트륨 부담이 적으며 소금, 간장, 된장 사용이 적은 담백한 레시피"),
+                condition("ALLERGY", "ALLERGY_EGG", "계란 알러지", "계란, 달걀, 마요네즈, 계란물, 지단 등 계란 성분이 포함된 레시피"),
+                condition("ALLERGY", "ALLERGY_MILK", "우유 알러지", "우유, 치즈, 버터, 생크림, 요거트 등 유제품 성분이 포함된 레시피")
+        );
+
+        conditionCodeRepository.saveAll(conditions);
+        log.info("[DevDataInitializer] condition_code 시드 데이터 {} 건 삽입 완료", conditions.size());
+    }
+    private AllergenGroup allergen(
+    	    String code,
+    	    String name,
+    	    String desc
+    	){
+    	    return AllergenGroup.create(
+    	        code,
+    	        name,
+    	        desc
+    	    );
+    	}
+    private void seedAllergenGroups() {
+
+        if (allergenGroupRepository.count() > 0) {
+            log.info("[DevDataInitializer] allergen 데이터 존재, 시드 생략");
+            return;
+        }
+
+        AllergenGroup soy =
+                allergenGroupRepository.save(
+                    allergen("SOY","대두","대두 유발 물질")
+                );
+
+        AllergenGroup wheat =
+                allergenGroupRepository.save(
+                    allergen("WHEAT","밀","밀 유발 물질")
+                );
+
+        AllergenGroup egg =
+                allergenGroupRepository.save(
+                    allergen("EGG","난류","계란 유발 물질")
+                );
+
+        saveAllergenIngredients(
+            soy,
+            List.of("콩","대두","두부","간장","된장","고추장","유부")
+        );
+
+        saveAllergenIngredients(
+            wheat,
+            List.of("밀","밀가루","면","국수","빵","부침가루")
+        );
+
+        saveAllergenIngredients(
+            egg,
+            List.of("계란","달걀","난백","난황")
+        );
+
+        log.info("[DevDataInitializer] allergen seed 완료");
+    }
+    private void saveAllergenIngredients(
+            AllergenGroup group,
+            List<String> ingredients
+    ){
+        List<AllergenIngredientMap> maps =
+            ingredients.stream()
+                .map(i -> AllergenIngredientMap.create(group, i))
+                .toList();
+
+        allergenIngredientMapRepository.saveAll(maps);
+    }
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record IngredientMasterSeedRow(
             String normalizedName,

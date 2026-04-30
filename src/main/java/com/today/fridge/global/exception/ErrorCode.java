@@ -31,10 +31,16 @@ public enum ErrorCode {
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."),
     BOOKMARK_NOT_FOUND(HttpStatus.NOT_FOUND, "북마크를 찾을 수 없습니다."),
     FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다."),
+    RECIPE_NUTRITION_NOT_FOUND(HttpStatus.NOT_FOUND, "레시피 영양정보를 찾을 수 없습니다."),
+    RECIPE_STEP_NOT_FOUND(HttpStatus.NOT_FOUND, "레시피 단계정보를 찾을 수 없습니다."),
+    RECIPE_INGREDIENT_NOT_FOUND(HttpStatus.NOT_FOUND, "레시피 재료정보를 찾을 수 없습니다."),
 
     // 409 Conflict
     DUPLICATE_LOGIN_ID(HttpStatus.CONFLICT, "이미 사용 중인 아이디입니다."),
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다."),
+
+    // 502 Bad Gateway
+    AI_RECOGNITION_FAILED(HttpStatus.BAD_GATEWAY, "이미지 인식 서비스 호출에 실패했습니다."),
 
     // 500 Internal Server Error
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다."),

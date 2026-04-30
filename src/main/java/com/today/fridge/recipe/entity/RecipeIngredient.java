@@ -2,11 +2,15 @@ package com.today.fridge.recipe.entity;
 
 import com.today.fridge.ingredient.entity.IngredientMaster;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity
 @Table(name = "recipe_ingredient")
 public class RecipeIngredient {
