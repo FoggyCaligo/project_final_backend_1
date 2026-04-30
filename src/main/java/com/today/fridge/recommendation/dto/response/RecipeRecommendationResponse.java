@@ -7,7 +7,7 @@ import com.today.fridge.substitution.dto.SubstituteSuggestionDto;
 import lombok.Builder;
 import lombok.Getter;
 
-@Builder
+@Builder(toBuilder = true)
 @Getter
 public class RecipeRecommendationResponse {
 
@@ -27,6 +27,8 @@ public class RecipeRecommendationResponse {
 
     // 최종 병합 점수
     private double hybridScore;
+    
+    private double tagScore;
 
     private List<String> matchedIngredients;
     private List<String> missingIngredients;
@@ -36,4 +38,5 @@ public class RecipeRecommendationResponse {
     private List<ConditionWarningDto> warnings;
 
     private String reason;
+	private String llmExplanation;
 }

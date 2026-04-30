@@ -2,8 +2,12 @@ package com.today.fridge;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+
+import com.today.fridge.llm.config.LlmClientProperties;
 
 @SpringBootApplication
+@EnableConfigurationProperties(LlmClientProperties.class)
 public class TodayFridgeApplication {
 
     public static void main(String[] args) {

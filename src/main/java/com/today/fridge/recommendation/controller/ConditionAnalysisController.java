@@ -23,12 +23,24 @@ public class ConditionAnalysisController {
             @PathVariable("recipeId") Long recipeId
     ) {
 
-        recipeConditionAnalyzeService.saveDummyAnalysis(recipeId);
+        recipeConditionAnalyzeService.analyzeAndSave(recipeId);
 
         return ResponseEntity.ok(
                 ApiResponse.success(
                         null,
-                        "조건 분석 저장 완료"
+                        "임베딩 기반 조건 분석 저장 완료"
+                )
+        );
+    }
+    @PostMapping("/recipes/condition-analysis/bulk")
+    public ResponseEntity<ApiResponse<Void>> analyzeAll() {
+
+        recipeConditionAnalyzeService.analyzeAllRecipes();
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        null,
+                        "전체 레시피 조건 분석 완료"
                 )
         );
     }

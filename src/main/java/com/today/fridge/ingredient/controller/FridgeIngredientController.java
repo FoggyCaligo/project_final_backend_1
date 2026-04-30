@@ -9,9 +9,11 @@ import com.today.fridge.ingredient.dto.DeleteIngredientData;
 import com.today.fridge.ingredient.dto.FridgeIngredientListData;
 import com.today.fridge.ingredient.dto.FridgeSummaryResponse;
 import com.today.fridge.ingredient.dto.IngredientResponse;
+import com.today.fridge.ingredient.dto.vision.VisionRecognizeDataDto;
 import com.today.fridge.ingredient.service.FridgeIngredientService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,7 +24,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -51,10 +55,12 @@ public class FridgeIngredientController {
             @RequestParam(required = false) String sort,
             @RequestParam(required = false) String freshnessStatus,
             @RequestParam(required = false) String storageType,
-            @RequestParam(required = false) String keyword) {
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long categoryId) {
         long uid = requireUserId(userId);
         FridgeIngredientListData data =
-                fridgeIngredientService.list(uid, page, size, sort, freshnessStatus, storageType, keyword);
+                fridgeIngredientService.list(
+                        uid, page, size, sort, freshnessStatus, storageType, keyword, categoryId);
         return ResponseEntity.ok(ApiResponse.success(data, "식재료 목록 조회 성공"));
     }
 
@@ -64,6 +70,16 @@ public class FridgeIngredientController {
         long uid = requireUserId(userId);
         FridgeSummaryResponse data = fridgeIngredientService.summary(uid);
         return ResponseEntity.ok(ApiResponse.success(data));
+    }
+
+    @PostMapping(value = "/ingredients/recognize-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<VisionRecognizeDataDto>> recognizeImage(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @RequestPart("file") MultipartFile file,
+            @RequestParam(defaultValue = "3") int topK) {
+        long uid = requireUserId(userId);
+        VisionRecognizeDataDto data = fridgeIngredientService.recognizeIngredientImage(uid, file, topK);
+        return ResponseEntity.ok(ApiResponse.success(data, "이미지 인식 완료"));
     }
 
     @PostMapping("/ingredients")

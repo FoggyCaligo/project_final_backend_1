@@ -1,6 +1,7 @@
 package com.today.fridge.embedding.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -9,6 +10,8 @@ import org.springframework.data.repository.query.Param;
 
 import com.today.fridge.embedding.dto.SemanticSearchResult;
 import com.today.fridge.embedding.entity.RecipeEmbedding;
+import com.today.fridge.recipe.entity.Recipe;
+
 
 public interface RecipeEmbeddingRepository
         extends JpaRepository<RecipeEmbedding, Long> {
@@ -60,4 +63,6 @@ public interface RecipeEmbeddingRepository
         @Param("embedding") String embedding,
         @Param("modelName") String modelName
     );
+    
+   Optional<RecipeEmbedding> findByRecipe_RecipeIdAndIsActiveTrue(Long recipeId);
 }
