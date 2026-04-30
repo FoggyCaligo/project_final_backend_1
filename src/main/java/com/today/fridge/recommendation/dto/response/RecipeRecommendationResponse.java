@@ -27,6 +27,8 @@ public class RecipeRecommendationResponse {
 
     // 최종 병합 점수
     private double hybridScore;
+    
+    private double tagScore;
 
     private List<String> matchedIngredients;
     private List<String> missingIngredients;

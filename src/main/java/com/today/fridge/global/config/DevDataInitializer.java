@@ -13,6 +13,12 @@ import com.today.fridge.recommendation.repository.AllergenGroupRepository;
 import com.today.fridge.recommendation.repository.AllergenIngredientMapRepository;
 import com.today.fridge.recommendation.repository.ConditionCodeRepository;
 import com.today.fridge.ingredient.repository.IngredientMasterRepository;
+import com.today.fridge.recipe.entity.Recipe;
+import com.today.fridge.recipe.entity.RecipeTag;
+import com.today.fridge.recipe.entity.RecipeTagSourceType;
+import com.today.fridge.recipe.entity.RecipeTagType;
+import com.today.fridge.recipe.repository.RecipeRepository;
+import com.today.fridge.recipe.repository.RecipeTagRepository;
 import com.today.fridge.user.entity.User;
 import com.today.fridge.user.repository.UserRepository;
 import org.slf4j.Logger;
@@ -47,6 +53,8 @@ public class DevDataInitializer implements CommandLineRunner {
     private final AllergenGroupRepository allergenGroupRepository;
     private final AllergenIngredientMapRepository allergenIngredientMapRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RecipeRepository recipeRepository;
+    private final RecipeTagRepository recipeTagRepository;
 
     public DevDataInitializer(UserRepository userRepository,
                               IngredientCategoryRepository ingredientCategoryRepository,
@@ -55,7 +63,9 @@ public class DevDataInitializer implements CommandLineRunner {
                               ConditionCodeRepository conditionCodeRepository,
                               AllergenGroupRepository allergenGroupRepository,
                               AllergenIngredientMapRepository allergenIngredientMapRepository,
-                              PasswordEncoder passwordEncoder) {
+                              PasswordEncoder passwordEncoder,
+                              RecipeRepository recipeRepository,
+                              RecipeTagRepository recipeTagRepository) {
         this.userRepository = userRepository;
         this.ingredientCategoryRepository = ingredientCategoryRepository;
         this.ingredientMasterRepository = ingredientMasterRepository;
@@ -64,6 +74,8 @@ public class DevDataInitializer implements CommandLineRunner {
         this.allergenGroupRepository = allergenGroupRepository;
         this.allergenIngredientMapRepository = allergenIngredientMapRepository;
         this.passwordEncoder = passwordEncoder;
+        this.recipeRepository = recipeRepository;
+        this.recipeTagRepository = recipeTagRepository;
     }
 
     @Override
@@ -73,6 +85,7 @@ public class DevDataInitializer implements CommandLineRunner {
         seedConditionCodes();
         seedAllergenGroups();
         seedIngredientMasterFromCanonicalGroceryFile();
+        seedRecipeTags();
     }
 
     // testuser 계정 비밀번호: Test@1234
@@ -268,6 +281,72 @@ public class DevDataInitializer implements CommandLineRunner {
                 .toList();
 
         allergenIngredientMapRepository.saveAll(maps);
+    }
+    private void saveTag(Long recipeId, String tagCode) {
+        recipeTagRepository.save(
+            RecipeTag.builder()
+                .recipeId(recipeId)
+                .tagType(RecipeTagType.COOKING_TYPE)
+                .tagCode(tagCode)
+                .confidence(0.9)
+                .sourceType(RecipeTagSourceType.RULE)
+                .build()
+        );
+    }
+    private void seedRecipeTags() {
+
+        if (recipeTagRepository.count() > 0) {
+            log.info("[DevDataInitializer] recipe_tag 데이터 존재, 시드 생략");
+            return;
+        }
+
+        List<Recipe> recipes = recipeRepository.findAll();
+
+        int count = 0;
+
+        for (Recipe r : recipes) {
+            String title = r.getTitle();
+
+            if (title == null) continue;
+
+            // 국 / 탕
+            if (title.contains("국") || title.contains("탕")) {
+                saveTag(r.getRecipeId(), "SOUP");
+                count++;
+            }
+
+            // 찌개
+            if (title.contains("찌개")) {
+                saveTag(r.getRecipeId(), "STEW");
+                count++;
+            }
+
+            // 볶음
+            if (title.contains("볶음")) {
+                saveTag(r.getRecipeId(), "STIR_FRY");
+                count++;
+            }
+
+            // 조림
+            if (title.contains("조림")) {
+                saveTag(r.getRecipeId(), "BRAISED");
+                count++;
+            }
+
+            // 무침
+            if (title.contains("무침")) {
+                saveTag(r.getRecipeId(), "SEASONED");
+                count++;
+            }
+
+            // 전
+            if (title.contains("전")) {
+                saveTag(r.getRecipeId(), "PANCAKE");
+                count++;
+            }
+        }
+
+        log.info("[DevDataInitializer] recipe_tag {}건 생성 완료", count);
     }
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record IngredientMasterSeedRow(

@@ -94,4 +94,30 @@ public class RecommendationScoreService {
 
         return totalScore;
     }
+    public double calculateConditionScoreByCodes(
+            List<String> conditionCodes,
+            List<RecipeConditionMap> recipeConditions
+    ) {
+        if (conditionCodes == null || conditionCodes.isEmpty()
+                || recipeConditions == null || recipeConditions.isEmpty()) {
+            return 0.0;
+        }
+
+        boolean hasCaution = recipeConditions.stream()
+                .anyMatch(rc ->
+                        conditionCodes.contains(rc.getConditionCode().getConditionCode())
+                                && "CAUTION".equalsIgnoreCase(rc.getFitType())
+                );
+
+        if (hasCaution) {
+            return CAUTION_PENALTY;
+        }
+
+        long matchedCount = recipeConditions.stream()
+                .filter(rc -> conditionCodes.contains(rc.getConditionCode().getConditionCode()))
+                .filter(rc -> !"CAUTION".equalsIgnoreCase(rc.getFitType()))
+                .count();
+
+        return Math.min(matchedCount * CONDITION_MATCH_SCORE, MAX_CONDITION_SCORE);
+    }
 }
