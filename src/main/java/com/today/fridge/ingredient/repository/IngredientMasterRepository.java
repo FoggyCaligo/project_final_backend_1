@@ -12,6 +12,7 @@ import java.util.Optional;
 public interface IngredientMasterRepository extends JpaRepository<IngredientMaster, Long> {
 
     Optional<IngredientMaster> findByNormalizedNameIgnoreCase(String normalizedName);
+    Optional<IngredientMaster> findByCanonicalNameIgnoreCase(String canonicalName);
 
     Optional<IngredientMaster> findByCanonicalNameIgnoreCase(String canonicalName);
 
