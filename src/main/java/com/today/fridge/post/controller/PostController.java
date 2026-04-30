@@ -4,6 +4,8 @@ import com.today.fridge.post.dto.PostCreateRequest;
 import com.today.fridge.post.dto.PostDetailResponse;
 import com.today.fridge.post.service.PostService;
 import com.today.fridge.post.dto.PostSummaryResponse;
+import com.today.fridge.post.dto.PostUpdateRequest;
+
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -56,5 +58,20 @@ public class PostController {
     public ResponseEntity<Void> deletePost(@PathVariable Long postId) {
         postService.deletePost(postId);
         return ResponseEntity.noContent().build();
+    }
+    
+    // ==========================================
+    // 💡 게시글 수정 API (PATCH)
+    // ==========================================
+    @PatchMapping("/{postId}")
+    public ResponseEntity<Map<String, Object>> updatePost(
+            @PathVariable Long postId, 
+            @RequestBody PostUpdateRequest request) {
+        
+        postService.updatePost(postId, request);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        return ResponseEntity.ok(response);
     }
 }

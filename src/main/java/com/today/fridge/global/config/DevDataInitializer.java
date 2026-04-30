@@ -23,6 +23,7 @@ import com.today.fridge.user.entity.User;
 import com.today.fridge.user.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.ClassPathResource;
@@ -55,6 +56,7 @@ public class DevDataInitializer implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
     private final RecipeRepository recipeRepository;
     private final RecipeTagRepository recipeTagRepository;
+    private final boolean seedGroceryIngredientMaster;
 
     public DevDataInitializer(UserRepository userRepository,
                               IngredientCategoryRepository ingredientCategoryRepository,
@@ -65,7 +67,8 @@ public class DevDataInitializer implements CommandLineRunner {
                               AllergenIngredientMapRepository allergenIngredientMapRepository,
                               PasswordEncoder passwordEncoder,
                               RecipeRepository recipeRepository,
-                              RecipeTagRepository recipeTagRepository) {
+                              RecipeTagRepository recipeTagRepository,
+                              @Value("${app.dev.seed-grocery-ingredient-master:false}") boolean seedGroceryIngredientMaster) {
         this.userRepository = userRepository;
         this.ingredientCategoryRepository = ingredientCategoryRepository;
         this.ingredientMasterRepository = ingredientMasterRepository;
@@ -76,6 +79,7 @@ public class DevDataInitializer implements CommandLineRunner {
         this.passwordEncoder = passwordEncoder;
         this.recipeRepository = recipeRepository;
         this.recipeTagRepository = recipeTagRepository;
+        this.seedGroceryIngredientMaster = seedGroceryIngredientMaster;
     }
 
     @Override
@@ -86,6 +90,11 @@ public class DevDataInitializer implements CommandLineRunner {
         seedAllergenGroups();
         seedIngredientMasterFromCanonicalGroceryFile();
         seedRecipeTags();
+        if (seedGroceryIngredientMaster) {
+            seedIngredientMasterFromCanonicalGroceryFile();
+        } else {
+            log.info("[DevDataInitializer] ingredient_master grocery JSON 시드 생략 (app.dev.seed-grocery-ingredient-master=false)");
+        }
     }
 
     // testuser 계정 비밀번호: Test@1234
@@ -134,7 +143,8 @@ public class DevDataInitializer implements CommandLineRunner {
      *   <li>{@code category_id}: {@code ingredient_category.category_code}로 조회한 FK</li>
      *   <li>{@code alias_text}: {@code ko:한글별칭…|src:mapping_grocery_dataset|key:원본키|type:원본분류}</li>
      * </ul>
-     * 동일 {@code normalized_name}이 이미 있으면 건너뜁니다.
+     * 동일 {@code normalized_name} 또는 {@code canonical_name}(시드에서는 동일 문자열)이 이미 있으면 건너뜁니다.
+     * DB에만 canonical이 겹치는 행이 있어도 유니크 제약으로 기동이 실패하지 않도록 합니다.
      */
     private void seedIngredientMasterFromCanonicalGroceryFile() throws Exception {
         ClassPathResource resource = new ClassPathResource("data/grocery_ingredient_master_seed.json");
@@ -150,7 +160,8 @@ public class DevDataInitializer implements CommandLineRunner {
                 if (normalized.length() > 100) {
                     normalized = normalized.substring(0, 100);
                 }
-                if (ingredientMasterRepository.findByNormalizedNameIgnoreCase(normalized).isPresent()) {
+                if (ingredientMasterRepository.findByNormalizedNameIgnoreCase(normalized).isPresent()
+                        || ingredientMasterRepository.findByCanonicalNameIgnoreCase(normalized).isPresent()) {
                     continue;
                 }
                 Integer categoryId = ingredientCategoryRepository.findByCategoryCode(row.categoryCode())

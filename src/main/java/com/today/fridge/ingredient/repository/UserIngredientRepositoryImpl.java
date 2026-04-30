@@ -38,6 +38,7 @@ public class UserIngredientRepositoryImpl implements UserIngredientRepositoryCus
             FreshnessStatus freshnessStatus,
             String storageType,
             String keyword,
+            Long categoryId,
             String sort,
             Pageable pageable) {
 
@@ -47,7 +48,8 @@ public class UserIngredientRepositoryImpl implements UserIngredientRepositoryCus
 
         root.fetch("ingredientMaster", JoinType.LEFT);
 
-        List<Predicate> predicates = buildPredicates(cb, root, userId, freshnessStatus, storageType, keyword);
+        List<Predicate> predicates =
+                buildPredicates(cb, root, userId, today, soonEnd, freshnessStatus, storageType, keyword, categoryId);
         cq.where(predicates.toArray(Predicate[]::new));
         // DISTINCT + ORDER BY(CASE…) 는 H2에서 거부된다. 본 쿼리는 ManyToOne 페치만 있어 행 중복이 없다.
         applyOrder(cb, cq, root, today, soonEnd, sort);
@@ -57,7 +59,7 @@ public class UserIngredientRepositoryImpl implements UserIngredientRepositoryCus
         query.setMaxResults(pageable.getPageSize());
         List<UserIngredient> content = query.getResultList();
 
-        long total = countMatching(cb, userId, freshnessStatus, storageType, keyword);
+        long total = countMatching(cb, userId, today, soonEnd, freshnessStatus, storageType, keyword, categoryId);
         return new PageImpl<>(content, pageable, total);
     }
 
@@ -65,13 +67,16 @@ public class UserIngredientRepositoryImpl implements UserIngredientRepositoryCus
             CriteriaBuilder cb,
             Root<UserIngredient> root,
             Long userId,
+            LocalDate today,
+            LocalDate soonEnd,
             FreshnessStatus freshnessStatus,
             String storageType,
-            String keyword) {
+            String keyword,
+            Long categoryId) {
         List<Predicate> predicates = new ArrayList<>();
         predicates.add(cb.equal(root.get("user").get("userId"), userId));
         if (freshnessStatus != null) {
-            predicates.add(cb.equal(root.get("freshnessStatus"), freshnessStatus));
+            predicates.addAll(freshnessPredicates(cb, root, today, soonEnd, freshnessStatus));
         }
         if (StringUtils.hasText(storageType)) {
             predicates.add(cb.equal(root.get("storageType"), storageType));
@@ -82,7 +87,30 @@ public class UserIngredientRepositoryImpl implements UserIngredientRepositoryCus
                     cb.like(cb.lower(root.get("rawName")), pattern),
                     cb.like(cb.lower(root.get("normalizedNameSnapshot")), pattern)));
         }
+        if (categoryId != null) {
+            predicates.add(cb.equal(root.get("categoryId"), categoryId));
+        }
         return predicates;
+    }
+
+    /**
+     * {@link com.today.fridge.ingredient.domain.FreshnessCalculator} 와 동일한 조건을 Criteria로 표현한다.
+     */
+    private static List<Predicate> freshnessPredicates(
+            CriteriaBuilder cb,
+            Root<UserIngredient> root,
+            LocalDate today,
+            LocalDate soonEnd,
+            FreshnessStatus freshnessStatus) {
+        return switch (freshnessStatus) {
+            case UNKNOWN -> List.of(cb.isNull(root.get("expiresAt")));
+            case EXPIRED -> List.of(cb.lessThan(root.get("expiresAt"), cb.literal(today)));
+            case SOON -> List.of(
+                    cb.isNotNull(root.get("expiresAt")),
+                    cb.greaterThanOrEqualTo(root.get("expiresAt"), cb.literal(today)),
+                    cb.lessThanOrEqualTo(root.get("expiresAt"), cb.literal(soonEnd)));
+            case FRESH -> List.of(cb.greaterThan(root.get("expiresAt"), cb.literal(soonEnd)));
+        };
     }
 
     private void applyOrder(
@@ -135,12 +163,16 @@ public class UserIngredientRepositoryImpl implements UserIngredientRepositoryCus
     private long countMatching(
             CriteriaBuilder cb,
             Long userId,
+            LocalDate today,
+            LocalDate soonEnd,
             FreshnessStatus freshnessStatus,
             String storageType,
-            String keyword) {
+            String keyword,
+            Long categoryId) {
         CriteriaQuery<Long> cq = cb.createQuery(Long.class);
         Root<UserIngredient> root = cq.from(UserIngredient.class);
-        List<Predicate> predicates = buildPredicates(cb, root, userId, freshnessStatus, storageType, keyword);
+        List<Predicate> predicates =
+                buildPredicates(cb, root, userId, today, soonEnd, freshnessStatus, storageType, keyword, categoryId);
         cq.select(cb.count(root));
         cq.where(predicates.toArray(Predicate[]::new));
         return em.createQuery(cq).getSingleResult();

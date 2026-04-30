@@ -26,16 +26,21 @@ public class RecipeController {
 	private final RecipeService recipeService;
 
 	@GetMapping
-  public ResponseEntity<ApiResponse<PageResult<RecipeListResponse>>> getRecipes(
-	        @PageableDefault(size = 12)
-	        Pageable pageable
-	) {
+	public ResponseEntity<ApiResponse<PageResult<RecipeListResponse>>> getRecipes(
+			@PageableDefault(size = 12) Pageable pageable) {
 
-	    return ResponseEntity.ok(
-	            ApiResponse.success(
-	                    recipeService.getRecipes(pageable),
-	                    "전체 레시피 조회 성공"
-	            )
-	    );
+		return ResponseEntity.ok(
+				ApiResponse.success(
+						recipeService.getRecipes(pageable),
+						"전체 레시피 조회 성공"));
 	}
+
+	@GetMapping("/{recipeId}")
+	public ResponseEntity<ApiResponse<RecipeResponse>> getRecipe(@PathVariable("recipeId") Long recipeId) {
+		return ResponseEntity.ok(
+				ApiResponse.success(
+						recipeService.getRecipe(recipeId),
+						"상세 레시피 조회 성공"));
+	}
+
 }
