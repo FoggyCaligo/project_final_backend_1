@@ -2,6 +2,7 @@ package com.today.fridge.recommendation.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -23,11 +24,14 @@ import com.today.fridge.recommendation.repository.UserConditionRepository;
 import com.today.fridge.substitution.service.SubstituteIngredientService;
 import com.today.fridge.llm.dto.request.RecommendationExplanationContext;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class RecommendationService {
+
 
     private final UserConditionRepository userConditionRepository;
     private final RecipeConditionMapRepository recipeConditionMapRepository;
@@ -41,6 +45,7 @@ public class RecommendationService {
     private final RecipeEmbeddingSearchService recipeEmbeddingSearchService;
     private final HybridRankingService hybridRankingService;
     private final RecommendationExplanationService recommendationExplanationService;
+
     
     private RecipeRecommendationResponse createRecipeResponse(
             Recipe recipe,
@@ -62,7 +67,6 @@ public class RecommendationService {
 
         int matchedCount = matchedIngredients.size();
         int requiredCount = requiredIngredients.size();
-
         double ingredientScore =
                 recommendationScoreService.calculateIngredientScore(matchedCount, requiredCount);
 
@@ -77,7 +81,6 @@ public class RecommendationService {
                         totalScore,
                         semanticScore
                 );
-        
         String reason = recommendationReasonService.buildReason(
                 Math.round(matchRate * 10) / 10.0,
                 conditionTags,
@@ -249,13 +252,28 @@ public class RecommendationService {
                             recipeConditionMapRepository.findByRecipe_RecipeId(
                                     recipe.getRecipeId()
                             );
-
                     double conditionScore =
                             recommendationScoreService.calculateConditionScore(
                                     userConditions,
                                     recipeConditions
                             );
+                    double requestedBoost = 0.0;
 
+                    if (useHybridRanking && query.getIncludeIngredients() != null && !query.getIncludeIngredients().isEmpty()) {
+
+                    	Set<String> normalizedRequired = requiredIngredients.stream()
+                    	        .map(String::toLowerCase)
+                    	        .collect(Collectors.toSet());
+
+                    	boolean containsRequested = query.getIncludeIngredients().stream()
+                    	        .map(String::toLowerCase)
+                    	        .anyMatch(req ->
+                    	                normalizedRequired.stream()
+                    	                        .anyMatch(ing -> ing.contains(req))
+                    	        );
+
+                        requestedBoost = containsRequested ? 25.0 : -35.0;
+                    }
                     List<String> conditionTags = userConditions.stream()
                             .map(uc -> uc.getConditionCode().getConditionName())
                             .distinct()
@@ -272,7 +290,7 @@ public class RecommendationService {
                     return createRecipeResponse(
                             recipe,
                             requiredIngredients,
-                            conditionScore,
+                            conditionScore + requestedBoost,
                             conditionTags,
                             ownedIngredients,
                             warnings,
