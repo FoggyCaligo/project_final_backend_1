@@ -1,5 +1,16 @@
 package com.today.fridge.recipe.service;
 
+/*
+ * RecipeServiceTest는 RecipeService의 getRecipe(비회원) 메서드를 통합 테스트하는 클래스입니다.
+ *
+ * @SpringBootTest를 사용하여 실제 데이터베이스(H2) 환경에서 테스트합니다.
+ * @Transactional로 각 테스트 후 데이터가 롤백됩니다.
+ *
+ * 주요 테스트 시나리오:
+ * 1. 정상적인 recipeId로 조회 시 레시피 정보, 영양정보, 단계, 재료가 올바르게 반환되는지 확인
+ * 2. 존재하지 않는 recipeId로 조회 시 ExceptionTemplate 예외가 발생하는지 확인
+ */
+
 import com.today.fridge.global.exception.ExceptionTemplate;
 import com.today.fridge.recipe.dto.response.RecipeResponse;
 import com.today.fridge.recipe.entity.Recipe;
@@ -42,10 +53,13 @@ class RecipeServiceTest {
     @Autowired
     private RecipeService recipeService;
 
+    // ========================================================================
+    // 비회원 전용 레시피 조회 - 정상 시나리오
+    // ========================================================================
     @Test
     @DisplayName("Service Integration Test for getRecipe")
     void testGetRecipe() {
-        // Save Recipe
+        // 1. 레시피 데이터 저장
         Recipe recipe = Recipe.builder()
                 .sourceSite("test.com")
                 .sourceRecipeKey("test")
@@ -62,7 +76,7 @@ class RecipeServiceTest {
         Recipe savedRecipe = recipeRepository.save(recipe);
         Long recipeId = savedRecipe.getRecipeId();
 
-        // Save Nutrition
+        // 2. 레시피 영양정보 저장
         RecipeNutrition nutrition = RecipeNutrition.builder()
                 .recipe(savedRecipe)
                 .calories(BigDecimal.valueOf(500))
@@ -72,7 +86,7 @@ class RecipeServiceTest {
                 .build();
         recipeNutritionRepository.save(nutrition);
 
-        // Save Steps
+        // 3. 레시피 단계 저장
         RecipeStep step1 = RecipeStep.builder()
                 .recipe(savedRecipe)
                 .stepNo(1)
@@ -85,7 +99,7 @@ class RecipeServiceTest {
                 .build();
         recipeStepRepository.saveAll(List.of(step1, step2));
 
-        // Save Ingredients
+        // 4. 레시피 재료 저장
         RecipeIngredient ingredient1 = RecipeIngredient.builder()
                 .recipe(savedRecipe)
                 .rawText("Onion")
@@ -93,10 +107,10 @@ class RecipeServiceTest {
                 .build();
         recipeIngredientRepository.save(ingredient1);
 
-        // Test the Service method
+        // 5. 서비스 메서드 호출
         RecipeResponse response = recipeService.getRecipe(recipeId);
 
-        // Verify Service Response
+        // 6. 결과 검증
         assertThat(response.getRecipeId()).isEqualTo(recipeId);
         assertThat(response.getTitle()).isEqualTo("Test Recipe");
         assertThat(response.getCalories()).isEqualByComparingTo(BigDecimal.valueOf(500));
@@ -108,9 +122,13 @@ class RecipeServiceTest {
         assertThat(response.getRecipeIngredients().get(0).getRawText()).isEqualTo("Onion");
     }
 
+    // ========================================================================
+    // 비회원 전용 레시피 조회 - 존재하지 않는 레시피 예외 시나리오
+    // ========================================================================
     @Test
     @DisplayName("Service throws exception when Recipe is not found")
     void testGetRecipe_NotFound() {
+        // 존재하지 않는 recipeId로 조회 시 ExceptionTemplate 예외가 발생해야 함
         assertThrows(ExceptionTemplate.class, () -> {
             recipeService.getRecipe(9999L);
         });

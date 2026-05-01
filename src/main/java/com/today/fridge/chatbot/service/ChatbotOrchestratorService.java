@@ -39,27 +39,33 @@ public class ChatbotOrchestratorService {
         List<String> conditionCodes =
                 parsed.getConditionTags() == null ? List.of() : parsed.getConditionTags();
         
-        List<String> keywords =
-                parsed.getKeywords() == null || parsed.getKeywords().isEmpty()
-                        ? List.of(request.getText())
-                        : parsed.getKeywords();
+        List<String> keywords = new java.util.ArrayList<>();
+
+        keywords.add(request.getText());
+
+        if (parsed.getKeywords() != null) {
+            keywords.addAll(parsed.getKeywords());
+        }
         
         if (isMember && includeIngredients.isEmpty()) {
-            // TODO: 회원 냉장고 재료 조회 로직으로 교체
-            includeIngredients = List.of("두부", "계란");
+            includeIngredients = List.of();
         }
         
-        if (isMember && conditionCodes.isEmpty()) {
-        	// TODO: 회원 조건 조회 로직은 user_condition seed 이후 검증
-            conditionCodes =
-                    userConditionRepository
-                            .findByUser_UserIdAndIsActiveTrue(userId)
-                            .stream()
-                            .map(uc -> uc.getConditionCode().getConditionCode())
-                            .distinct()
-                            .toList();
-        }
+        List<String> profileConditionCodes = isMember
+                ? userConditionRepository
+                        .findByUser_UserIdAndIsActiveTrue(userId)
+                        .stream()
+                        .map(uc -> uc.getConditionCode().getConditionCode())
+                        .toList()
+                : List.of();
 
+        conditionCodes = java.util.stream.Stream
+                .concat(conditionCodes.stream(), profileConditionCodes.stream())
+                .distinct()
+                .toList();
+        System.out.println("[CHAT_PARSED] conditions=" + conditionCodes);
+        System.out.println("[CHAT_PARSED] includeIngredients=" + includeIngredients);
+        System.out.println("[CHAT_PARSED] keywords=" + keywords);
         RecommendationQuery query =
                 RecommendationQuery.builder()
                         .userId(userId)
