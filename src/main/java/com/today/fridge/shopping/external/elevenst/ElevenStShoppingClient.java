@@ -28,6 +28,8 @@ import java.util.List;
 @Slf4j
 @Primary
 @Component
+// Todo: 11번가가 쿠팡 클라이언트 상속 받고 있음 > 이후 shoppingClient 공통 인터페이스로 수정하기  
+// 11번가의 XML 응답을'EUC-KR'로 읽고 다시 리스트로 변환하는 역할
 public class ElevenStShoppingClient extends CoupangShoppingClient2 {
 
     private static final String BASE_URL =
@@ -50,10 +52,11 @@ public class ElevenStShoppingClient extends CoupangShoppingClient2 {
             return Collections.emptyList();
         }
         try {
+            // encodedKeyword는 URLEncoder.encode를 사용해서 검색어에 띄어쓰기나 글자들을 컴퓨터용 언어로 바꿔주는 번역된 키워드 
             String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
             String url = BASE_URL + "?key=" + apiKey
                     + "&apiCode=ProductSearch&keyword=" + encodedKeyword + "&pageSize=10";
-
+            //  데이터 가져오기 (byte배열) : EUC-KR 로 직접 해석하기 위해 가공되지 않은 '날것'의 데이터를 가져온다 
             byte[] body = restClient.get()
                     .uri(url)
                     .retrieve()
@@ -69,6 +72,9 @@ public class ElevenStShoppingClient extends CoupangShoppingClient2 {
         }
     }
 
+
+    //  11번가 api는 xml을 사용, 따라서 euc-kr 을 사용한다 : Charset.forName('EUC-KR')
+    //  DocumentBuilderFactory , getElementByTagName("Product") : XML에서 parse (XML은 큰 박스 범위에서 작은 상자들 중에 Product 태그를 찾아서 그 안에 있는 정보들을 ShoppingItemDto로 변환한다)
     private List<ShoppingItemDto> parseXml(byte[] body) throws Exception {
         Document doc = DocumentBuilderFactory.newInstance()
                 .newDocumentBuilder()
@@ -94,6 +100,8 @@ public class ElevenStShoppingClient extends CoupangShoppingClient2 {
         return result;
     }
 
+
+    //  가격에 콤마를 찍어서 보내줄때 콤마가 포함된 가격표시를 숫자로 바꿈 
     private ShoppingItemDto toDto(Element el) {
         String productCode = getTagText(el, "ProductCode");
         String productName = getTagText(el, "ProductName");

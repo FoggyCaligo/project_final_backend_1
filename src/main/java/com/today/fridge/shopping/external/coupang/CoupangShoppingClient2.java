@@ -20,8 +20,10 @@ import java.util.Collections;
 import java.util.HexFormat;
 import java.util.List;
 
+// @Sl4fj 은 무엇인가요 : Log를 남기는 역할
 @Slf4j
 @Component
+// 쿠팡 API 라는 외부 서비스에 접속해서 데이터를 가져오는 심부름꾼
 public class CoupangShoppingClient2 {
 
     private static final String BASE_URL = "https://api-gateway.coupang.com";
@@ -44,14 +46,18 @@ public class CoupangShoppingClient2 {
         if (accessKey.isBlank() || secretKey.isBlank()) {
             log.warn("[CoupangShoppingClient2] API 키 미설정, 건너뜀");
             return Collections.emptyList();
+            // Collections.emptyList는 빈 객체를 재사용한다 
         }
+
         try {
+            // ZonedDateTime 은 UTC기준으로 시간+날짜+시간대(TimeZone) 정보를 사용 , java.time 패키지 중 하나 
             String datetime = ZonedDateTime.now(ZoneOffset.UTC).format(DATETIME_FMT);
             String queryString = "keyword=" + keyword + "&limit=10&subId=";
             String signature = buildHmac(datetime, queryString);
             String authorization = String.format(
                     "CEA algorithm=HmacSHA256, access-key=%s, signed-date=%s, signature=%s",
                     accessKey, datetime, signature);
+//  authorization 은 assetKey를 확인하고 현재 시각(signed-date) 에 signature (인증)을 보낸다  , 매 요청마다 시간이 포함된 '서명'을 만들어서 사용. Replay Attack 방지
 
             CoupangSearchResponse response = restClient.get()
                     .uri(BASE_URL + SEARCH_PATH + "?" + queryString)
@@ -74,6 +80,8 @@ public class CoupangShoppingClient2 {
             return Collections.emptyList();
         }
     }
+//  HMAC은 비밀 키를 사용해 만든 암호화된 메시지
+ //HexFormat은 암호화 결과물은 사람이 읽을 수 없는 복잡한 컴퓨터 숫자인데 이걸 우리가 아는 16진수 문자열로 바꿔준다
 
     private String buildHmac(String datetime, String queryString) throws Exception {
         String message = datetime + "\nGET\n" + SEARCH_PATH + "\n" + queryString;
@@ -88,7 +96,8 @@ public class CoupangShoppingClient2 {
                 ? BigDecimal.valueOf(p.discountRate()) : null;
         ShippingType shippingType = Boolean.TRUE.equals(p.isRocket())
                 ? ShippingType.EXPRESS : ShippingType.STANDARD;
-        return ShoppingItemDto.builder()
+            // 빌더패턴의 장단점 : 가독성이 좋아지고 유연성(객체에 따라 값 사용 마음대로), 불변성(객체를 만든 후 내용을 바꿀 수 없게 설계) , 단점은 코드양이 많아지고 성능이 진다는 부분   
+                return ShoppingItemDto.builder()
                 .mallName("쿠팡")
                 .mallProductId(p.itemId() != null ? String.valueOf(p.itemId()) : null)
                 .productName(p.productName())

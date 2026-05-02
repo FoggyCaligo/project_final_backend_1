@@ -23,6 +23,12 @@ spring:
       ddl-auto: update
   flyway:
     enabled: false
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 3000ms
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
@@ -48,8 +54,8 @@ app:
   security:
     jwt:
       secret: "VG9kYXlGcmlkZ2VQcm9qZWN0QmFja2VuZDFTdGFydGVyU2VjcmV0S2V5Rm9ySldU"
-      access-token-validity-seconds: 3600
-      refresh-token-validity-seconds: 1209600
+      access-token-validity-seconds: 900
+      refresh-token-validity-seconds: 604800
     cookie:
       secure: false
       same-site: Lax
