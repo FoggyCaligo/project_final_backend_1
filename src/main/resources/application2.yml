@@ -1,7 +1,7 @@
 naver:
   shopping:
-    client-id: ${NAVER_CLIENT_ID:}
-    client-secret: ${NAVER_CLIENT_SECRET:}
+    client-id: ${NAVER_CLIENT_ID:N9SUyMRGr8Dt6N1zgCVl}
+    client-secret: ${NAVER_CLIENT_SECRET:1gqwYIfDIH}
 
 coupang:
   partners:

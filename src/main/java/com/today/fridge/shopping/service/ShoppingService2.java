@@ -6,7 +6,7 @@ import com.today.fridge.shopping.dto.IngredientPriceResponse;
 import com.today.fridge.shopping.dto.ShoppingItemDto;
 import com.today.fridge.shopping.entity.ShoppingItem;
 import com.today.fridge.shopping.exception.ErrorCode2;
-import com.today.fridge.shopping.external.coupang.CoupangShoppingClient;
+import com.today.fridge.shopping.external.coupang.CoupangShoppingClient2;
 import com.today.fridge.shopping.external.naver.NaverShoppingClient;
 import com.today.fridge.shopping.repository.ShoppingItemRepository;
 import com.today.fridge.shopping.type.StockStatus;
@@ -17,10 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
@@ -28,19 +26,18 @@ import java.util.stream.Stream;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ShoppingService {
-// DB에 1시간동안 저장 기
+public class ShoppingService2 {
+    // DB에 1시간동안 저장
     private static final long CACHE_HOURS = 1;
 
     private final ShoppingItemRepository shoppingItemRepository;
     private final IngredientMasterRepository ingredientMasterRepository;
     private final NaverShoppingClient naverClient;
-    private final CoupangShoppingClient coupangClient;
+    private final CoupangShoppingClient2 coupangClient;  // ElevenStShoppingClient(@Primary)가 주입됨
 
     @PersistenceContext
     private EntityManager em;
 
-//     getIngredientPrices : 특정 식재료 하나에 최저가 검색 결과를 가져다준다
     @Transactional
     public IngredientPriceResponse getIngredientPrices(Long ingredientMasterId) {
         IngredientMaster master = ingredientMasterRepository.findById(ingredientMasterId)
@@ -49,7 +46,6 @@ public class ShoppingService {
         return fetchPrices(master);
     }
 
-//     getFridgePrices: 내 냉장고에 있는 모든 식재료들을 쭈욱 훑어보고 stream 기능을 통 각각의 최저가를 한꺼번에 가져다 주는 기능
     @Transactional
     public List<IngredientPriceResponse> getFridgePrices(Long userId) {
         List<IngredientMaster> masters = em.createQuery(
@@ -68,13 +64,10 @@ public class ShoppingService {
                 .toList();
     }
 
-
-//     fetchPrices : 1. 기억된 가격이 있는지 확인 -> 2. 없으면 쇼핑몰 동시 검색 -> 3. 저렴한 순서대로 정렬
-// 4. 1시간 동안 기억하기 (저장) -> 5. 결과 반환 
+    // fetchPrices: 1. DB 캐시 확인 → 2. 없으면 네이버+11번가 병렬 검색 → 3. 가격순 정렬 → 4. 1시간 캐시 저장
     private IngredientPriceResponse fetchPrices(IngredientMaster master) {
         Instant now = Instant.now();
 
-        // 1. 기억된 가격이 있는지 확인(cached 변수로 DB에서 검색) -> 있다면 buildResponse 반환     
         List<ShoppingItem> cached = shoppingItemRepository
                 .findByIngredientMaster_IngredientMasterIdAndExpiresAtAfterOrderByPriceAsc(
                         master.getIngredientMasterId(), now);
@@ -85,17 +78,16 @@ public class ShoppingService {
 
         String keyword = master.getCanonicalName();
 
-        //   completableFuture : 네이버와 쿠팡에 동시에 요청 보낸 부분을 비동기 검색하여 속도를 높인다 그리고 두 쇼핑몰에서 대답이 오면 가격이 저렴한 순서대로 Integer.compare로 정렬해서 보여준다.
-
+        // 네이버와 11번가에 동시에 비동기 요청하여 속도를 높임
         CompletableFuture<List<ShoppingItemDto>> naverFuture =
                 CompletableFuture.supplyAsync(() -> naverClient.search(keyword));
-        CompletableFuture<List<ShoppingItemDto>> coupangFuture =
+        CompletableFuture<List<ShoppingItemDto>> elevenStFuture =
                 CompletableFuture.supplyAsync(() -> coupangClient.search(keyword));
 
         List<ShoppingItemDto> naverItems = naverFuture.join();
-        List<ShoppingItemDto> coupangItems = coupangFuture.join();
+        List<ShoppingItemDto> elevenStItems = elevenStFuture.join();
 
-        List<ShoppingItemDto> allItems = Stream.concat(naverItems.stream(), coupangItems.stream())
+        List<ShoppingItemDto> allItems = Stream.concat(naverItems.stream(), elevenStItems.stream())
                 .sorted((a, b) -> Integer.compare(a.getPrice(), b.getPrice()))
                 .toList();
 
@@ -178,15 +170,14 @@ public class ShoppingService {
                 .expiresAt(expiresAt)
                 .build();
     }
-// cleanupExpiredAsync은 사용자가 가격을 물어보는것과 별개로 진행된다. 백그라운드에서 실행이 된다. 유효시간(1시간)이 옛날 가격 정보들을 데이터베이스에서 스스로 청소한다 
 
-
+    // 백그라운드에서 만료된 캐시 자동 정리
     private void cleanupExpiredAsync(Instant now) {
         CompletableFuture.runAsync(() -> {
             try {
                 shoppingItemRepository.deleteExpired(now);
             } catch (Exception e) {
-                log.warn("[ShoppingService] 만료 캐시 삭제 실패: {}", e.getMessage());
+                log.warn("[ShoppingService2] 만료 캐시 삭제 실패: {}", e.getMessage());
             }
         });
     }
