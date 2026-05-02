@@ -1,0 +1,9 @@
+naver:
+  shopping:
+    client-id: ${NAVER_CLIENT_ID:}
+    client-secret: ${NAVER_CLIENT_SECRET:}
+
+coupang:
+  partners:
+    access-key: ${COUPANG_ACCESS_KEY:}
+    secret-key: ${COUPANG_SECRET_KEY:}

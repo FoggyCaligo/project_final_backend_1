@@ -1,0 +1,11 @@
+-- ===================================================================================
+-- [Shopping] postgre_init2.sql
+-- shopping_item_mcp 테이블 및 관련 enum은 postgre_init.sql 에 이미 정의되어 있음.
+-- 추가 변경 사항 없음 (테이블 이미 존재).
+-- ===================================================================================
+
+-- 필요 시 아래 인덱스가 누락된 경우에만 실행:
+-- CREATE INDEX IF NOT EXISTS idx_sim_ingredient_price
+--     ON today_fridge.shopping_item_mcp(ingredient_master_id, price ASC);
+-- CREATE INDEX IF NOT EXISTS idx_sim_expires
+--     ON today_fridge.shopping_item_mcp(expires_at);
