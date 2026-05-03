@@ -1,3 +1,0 @@
-elevenst:
-  openapi:
-    key: ${ELEVENST_API_KEY:bbc4b7aeadd92902ac44aa5e932d39af}

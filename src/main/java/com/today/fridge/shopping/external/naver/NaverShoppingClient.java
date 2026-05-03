@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.Comparator;
 
 @Slf4j
 @Component
@@ -40,7 +41,7 @@ public class NaverShoppingClient {
         }
         try {
             NaverShoppingResponse response = restClient.get()
-                    .uri(BASE_URL + "/v1/search/shop.json?query={q}&display=10&sort=asc", keyword)
+                    .uri(BASE_URL + "/v1/search/shop.json?query={q}&display=10&sort=sim", keyword)
                     .header("X-Naver-Client-Id", clientId)
                     .header("X-Naver-Client-Secret", clientSecret)
                     .retrieve()
@@ -52,7 +53,10 @@ public class NaverShoppingClient {
             return response.items().stream()
                     .filter(item -> item.lprice() != null && !item.lprice().isBlank())
                     .map(this::toDto)
-                    .toList();
+                    .filter(dto -> dto.getPrice() >= 500)
+                    .min(Comparator.comparingInt(ShoppingItemDto::getPrice))
+                    .map(List::of)
+                    .orElse(Collections.emptyList());
         } catch (RestClientException e) {
             log.warn("[NaverShoppingClient] 검색 실패 keyword={}: {}", keyword, e.getMessage());
             return Collections.emptyList();
@@ -84,7 +88,8 @@ public class NaverShoppingClient {
     }
 
     private int parsePrice(String value) {
-        if (value == null || value.isBlank()) return 0;
+        if (value == null || value.isBlank())
+            return 0;
         try {
             return Integer.parseInt(value.trim());
         } catch (NumberFormatException e) {

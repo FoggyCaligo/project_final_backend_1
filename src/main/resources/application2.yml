@@ -7,3 +7,7 @@ coupang:
   partners:
     access-key: ${COUPANG_ACCESS_KEY:}
     secret-key: ${COUPANG_SECRET_KEY:}
+
+elevenst:
+  openapi:
+    key: ${ELEVENST_API_KEY:bbc4b7aeadd92902ac44aa5e932d39af}
