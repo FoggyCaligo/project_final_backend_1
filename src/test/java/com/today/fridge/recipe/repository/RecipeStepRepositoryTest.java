@@ -1,11 +1,19 @@
 package com.today.fridge.recipe.repository;
 
+/*
+ * RecipeStepRepositoryTest는 RecipeStepRepository의 쿼리 메서드를 테스트하는 클래스입니다.
+ *
+ * 주요 테스트:
+ * - findByRecipe_RecipeId: 레시피 ID로 해당 레시피의 모든 단계를 정상적으로 조회하는지 확인
+ */
+
 import com.today.fridge.recipe.entity.Recipe;
 import com.today.fridge.recipe.entity.RecipeStep;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -14,6 +22,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
+@ActiveProfiles("test")
 @Transactional
 class RecipeStepRepositoryTest {
 

@@ -4,6 +4,8 @@ import com.today.fridge.post.dto.PostCreateRequest;
 import com.today.fridge.post.dto.PostDetailResponse;
 import com.today.fridge.post.service.PostService;
 import com.today.fridge.post.dto.PostSummaryResponse;
+import com.today.fridge.post.dto.PostUpdateRequest;
+
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -28,9 +30,11 @@ public class PostController {
         response.put("success", true);
         return ResponseEntity.ok(response);
     }
+    
     // 2. 새로 추가된 특정 유저의 최근 게시글 조회 API
+    // 💡 수정: @PathVariable("userId") 명시
     @GetMapping("/users/{userId}")
-    public ResponseEntity<List<PostSummaryResponse>> getUserPosts(@PathVariable Long userId) {
+    public ResponseEntity<List<PostSummaryResponse>> getUserPosts(@PathVariable("userId") Long userId) {
         
         List<PostSummaryResponse> response = postService.getUserPosts(userId);
         
@@ -40,21 +44,40 @@ public class PostController {
     // ==========================================
     // 새로 추가: 커뮤니티 메인 전체 게시글 조회 API
     // ==========================================
+    // 💡 수정: @RequestParam(name = "...", defaultValue = "...") 명시
     @GetMapping
     public ResponseEntity<Page<PostSummaryResponse>> getAllPosts(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size) {
         return ResponseEntity.ok(postService.getAllPosts(page, size));
     }
     
+    // 💡 수정: @PathVariable("postId") 명시
     @GetMapping("/{postId}")
-    public ResponseEntity<PostDetailResponse> getPostDetail(@PathVariable Long postId) {
+    public ResponseEntity<PostDetailResponse> getPostDetail(@PathVariable("postId") Long postId) {
         return ResponseEntity.ok(postService.getPostDetail(postId));
     }
     
+    // 💡 수정: @PathVariable("postId") 명시
     @DeleteMapping("/{postId}")
-    public ResponseEntity<Void> deletePost(@PathVariable Long postId) {
+    public ResponseEntity<Void> deletePost(@PathVariable("postId") Long postId) {
         postService.deletePost(postId);
         return ResponseEntity.noContent().build();
+    }
+    
+    // ==========================================
+    // 💡 게시글 수정 API (PATCH)
+    // ==========================================
+    // 💡 수정: @PathVariable("postId") 명시
+    @PatchMapping("/{postId}")
+    public ResponseEntity<Map<String, Object>> updatePost(
+            @PathVariable("postId") Long postId, 
+            @RequestBody PostUpdateRequest request) {
+        
+        postService.updatePost(postId, request);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        return ResponseEntity.ok(response);
     }
 }
