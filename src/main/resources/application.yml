@@ -8,12 +8,14 @@ spring:
       max-file-size: 5MB
       max-request-size: 25MB
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/today_fridge?currentSchema=today_fridge,public}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    url: jdbc:postgresql://ep-wispy-art-amny04jt-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+    username: postgres
+    password: FoggyCaligo123!
     driver-class-name: org.postgresql.Driver
     hikari:
       connection-init-sql: CREATE EXTENSION IF NOT EXISTS vector
+      maximum-pool-size: 5
+      minimum-idle: 1
   jpa:
     open-in-view: false
     properties:
@@ -61,6 +63,7 @@ app:
   mail:
     from: ${MAIL_FROM:noreply@todayfridge.com}
     base-url: ${APP_BASE_URL:http://localhost:8080}
+    verification-required: ${MAIL_VERIFICATION_REQUIRED:true}
   kakao:
     rest-api-key: ${KAKAO_REST_API_KEY:75029a3464f13bd358978e6ed88f9efd}
     client-secret: ${KAKAO_CLIENT_SECRET:}
