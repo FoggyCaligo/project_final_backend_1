@@ -33,6 +33,18 @@ public class User {
     @Column(name = "profile_image_url", length = 2048)
     private String profileImageUrl;
 
+    @Column(name = "height_cm", nullable = true)
+    private Double heightCm;
+
+    @Column(name = "weight_kg", nullable = true)
+    private Double weightKg;
+
+    @Column(name = "age", nullable = true)
+    private Integer age;
+
+    @Column(name = "gender", length = 10, nullable = true)
+    private String gender;
+
     @Column(name = "status", length = 20)
     private String status;
 
@@ -86,10 +98,14 @@ public class User {
 
     @PrePersist
     private void prePersist() {
-        if (createdAt == null) createdAt = OffsetDateTime.now();
-        if (updatedAt == null) updatedAt = OffsetDateTime.now();
-        if (status == null) status = "PENDING_VERIFICATION";
-        if (emailVerified == null) emailVerified = false;
+        if (createdAt == null)
+            createdAt = OffsetDateTime.now();
+        if (updatedAt == null)
+            updatedAt = OffsetDateTime.now();
+        if (status == null)
+            status = "PENDING_VERIFICATION";
+        if (emailVerified == null)
+            emailVerified = false;
     }
 
     @PreUpdate
@@ -98,8 +114,10 @@ public class User {
     }
 
     public void updateProfile(String nickname, String profileImageUrl) {
-        if (nickname != null) this.nickname = nickname;
-        if (profileImageUrl != null) this.profileImageUrl = profileImageUrl;
+        if (nickname != null)
+            this.nickname = nickname;
+        if (profileImageUrl != null)
+            this.profileImageUrl = profileImageUrl;
     }
 
     public void changePassword(String newPasswordHash) {
@@ -127,5 +145,21 @@ public class User {
         return this.emailVerifyToken != null
                 && this.emailVerifyExpiry != null
                 && OffsetDateTime.now().isBefore(this.emailVerifyExpiry);
+    }
+
+    public void setHeightCm(Double heightCm) {
+        this.heightCm = heightCm;
+    }
+
+    public void setWeightKg(Double weightKg) {
+        this.weightKg = weightKg;
+    }
+
+    public void setAge(Integer age) {
+        this.age = age;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
     }
 }
