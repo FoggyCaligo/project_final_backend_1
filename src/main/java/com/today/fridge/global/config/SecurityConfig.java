@@ -1,6 +1,6 @@
 package com.today.fridge.global.config;
 
-import com.today.fridge.auth.security.JwtAuthenticationFilter2;
+import com.today.fridge.auth.security.JwtAuthenticationFilter;
 import com.today.fridge.auth.security.JwtProvider;
 import com.today.fridge.auth.service.RedisTokenService;
 import com.today.fridge.global.filter.MDCLoggingFilter;
@@ -43,8 +43,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public JwtAuthenticationFilter2 jwtAuthenticationFilter2() {
-        return new JwtAuthenticationFilter2(jwtProvider, userDetailsService, redisTokenService);
+    public JwtAuthenticationFilter JwtAuthenticationFilter() {
+        return new JwtAuthenticationFilter(jwtProvider, userDetailsService, redisTokenService);
     }
 
     @Bean
@@ -93,9 +93,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/users/me/**").authenticated()
                         .requestMatchers("/api/v1/shopping/**").authenticated()
                         .anyRequest().permitAll())
-                .addFilterBefore(jwtAuthenticationFilter2(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(JwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(MDCLoggingFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(new UserIdResolutionFilter(userRepository), JwtAuthenticationFilter2.class);
+                .addFilterAfter(new UserIdResolutionFilter(userRepository), JwtAuthenticationFilter.class);
         return http.build();
     }
 }

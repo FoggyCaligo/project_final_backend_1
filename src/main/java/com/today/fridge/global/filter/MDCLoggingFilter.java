@@ -51,16 +51,12 @@ public class MDCLoggingFilter extends OncePerRequestFilter {
 
         try {
             // 1. 요청 헤더에서 ID 추출 및 없을 경우 신규 생성
-            // 클라이언트(브라우저나 다른 서버)가 이미 X-Request-ID 라는 이름으로 ID를 보냈는지 확인한다. requestId가 없다면
-            // UUID 를 만든다
-
             String requestId = request.getHeader(REQUEST_ID_HEADER);
             if (requestId == null || requestId.isEmpty()) {
                 requestId = UUID.randomUUID().toString();
             }
 
-            // 2. MDC 컨텍스트에 ID 저장 (이후 해당 스레드의 모든 로그에 자동 포함될 준비 완료) : 해당 요청이 끝날때까지 찍히는 모든
-            // 로그에는 이 ID가 자동으로 포함될 준비를 한다.
+            // 2. MDC 컨텍스트에 ID 저장 (이후 해당 스레드의 모든 로그에 자동 포함될 준비 완료)
             MDC.put(MDC_REQUEST_ID_KEY, requestId);
 
             // 3. 응답 헤더에 ID 포함 (클라이언트가 에러 발생 시 추적 ID 제공 가능)

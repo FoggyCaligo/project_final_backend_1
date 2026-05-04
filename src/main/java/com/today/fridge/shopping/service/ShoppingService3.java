@@ -6,7 +6,7 @@ import com.today.fridge.ingredient.repository.IngredientMasterRepository;
 import com.today.fridge.shopping.dto.IngredientPriceResponse;
 import com.today.fridge.shopping.dto.ShoppingItemDto;
 import com.today.fridge.shopping.entity.ShoppingItem;
-import com.today.fridge.shopping.exception.ErrorCode2;
+import com.today.fridge.shopping.exception.ShoppingErrorCode;
 // import com.today.fridge.shopping.external.coupang.CoupangShoppingClient2;
 import com.today.fridge.shopping.external.elevenst.ElevenStShoppingClient;
 import com.today.fridge.shopping.external.naver.NaverShoppingClient;
@@ -87,7 +87,7 @@ public class ShoppingService3 {
 
         // 2. DB 캐시 확인 (Redis 장애 시 fallback)
         IngredientMaster master = ingredientMasterRepository.findById(ingredientMasterId)
-                .orElseThrow(ErrorCode2.INGREDIENT_MASTER_NOT_FOUND::toException);
+                .orElseThrow(ShoppingErrorCode.INGREDIENT_MASTER_NOT_FOUND::toException);
         // DB 를 조회하지 못하면 '식재료 마스터 정보를 찾을 수 없습니다.' 문구 출력
         Instant now = Instant.now();
         // dbCached는 shoppingItem 테이블에서 식재료 id 기준으로 데이터를 조회해 가격순서대로 db를 조회한 결과를 받아서 변수에
@@ -193,7 +193,7 @@ public class ShoppingService3 {
                 .sorted(Comparator.comparingInt(ShoppingItemDto::getPrice))
                 .toList();
         if (allItems.isEmpty()) {
-            throw ErrorCode2.ALL_SHOPPING_API_FAILED.toException();
+            throw ShoppingErrorCode.ALL_SHOPPING_API_FAILED.toException();
         }
 
         // DB에도 저장 (Redis 장애 시 fallback용)

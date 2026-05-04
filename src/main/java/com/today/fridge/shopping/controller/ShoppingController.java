@@ -2,7 +2,7 @@ package com.today.fridge.shopping.controller;
 
 import com.today.fridge.global.exception.BusinessException;
 import com.today.fridge.global.exception.ErrorCode;
-import com.today.fridge.global.response.ApiResponse;
+import com.today.fridge.global.response.ApiResponse; 
 import com.today.fridge.shopping.dto.IngredientPriceResponse;
 import com.today.fridge.shopping.service.ShoppingService3;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v3/shopping")
 @RequiredArgsConstructor
-public class ShoppingController3 {
+public class ShoppingController {
 
     private final ShoppingService3 shoppingService3;
 

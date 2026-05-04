@@ -20,11 +20,11 @@ import java.util.Collections;
 import java.util.HexFormat;
 import java.util.List;
 
-// @Sl4fj 은 무엇인가요 : Log를 남기는 역할
+//  Log를 남기는 역할
 @Slf4j
 @Component
 // 쿠팡 API 라는 외부 서비스에 접속해서 데이터를 가져오는 심부름꾼
-public class CoupangShoppingClient2 {
+public class CoupangShoppingClient {
 
     private static final String BASE_URL = "https://api-gateway.coupang.com";
     private static final String SEARCH_PATH = "/v2/providers/affiliate_open_api/apis/openapi/products/search";
@@ -38,7 +38,7 @@ public class CoupangShoppingClient2 {
     @Value("${coupang.partners.secret-key:}")
     private String secretKey;
 
-    public CoupangShoppingClient2(RestClient restClient) {
+    public CoupangShoppingClient(RestClient restClient) {
         this.restClient = restClient;
     }
 

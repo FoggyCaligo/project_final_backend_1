@@ -7,7 +7,7 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 @AllArgsConstructor
-public enum ErrorCode2 {
+public enum ShoppingErrorCode {
 
     // 502 Bad Gateway - 쇼핑 외부 API
     NAVER_API_FAILED(HttpStatus.BAD_GATEWAY, "네이버 쇼핑 API 호출에 실패했습니다."),

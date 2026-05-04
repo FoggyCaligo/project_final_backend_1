@@ -1,7 +1,7 @@
 package com.today.fridge.shopping.external.elevenst;
 
 import com.today.fridge.shopping.dto.ShoppingItemDto;
-import com.today.fridge.shopping.external.coupang.CoupangShoppingClient2;
+import com.today.fridge.shopping.external.coupang.CoupangShoppingClient;
 import com.today.fridge.shopping.type.ShippingType;
 import com.today.fridge.shopping.type.StockStatus;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +29,7 @@ import java.util.List;
 @Component
 // Todo: 11번가가 쿠팡 클라이언트 상속 받고 있음 > 이후 shoppingClient 공통 인터페이스로 수정하기
 // 11번가의 XML 응답을'EUC-KR'로 읽고 다시 리스트로 변환하는 역할
-public class ElevenStShoppingClient extends CoupangShoppingClient2 {
+public class ElevenStShoppingClient extends CoupangShoppingClient {
 
     private static final String BASE_URL = "http://openapi.11st.co.kr/openapi/OpenApiService.tmall";
 
@@ -39,7 +39,7 @@ public class ElevenStShoppingClient extends CoupangShoppingClient2 {
     private String apiKey;
 
     public ElevenStShoppingClient(RestClient restClient) {
-        super(restClient);
+        super();
         this.restClient = restClient;
     }
 
