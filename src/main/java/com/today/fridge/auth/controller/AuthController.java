@@ -275,7 +275,9 @@ public class AuthController {
             setTokenCookies(response, accessToken, refreshToken);
 
             // 6. 프론트엔드 리다이렉트
-            response.sendRedirect(frontendBaseUrl + "/dashboard");
+            String encodedLoginId = URLEncoder.encode(user.getLoginId(), StandardCharsets.UTF_8);
+            String encodedNickname = URLEncoder.encode(user.getNickname(), StandardCharsets.UTF_8);
+            response.sendRedirect(frontendBaseUrl + "/dashboard?kakaoLogin=success&loginId=" + encodedLoginId + "&nickname=" + encodedNickname);
 
         } catch (Exception e) {
             log.error("[KakaoOAuth2] 로그인 처리 중 오류: {} - {}", e.getClass().getSimpleName(), e.getMessage(), e);
