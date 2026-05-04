@@ -22,7 +22,7 @@ public class EmbeddingClient {
 
         EmbeddingResponse response =
                 restClient.post()
-                        .uri("http://localhost:8000/api/v1/embedding")
+                        .uri("http://192.168.0.6:8000/api/v1/embedding")
                         .body(
                                 new EmbeddingRequest(text)
                         )

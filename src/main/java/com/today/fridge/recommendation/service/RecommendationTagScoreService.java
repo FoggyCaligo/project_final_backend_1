@@ -11,8 +11,8 @@ import com.today.fridge.recipe.entity.RecipeTagType;
 @Service
 public class RecommendationTagScoreService {
 
-    private static final double COOKING_TYPE_MATCH_SCORE = 80.0;
-    private static final double STYLE_MATCH_SCORE = 60.0;
+    private static final double COOKING_TYPE_MATCH_SCORE = 20.0;
+    private static final double STYLE_MATCH_SCORE = 15.0;
 
     private static final Map<String, String> COOKING_TYPE_KEYWORD_MAP = Map.ofEntries(
             Map.entry("국", "SOUP"),
@@ -56,52 +56,50 @@ public class RecommendationTagScoreService {
     }
 
     private double calculateCookingTypeScore(String query, List<RecipeTag> recipeTags) {
-        double score = 0.0;
+        String target = extractCookingType(query);
 
-        for (Map.Entry<String, String> entry : COOKING_TYPE_KEYWORD_MAP.entrySet()) {
-            String keyword = entry.getKey();
-            String expectedTagCode = entry.getValue();
-
-            if (!query.contains(keyword)) {
-                continue;
-            }
-
-            boolean matched = recipeTags.stream()
-                    .anyMatch(tag ->
-                            tag.getTagType() == RecipeTagType.COOKING_TYPE
-                                    && expectedTagCode.equals(tag.getTagCode())
-                    );
-
-            if (matched) {
-                score += COOKING_TYPE_MATCH_SCORE;
-            }
+        if (target == null) {
+            return 0.0;
         }
 
-        return score;
+        boolean matched = recipeTags.stream()
+                .anyMatch(tag ->
+                        tag.getTagType() == RecipeTagType.COOKING_TYPE
+                                && target.equals(tag.getTagCode())
+                );
+
+        return matched ? COOKING_TYPE_MATCH_SCORE : 0.0;
     }
 
     private double calculateStyleScore(String query, List<RecipeTag> recipeTags) {
-        double score = 0.0;
+        String target = extractStyle(query);
 
-        for (Map.Entry<String, String> entry : STYLE_KEYWORD_MAP.entrySet()) {
-            String keyword = entry.getKey();
-            String expectedTagCode = entry.getValue();
-
-            if (!query.contains(keyword)) {
-                continue;
-            }
-
-            boolean matched = recipeTags.stream()
-                    .anyMatch(tag ->
-                            tag.getTagType() == RecipeTagType.STYLE
-                                    && expectedTagCode.equals(tag.getTagCode())
-                    );
-
-            if (matched) {
-                score += STYLE_MATCH_SCORE;
-            }
+        if (target == null) {
+            return 0.0;
         }
 
-        return score;
+        boolean matched = recipeTags.stream()
+                .anyMatch(tag ->
+                        tag.getTagType() == RecipeTagType.STYLE
+                                && target.equals(tag.getTagCode())
+                );
+
+        return matched ? STYLE_MATCH_SCORE : 0.0;
+    }
+
+    private String extractCookingType(String query) {
+        return COOKING_TYPE_KEYWORD_MAP.entrySet().stream()
+                .filter(e -> query.contains(e.getKey()))
+                .map(Map.Entry::getValue)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private String extractStyle(String query) {
+        return STYLE_KEYWORD_MAP.entrySet().stream()
+                .filter(e -> query.contains(e.getKey()))
+                .map(Map.Entry::getValue)
+                .findFirst()
+                .orElse(null);
     }
 }

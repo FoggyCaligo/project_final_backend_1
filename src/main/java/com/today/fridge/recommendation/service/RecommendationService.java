@@ -13,6 +13,7 @@ import com.today.fridge.ingredient.repository.UserIngredientRepository;
 import com.today.fridge.llm.service.RecommendationExplanationService;
 import com.today.fridge.recipe.entity.Recipe;
 import com.today.fridge.recipe.entity.RecipeTag;
+import com.today.fridge.recipe.entity.RecipeTagSourceType;
 import com.today.fridge.recipe.repository.RecipeIngredientRepository;
 import com.today.fridge.recipe.repository.RecipeRepository;
 import com.today.fridge.recipe.repository.RecipeTagRepository;
@@ -96,14 +97,14 @@ public class RecommendationService {
                 );
 
         log.info(
-                "[HYBRID] recipeId={}, title={}, totalScore={}, semanticScore={}, tagScore={}, hybridScore={}",
-                recipe.getRecipeId(),
-                recipe.getTitle(),
-                Math.round(totalScore * 10) / 10.0,
-                Math.round(semanticScore * 1000) / 1000.0,
-                Math.round(tagScore * 10) / 10.0,
-                Math.round(hybridScore * 10) / 10.0
-        );
+        	    "[RANKING_DETAIL] recipeId={}, ingredientScore={}, conditionScore={}, semanticScore={}, tagScore={}, hybridScore={}",
+        	    recipe.getRecipeId(),
+        	    Math.round(ingredientScore * 10) / 10.0,
+        	    Math.round(conditionScore * 10) / 10.0,
+        	    Math.round(semanticScore * 1000) / 1000.0,
+        	    Math.round(tagScore * 10) / 10.0,
+        	    Math.round(hybridScore * 10) / 10.0
+        	);
 
         String reason = recommendationReasonService.buildReason(
                 Math.round(matchRate * 10) / 10.0,
@@ -262,6 +263,12 @@ public class RecommendationService {
                     );
             log.info("[SEMANTIC_QUERY] {}", semanticQuery);
             log.info("[SEMANTIC_RESULT_SIZE] {}", semanticResults.size());
+            semanticResults.stream().limit(5).forEach(r ->
+            log.info("[SEMANTIC_TOP] recipeId={}, distance={}",
+                r.getRecipeId(),
+                r.getDistance()
+            )
+        );
 
             semanticScoreMap =
                     semanticResults.stream()
@@ -322,19 +329,26 @@ public class RecommendationService {
                             recipeConditions
                     );
                     double semanticScore =
-                            semanticScoreMap.containsKey(recipe.getRecipeId())
-                            ? semanticScoreMap.get(recipe.getRecipeId())
-                            : 0.3;
-                    List<RecipeTag> tags = recipeTagMap.getOrDefault(recipe.getRecipeId(), List.of());
+                            semanticScoreMap.getOrDefault(recipe.getRecipeId(), 0.0);
+                    List<RecipeTag> allTags =
+                            recipeTagMap.getOrDefault(recipe.getRecipeId(), List.of());
 
+                    List<RecipeTag> llmTags = allTags.stream()
+                            .filter(tag -> tag.getSourceType() == RecipeTagSourceType.LLM)
+                            .toList();
+
+                    List<RecipeTag> tags = llmTags.isEmpty() ? allTags : llmTags;
 
                     double tagScore = useHybridRanking
                             ? recommendationTagScoreService.calculateTagScore(
                                     String.join(" ", query.getKeywords()),
-                                    recipeTagMap.getOrDefault(recipe.getRecipeId(), List.of())
+                                    tags
                             )
                             : 0.0;
-                   
+                    // 태그는 맞는데 semantic 유사도가 너무 낮으면 태그 신뢰도 낮춤
+                    if (useHybridRanking && tagScore > 0 && semanticScore < 0.5) {
+                        tagScore = 0.0;
+                    }
                     return createRecipeResponse(
                             recipe,
                             requiredIngredients,
@@ -354,7 +368,19 @@ public class RecommendationService {
                     return Double.compare(b.getTotalScore(), a.getTotalScore());
                 })
                 .toList();
-        
+        if (useHybridRanking) {
+            responses.stream()
+                    .limit(10)
+                    .forEach(r -> log.info(
+                            "[RANKING_TOP] recipeId={}, title={}, totalScore={}, semanticScore={}, tagScore={}, hybridScore={}",
+                            r.getRecipeId(),
+                            r.getTitle(),
+                            r.getTotalScore(),
+                            r.getSemanticScore(),
+                            r.getTagScore(),
+                            r.getHybridScore()
+                    ));
+        }
         if (useHybridRanking) {
             return attachLlmExplanationToTopN(responses, 3);
         }
