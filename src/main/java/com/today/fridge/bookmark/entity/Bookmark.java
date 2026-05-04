@@ -5,10 +5,12 @@ import com.today.fridge.user.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter; // 💡 Setter 추가
 
 import java.time.LocalDateTime;
 
 @Getter
+@Setter // 💡 북마크 저장을 위해 추가
 @NoArgsConstructor
 @Entity
 @Table(name = "bookmark")
