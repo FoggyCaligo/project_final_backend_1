@@ -171,4 +171,79 @@ class RecipeServiceAteTest {
         // 3. 서비스 메서드 실행 및 에러 미발생 검증
         recipeService.ateRecipe(recipe.getRecipeId(), userId);
     }
+
+    // ========================================================================
+    // ateRecipe: 단위 불일치 테스트 (1kg 소유, 250g 요구)
+    // ========================================================================
+    @Test
+    @DisplayName("ateRecipe: Unit mismatch - Consuming 250g from 1kg should leave 0.75kg")
+    void ateRecipe_UnitMismatch_KgToG() {
+        // 1. 사용자 추가
+        User user = userRepository.save(User.create("unituser1", "unit1@example.com", "password", "unitr1"));
+        Long userId = user.getUserId();
+
+        // 2. 사용자의 냉장고에 1kg의 소고기 추가
+        UserIngredient ui = new UserIngredient();
+        ui.setUser(user);
+        ui.setRawName("Beef");
+        ui.setNormalizedNameSnapshot("Beef");
+        ui.setQuantity(BigDecimal.valueOf(1));
+        ui.setUnit("kg");
+        ui.setExpiresAt(LocalDate.now().plusDays(10));
+        userIngredientRepository.save(ui);
+
+        // 3. 레시피 설정 (250g의 소고기 요구)
+        Recipe recipe = recipeRepository.save(Recipe.builder().title("Beef Stew").isActive(true).build());
+        recipeNutritionRepository.save(RecipeNutrition.builder().recipe(recipe).calories(BigDecimal.ZERO)
+                .carbs(BigDecimal.ZERO).protein(BigDecimal.ZERO).fat(BigDecimal.ZERO).build());
+        recipeStepRepository.save(RecipeStep.builder().recipe(recipe).stepNo(1).instructionText("Cook").build());
+        recipeIngredientRepository.save(RecipeIngredient.builder().recipe(recipe).rawText("Beef")
+                .normalizedNameSnapshot("Beef").amountText("250g").build());
+
+        // 4. 서비스 메서드 실행
+        recipeService.ateRecipe(recipe.getRecipeId(), userId);
+
+        // 5. 결과 검증: 1kg - 250g = 750g -> 0.75kg
+        List<UserIngredient> remaining = userIngredientRepository.findByUserIdAndIngredientNameIn(userId, List.of("Beef"));
+        assertThat(remaining).hasSize(1);
+        assertThat(remaining.get(0).getQuantity()).isEqualByComparingTo(BigDecimal.valueOf(0.75));
+        assertThat(remaining.get(0).getUnit()).isEqualTo("kg");
+    }
+
+    // ========================================================================
+    // ateRecipe: 컵(Cup) 단위 테스트 (2컵 요구, 500ml 소유)
+    // ========================================================================
+    @Test
+    @DisplayName("ateRecipe: Cup unit - Consuming 2 cups (200ml) from 500ml should leave 300ml")
+    void ateRecipe_CupUnit() {
+        // 1. 사용자 추가
+        User user = userRepository.save(User.create("unituser2", "unit2@example.com", "password", "unitr2"));
+        Long userId = user.getUserId();
+
+        // 2. 사용자의 냉장고에 500ml의 물 추가
+        UserIngredient ui = new UserIngredient();
+        ui.setUser(user);
+        ui.setRawName("Water");
+        ui.setNormalizedNameSnapshot("Water");
+        ui.setQuantity(BigDecimal.valueOf(500));
+        ui.setUnit("ml");
+        ui.setExpiresAt(LocalDate.now().plusDays(10));
+        userIngredientRepository.save(ui);
+
+        // 3. 레시피 설정 (2컵의 물 요구 -> 2 * 100 = 200ml)
+        Recipe recipe = recipeRepository.save(Recipe.builder().title("Boiled Water").isActive(true).build());
+        recipeNutritionRepository.save(RecipeNutrition.builder().recipe(recipe).calories(BigDecimal.ZERO)
+                .carbs(BigDecimal.ZERO).protein(BigDecimal.ZERO).fat(BigDecimal.ZERO).build());
+        recipeStepRepository.save(RecipeStep.builder().recipe(recipe).stepNo(1).instructionText("Boil").build());
+        recipeIngredientRepository.save(RecipeIngredient.builder().recipe(recipe).rawText("Water")
+                .normalizedNameSnapshot("Water").amountText("2컵").build());
+
+        // 4. 서비스 메서드 실행
+        recipeService.ateRecipe(recipe.getRecipeId(), userId);
+
+        // 5. 결과 검증: 500ml - 200ml = 300ml
+        List<UserIngredient> remaining = userIngredientRepository.findByUserIdAndIngredientNameIn(userId, List.of("Water"));
+        assertThat(remaining).hasSize(1);
+        assertThat(remaining.get(0).getQuantity()).isEqualByComparingTo(BigDecimal.valueOf(300));
+    }
 }

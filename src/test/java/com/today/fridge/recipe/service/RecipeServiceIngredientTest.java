@@ -285,7 +285,8 @@ class RecipeServiceIngredientTest {
                 recipeIngredientRepository.saveAll(List.of(riTofu, riWater, riSalt));
 
                 // 레시피 조회
-                System.out.println("[TEST EXECUTION] Calling recipeService.getRecipe for recipeId: " + savedRecipe.getRecipeId());
+                System.out.println("[TEST EXECUTION] Calling recipeService.getRecipe for recipeId: "
+                                + savedRecipe.getRecipeId());
                 RecipeResponse response = recipeService.getRecipe(savedRecipe.getRecipeId(), userId);
 
                 // Verify
@@ -307,6 +308,83 @@ class RecipeServiceIngredientTest {
                 // 소금: 1g (Required "약간") -> OK
                 RecipeIngredientDTO saltDTO = findIngredient(response, "소금");
                 assertThat(saltDTO.getSufficiency()).isEqualTo("OK"); // 1 > 0
+        }
+
+        // ============================================================================================
+        // 1 1/2 와 같은 믹스드 넘버(혼합 분수) 파싱 테스트
+        // ============================================================================================
+        @Test
+        @DisplayName("Test extractNumericAmount with Mixed Numbers (1 1/2)")
+        void testExtractNumericAmountWithMixedNumbers() {
+                User user = User.create("testuser4", "test4@example.com", "password", "tester4");
+                User savedUser = userRepository.save(user);
+                Long userId = savedUser.getUserId();
+
+                // Ingredient Master
+                IngredientMaster imSugar = IngredientMaster.builder().canonicalName("설탕").normalizedName("설탕")
+                                .isActive(true).build();
+                ingredientMasterRepository.save(imSugar);
+
+                // 냉장고에 100g 설탕 (Required 1 1/2 컵 = 150g) -> NOT_ENOUGH
+                UserIngredient uiSugar = new UserIngredient();
+                uiSugar.setUser(savedUser);
+                uiSugar.setNormalizedNameSnapshot("설탕");
+                uiSugar.setQuantity(BigDecimal.valueOf(100));
+                uiSugar.setUnit("g");
+                userIngredientRepository.save(uiSugar);
+
+                // 레시피 추가
+                Recipe recipe = Recipe.builder().title("Sweet Test").isActive(true).build();
+                recipeRepository.save(recipe);
+                recipeNutritionRepository.save(RecipeNutrition.builder().recipe(recipe).calories(BigDecimal.ZERO)
+                                .carbs(BigDecimal.ZERO).protein(BigDecimal.ZERO).fat(BigDecimal.ZERO).build());
+                recipeStepRepository.save(
+                                RecipeStep.builder().recipe(recipe).stepNo(1).instructionText("Add sugar").build());
+
+                recipeIngredientRepository.save(RecipeIngredient.builder().recipe(recipe).normalizedNameSnapshot("설탕")
+                                .amountText("1 1/2 컵").build());
+
+                // 조회
+                RecipeResponse response = recipeService.getRecipe(recipe.getRecipeId(), userId);
+
+                // 검증: 1 1/2 컵 = 1.5 * 100 = 150g. 유저가 100g 가졌으므로 NOT_ENOUGH
+                RecipeIngredientDTO sugarDTO = findIngredient(response, "설탕");
+                assertThat(sugarDTO.getSufficiency()).isEqualTo("NOT_ENOUGH");
+                assertThat(sugarDTO.getRequiredQuantity()).isEqualByComparingTo(BigDecimal.valueOf(150));
+        }
+
+        // ============================================================================================
+        // 단위 불일치 통합 테스트 (레시피 kg vs 유저 g)
+        // ============================================================================================
+        @Test
+        @DisplayName("Test getRecipe with unit mismatch (Recipe kg vs User g)")
+        void testGetRecipe_UnitMismatch_RecipeKgUserG() {
+                User user = userRepository.save(User.create("testuser5", "test5@example.com", "password", "tester5"));
+                Long userId = user.getUserId();
+
+                // 유저: 밀가루 800g
+                UserIngredient ui = new UserIngredient();
+                ui.setUser(user);
+                ui.setNormalizedNameSnapshot("밀가루");
+                ui.setQuantity(BigDecimal.valueOf(800));
+                ui.setUnit("g");
+                userIngredientRepository.save(ui);
+
+                // 레시피: 밀가루 1kg (1000g)
+                Recipe recipe = recipeRepository.save(Recipe.builder().title("Flour Test").isActive(true).build());
+                recipeNutritionRepository.save(RecipeNutrition.builder().recipe(recipe).calories(BigDecimal.ZERO)
+                                .carbs(BigDecimal.ZERO).protein(BigDecimal.ZERO).fat(BigDecimal.ZERO).build());
+                recipeStepRepository.save(
+                                RecipeStep.builder().recipe(recipe).stepNo(1).instructionText("Use flour").build());
+                recipeIngredientRepository.save(RecipeIngredient.builder().recipe(recipe).normalizedNameSnapshot("밀가루")
+                                .amountText("1kg").build());
+
+                // 조회
+                RecipeResponse response = recipeService.getRecipe(recipe.getRecipeId(), userId);
+
+                // 검증: 800g < 1000g -> NOT_ENOUGH
+                RecipeIngredientDTO dto = findIngredient(response, "밀가루");
+                assertThat(dto.getSufficiency()).isEqualTo("NOT_ENOUGH");
         }
 
         // ============================================================================================
@@ -388,7 +466,8 @@ class RecipeServiceIngredientTest {
                 recipeIngredientRepository.saveAll(List.of(riFlour, riMilk, riWater));
 
                 // 레시피 조회 및 검증
-                System.out.println("[TEST EXECUTION] Calling recipeService.getRecipe for recipeId: " + savedRecipe.getRecipeId());
+                System.out.println("[TEST EXECUTION] Calling recipeService.getRecipe for recipeId: "
+                                + savedRecipe.getRecipeId());
                 RecipeResponse response = recipeService.getRecipe(savedRecipe.getRecipeId(), userId);
 
                 // 결과 검증
