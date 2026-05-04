@@ -28,9 +28,10 @@ import com.today.fridge.global.response.PageResult;
 
 // Spring Framework
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 // DTO
@@ -63,17 +64,17 @@ public class RecipeController {
 	@GetMapping("/{recipeId}")
 	public ResponseEntity<ApiResponse<RecipeResponse>> getRecipe(
 			@PathVariable("recipeId") Long recipeId,
-			@RequestParam(value = "userId", required = false) Long userId) {
+			@RequestHeader(value = "X-User-Id", required = false) Long userId) {
 		return ResponseEntity.ok(
 				ApiResponse.success(
 						recipeService.getRecipe(recipeId, userId),
 						"상세 레시피 조회 성공"));
 	}
 
-	@GetMapping("/{recipeId}/cooked")
+	@PostMapping("/{recipeId}/cooked")
 	public ResponseEntity<ApiResponse<Void>> ateRecipe(
 			@PathVariable("recipeId") Long recipeId,
-			@RequestParam(value = "userId", required = false) Long userId) {
+			@RequestHeader(value = "X-User-Id", required = false) Long userId) {
 		recipeService.ateRecipe(recipeId, userId);
 		return ResponseEntity.ok(
 				ApiResponse.success(

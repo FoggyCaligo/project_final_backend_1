@@ -47,6 +47,8 @@ public class RecipeIngredientDTO {
     }
 
     public String getIngredientName() {
-        return this.normalizedNameSnapshot;
+        return (this.normalizedNameSnapshot != null && !this.normalizedNameSnapshot.isBlank()) 
+                ? this.normalizedNameSnapshot 
+                : this.rawText;
     }
 }
