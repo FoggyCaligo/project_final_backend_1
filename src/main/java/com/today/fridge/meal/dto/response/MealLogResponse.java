@@ -18,11 +18,12 @@ public class MealLogResponse {
     private LocalDateTime createdAt;
 
     public MealLogResponse(Long mealId, Long recipeId, String recipeTitle, BigDecimal servings,
-            LocalDateTime consumedAt) {
+            LocalDateTime consumedAt, LocalDateTime createdAt) {
         this.mealId = mealId;
         this.recipeId = recipeId;
         this.recipeTitle = recipeTitle;
         this.servings = servings;
         this.consumedAt = consumedAt;
+        this.createdAt = createdAt;
     }
 }

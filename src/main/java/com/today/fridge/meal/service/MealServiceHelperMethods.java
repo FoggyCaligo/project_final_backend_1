@@ -16,6 +16,7 @@ import com.today.fridge.recipe.entity.Recipe;
 import com.today.fridge.recipe.entity.RecipeNutrition;
 import com.today.fridge.user.entity.User;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -24,6 +25,7 @@ import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class MealServiceHelperMethods {
 
     private final DayNutritionRepository dayNutritionRepository;
@@ -92,14 +94,28 @@ public class MealServiceHelperMethods {
 
         // 업데이트된 일일 영양 데이터 저장
         dayNutritionRepository.save(dayNutrition);
+        log.info("일일 영양 합계 업데이트 완료 - 사용자 ID: {}, 날짜: {}", user.getUserId(), dateOnly.toLocalDate());
+    }
+
+    // ============================================================================================
+    // 사용자 신체 정보를 기반으로 영양 목표 산출 (기본값 처리 포함)
+    // ============================================================================================
+    public NutritionTarget calculateTargetsWithDefaults(User user) {
+        double heightCm = user.getHeightCm() != null && user.getHeightCm() > 0 ? user.getHeightCm() : 175.0;
+        double weightKg = user.getWeightKg() != null && user.getWeightKg() > 0 ? user.getWeightKg() : 70.0;
+        int age = user.getAge() != null && user.getAge() > 0 ? user.getAge() : 30;
+        String gender = user.getGender() != null ? user.getGender() : "MALE";
+
+        return calculateDetailedTargets(heightCm, weightKg, age, gender);
     }
 
     // ============================================================================================
     // 사용자 맞춤형 일일 영양 목표치 상세 계산 (TDEE 기반)
     // ============================================================================================
     public NutritionTarget calculateDetailedTargets(double heightCm, double weightKg, int age, String gender) {
-        // BMI 계산
-        double bmi = weightKg / ((heightCm / 100.0) * (heightCm / 100.0));
+        // BMI 계산 (0으로 나누기 방지)
+        double heightM = heightCm / 100.0;
+        double bmi = (heightM > 0) ? weightKg / (heightM * heightM) : 0;
 
         // 기초 대사량 (BMR) 계산 (Mifflin-St Jeor 방정식)
         double bmr = (10 * weightKg) + (6.25 * heightCm) - (5 * age);
@@ -108,6 +124,7 @@ public class MealServiceHelperMethods {
         } else {
             bmr -= 161;
         }
+        log.debug("사용자 기초대사량(BMR) 계산 완료 - 성별: {}, BMR: {}", gender, bmr);
 
         // 일일 총 에너지 소모량 (TDEE) 추정 (활동 계수 1.2 적용)
         double tdee = bmr * 1.2;

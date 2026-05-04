@@ -53,13 +53,13 @@ public interface MealRepository extends JpaRepository<Meal, Long> {
         // 계산: (1.5 / 2.0) * r.calories
         @Query("""
                             SELECT new com.today.fridge.meal.dto.response.MealNutritionSummaryDTO(
-                                COALESCE(SUM((m.servings / cast(REPLACE(r.servingsText, '인분', '') as double)) * rn.calories), 0),
-                                COALESCE(SUM((m.servings / cast(REPLACE(r.servingsText, '인분', '') as double)) * rn.carbs), 0),
-                                COALESCE(SUM((m.servings / cast(REPLACE(r.servingsText, '인분', '') as double)) * rn.protein), 0),
-                                COALESCE(SUM((m.servings / cast(REPLACE(r.servingsText, '인분', '') as double)) * rn.fat), 0),
-                                COALESCE(SUM((m.servings / cast(REPLACE(r.servingsText, '인분', '') as double)) * rn.sugar), 0),
-                                COALESCE(SUM((m.servings / cast(REPLACE(r.servingsText, '인분', '') as double)) * rn.sodium), 0),
-                                COALESCE(SUM((m.servings / cast(REPLACE(r.servingsText, '인분', '') as double)) * rn.cholesterol), 0)
+                                COALESCE(SUM((m.servings / cast(REPLACE(REPLACE(r.servingsText, '인분 이상', ''), '인분', '') as double)) * rn.calories), 0),
+                                COALESCE(SUM((m.servings / cast(REPLACE(REPLACE(r.servingsText, '인분 이상', ''), '인분', '') as double)) * rn.carbs), 0),
+                                COALESCE(SUM((m.servings / cast(REPLACE(REPLACE(r.servingsText, '인분 이상', ''), '인분', '') as double)) * rn.protein), 0),
+                                COALESCE(SUM((m.servings / cast(REPLACE(REPLACE(r.servingsText, '인분 이상', ''), '인분', '') as double)) * rn.fat), 0),
+                                COALESCE(SUM((m.servings / cast(REPLACE(REPLACE(r.servingsText, '인분 이상', ''), '인분', '') as double)) * rn.sugar), 0),
+                                COALESCE(SUM((m.servings / cast(REPLACE(REPLACE(r.servingsText, '인분 이상', ''), '인분', '') as double)) * rn.sodium), 0),
+                                COALESCE(SUM((m.servings / cast(REPLACE(REPLACE(r.servingsText, '인분 이상', ''), '인분', '') as double)) * rn.cholesterol), 0)
                             )
                             FROM Meal m
                             JOIN m.recipe r
@@ -87,7 +87,8 @@ public interface MealRepository extends JpaRepository<Meal, Long> {
                             r.recipeId,
                             r.title,
                             m.servings,
-                            m.consumedAt
+                            m.consumedAt,
+                            m.createdAt
                         )
                         FROM Meal m
                         JOIN m.recipe r

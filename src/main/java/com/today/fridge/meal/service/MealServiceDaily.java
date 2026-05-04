@@ -14,12 +14,11 @@ import com.today.fridge.meal.dto.response.DailyRecommendationResponse;
 import com.today.fridge.meal.dto.response.MealLogResponse;
 import com.today.fridge.meal.dto.response.MealNutritionSummaryDTO;
 import com.today.fridge.meal.dto.response.RemainingNutritionResponse;
-import com.today.fridge.meal.entity.DayNutrition;
-import com.today.fridge.meal.repository.DayNutritionRepository;
 import com.today.fridge.meal.repository.MealRepository;
 import com.today.fridge.user.entity.User;
 import com.today.fridge.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -31,11 +30,11 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MealServiceDaily {
 
     private final MealRepository mealRepository;
     private final UserRepository userRepository;
-    private final DayNutritionRepository dayNutritionRepository;
     private final MealServiceHelperMethods helperMethods;
 
     // ============================================================================================
@@ -43,6 +42,7 @@ public class MealServiceDaily {
     // ============================================================================================
     public List<MealLogResponse> getMeals(Long userId, LocalDate date) {
         // 지정된 날짜의 식단 목록 반환
+        log.info("사용자 식단 데이터 조회 - 사용자 ID: {}, 날짜: {}", userId, date);
         return mealRepository.findByUserIdAndConsumedAtBetween(userId, date.atStartOfDay(),
                 date.plusDays(1).atStartOfDay());
     }
@@ -53,7 +53,7 @@ public class MealServiceDaily {
     public MealNutritionSummaryDTO getDailyIntake(Long userId, LocalDate date) {
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
-        
+
         // 해당 날짜의 총 영양 섭취량 계산 및 반환
         return mealRepository.getNutritionSummaryByDateRange(userId, startOfDay, endOfDay);
     }
@@ -66,14 +66,8 @@ public class MealServiceDaily {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
 
-        // 사용자 신체 정보가 없을 경우 기본값 설정
-        double heightCm = user.getHeightCm() != null ? user.getHeightCm() : 175.0;
-        double weightKg = user.getWeightKg() != null ? user.getWeightKg() : 70.0;
-        int age = user.getAge() != null ? user.getAge() : 30;
-        String gender = user.getGender() != null ? user.getGender() : "MALE";
-        
-        // 일일 권장 목표 계산 로직 호출
-        MealServiceHelperMethods.NutritionTarget target = helperMethods.calculateDetailedTargets(heightCm, weightKg, age, gender);
+        // 일일 권장 목표 계산 로직 호출 (중앙화된 기본값 처리 포함)
+        MealServiceHelperMethods.NutritionTarget target = helperMethods.calculateTargetsWithDefaults(user);
 
         // 지정된 날짜의 실시간 누적 영양 정보 조회 (MealRepository 사용으로 일관성 유지)
         LocalDateTime startOfDay = date.atStartOfDay();
@@ -87,24 +81,27 @@ public class MealServiceDaily {
         BigDecimal currentFat = intake.getTotalFat() != null ? intake.getTotalFat() : BigDecimal.ZERO;
         BigDecimal currentSugar = intake.getTotalSugar() != null ? intake.getTotalSugar() : BigDecimal.ZERO;
         BigDecimal currentSodium = intake.getTotalSodium() != null ? intake.getTotalSodium() : BigDecimal.ZERO;
-        BigDecimal currentCholesterol = intake.getTotalCholesterol() != null ? intake.getTotalCholesterol() : BigDecimal.ZERO;
+        BigDecimal currentCholesterol = intake.getTotalCholesterol() != null ? intake.getTotalCholesterol()
+                : BigDecimal.ZERO;
 
         // 권장량 대비 섭취량 기반 피드백 생성
         List<String> advice = new ArrayList<>();
         if (currentCalories.compareTo(target.getCalories()) > 0) {
             advice.add("일일 권장 칼로리(" + target.getCalories() + " kcal)를 초과했습니다. 가벼운 운동을 권장합니다.");
         } else {
-            advice.add("오늘 남은 권장 칼로리는 " + target.getCalories().subtract(currentCalories).setScale(1, RoundingMode.HALF_UP) + " kcal입니다.");
+            advice.add("오늘 남은 권장 칼로리는 "
+                    + target.getCalories().subtract(currentCalories).setScale(1, RoundingMode.HALF_UP) + " kcal입니다.");
         }
 
         if (currentProtein.compareTo(target.getProtein()) < 0) {
-            advice.add("단백질이 풍부한 음식을 더 섭취해 보세요. " + target.getProtein().subtract(currentProtein).setScale(1, RoundingMode.HALF_UP) + "g이 더 필요합니다.");
+            advice.add("단백질이 풍부한 음식을 더 섭취해 보세요. "
+                    + target.getProtein().subtract(currentProtein).setScale(1, RoundingMode.HALF_UP) + "g이 더 필요합니다.");
         }
 
         if (currentCarbs.compareTo(target.getCarbs()) > 0) {
             advice.add("탄수화물 권장량을 초과했습니다. 남은 하루 동안 탄수화물 섭취를 줄여보세요.");
         }
-        
+
         if (currentSugar.compareTo(target.getSugar()) > 0) {
             advice.add("일일 당류 권장량을 초과했습니다. 단 음료나 간식을 피해 보세요.");
         }
@@ -118,7 +115,7 @@ public class MealServiceDaily {
         }
 
         // 응답 객체 생성 및 반환
-        return DailyRecommendationResponse.builder()
+        DailyRecommendationResponse response = DailyRecommendationResponse.builder()
                 .targetCalories(target.getCalories())
                 .targetCarbs(target.getCarbs())
                 .targetProtein(target.getProtein())
@@ -135,6 +132,8 @@ public class MealServiceDaily {
                 .currentCholesterol(currentCholesterol)
                 .advice(advice)
                 .build();
+        log.info("일일 권장량 및 피드백 생성 완료 - 사용자 ID: {}, 조언 개수: {}", userId, advice.size());
+        return response;
     }
 
     // ============================================================================================
@@ -145,14 +144,8 @@ public class MealServiceDaily {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
 
-        // 사용자 신체 정보가 없을 경우 기본값 설정
-        double heightCm = user.getHeightCm() != null ? user.getHeightCm() : 175.0;
-        double weightKg = user.getWeightKg() != null ? user.getWeightKg() : 70.0;
-        int age = user.getAge() != null ? user.getAge() : 30;
-        String gender = user.getGender() != null ? user.getGender() : "MALE";
-        
-        // 일일 권장 목표 계산 로직 호출
-        MealServiceHelperMethods.NutritionTarget target = helperMethods.calculateDetailedTargets(heightCm, weightKg, age, gender);
+        // 일일 권장 목표 계산 로직 호출 (중앙화된 기본값 처리 포함)
+        MealServiceHelperMethods.NutritionTarget target = helperMethods.calculateTargetsWithDefaults(user);
 
         // 지정된 날짜의 누적 영양 정보 조회
         LocalDateTime startOfDay = date.atStartOfDay();

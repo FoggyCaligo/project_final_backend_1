@@ -17,6 +17,7 @@ import com.today.fridge.recipe.repository.RecipeRepository;
 import com.today.fridge.user.entity.User;
 import com.today.fridge.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MealService {
 
         private final MealRepository mealRepository;
@@ -36,9 +38,9 @@ public class MealService {
         // 식단 기록 저장
         // ============================================================================================
         @Transactional
-        public void recordMeal(MealLogRequest request) {
+        public void recordMeal(Long userId, MealLogRequest request) {
                 // 사용자 정보 조회
-                User user = userRepository.findById(request.getUserId())
+                User user = userRepository.findById(userId)
                                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
 
                 // 레시피 정보 조회
@@ -59,6 +61,7 @@ public class MealService {
 
                 // 식단 기록 저장
                 mealRepository.save(meal);
+                log.info("식단 저장 완료 - 사용자 ID: {}, 레시피: {}, 섭취량: {}", userId, recipe.getTitle(), servings);
 
                 // 일일 영양 섭취량 업데이트 로직 호출
                 helperMethods.updateDayNutrition(user, recipe, servings, consumedAt);
@@ -78,5 +81,7 @@ public class MealService {
 
                 // 변경된 사용자 정보 저장
                 userRepository.save(user);
+                log.info("사용자 신체 정보 업데이트 완료 - 사용자 ID: {} (키: {}cm, 몸무게: {}kg, 나이: {}, 성별: {})", 
+                        userId, user.getHeightCm(), user.getWeightKg(), user.getAge(), user.getGender());
         }
 }

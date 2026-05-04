@@ -18,6 +18,7 @@ import com.today.fridge.meal.repository.MealRepository;
 import com.today.fridge.user.entity.User;
 import com.today.fridge.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -31,6 +32,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MealServicePeriod {
 
     private final MealRepository mealRepository;
@@ -172,7 +174,7 @@ public class MealServicePeriod {
         BigDecimal daysDivisor = new BigDecimal(totalDays);
 
         // 최종 보고서 요약 응답 반환
-        return ReportSummaryResponse.builder()
+        ReportSummaryResponse response = ReportSummaryResponse.builder()
                 .averageCalories(
                         totalDays > 0 ? totalReportCals.divide(daysDivisor, 2, RoundingMode.HALF_UP) : BigDecimal.ZERO)
                 .averageCarbs(
@@ -190,6 +192,8 @@ public class MealServicePeriod {
                 .missingDaysImputed(missingDaysImputed)
                 .dailyData(dailyDataList)
                 .build();
+        log.info("보고서 생성 완료 - 사용자 ID: {}, 기간: {} ~ {}. 결측치 보정 일수: {}", userId, startDate, endDate, missingDaysImputed);
+        return response;
     }
 
     // ============================================================================================
@@ -200,15 +204,8 @@ public class MealServicePeriod {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
 
-        // 사용자 신체 정보가 없을 경우 기본값 설정
-        double heightCm = user.getHeightCm() != null ? user.getHeightCm() : 175.0;
-        double weightKg = user.getWeightKg() != null ? user.getWeightKg() : 70.0;
-        int age = user.getAge() != null ? user.getAge() : 30;
-        String gender = user.getGender() != null ? user.getGender() : "MALE";
-
-        // 일일 권장 목표 계산 로직 호출
-        MealServiceHelperMethods.NutritionTarget target = helperMethods.calculateDetailedTargets(heightCm, weightKg,
-                age, gender);
+        // 일일 권장 목표 계산 로직 호출 (중앙화된 기본값 처리 포함)
+        MealServiceHelperMethods.NutritionTarget target = helperMethods.calculateTargetsWithDefaults(user);
 
         // 이번 주 시작일 및 종료일 계산
         int dayOfWeek = date.getDayOfWeek().getValue();
@@ -234,15 +231,8 @@ public class MealServicePeriod {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
 
-        // 사용자 신체 정보가 없을 경우 기본값 설정
-        double heightCm = user.getHeightCm() != null ? user.getHeightCm() : 175.0;
-        double weightKg = user.getWeightKg() != null ? user.getWeightKg() : 70.0;
-        int age = user.getAge() != null ? user.getAge() : 30;
-        String gender = user.getGender() != null ? user.getGender() : "MALE";
-
-        // 일일 권장 목표 계산 로직 호출
-        MealServiceHelperMethods.NutritionTarget target = helperMethods.calculateDetailedTargets(heightCm, weightKg,
-                age, gender);
+        // 일일 권장 목표 계산 로직 호출 (중앙화된 기본값 처리 포함)
+        MealServiceHelperMethods.NutritionTarget target = helperMethods.calculateTargetsWithDefaults(user);
 
         // 이번 달 시작일 및 종료일 계산
         LocalDate startOfMonth = date.withDayOfMonth(1);
