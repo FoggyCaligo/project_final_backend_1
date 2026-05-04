@@ -1,0 +1,152 @@
+package com.today.fridge.shopping.external.elevenst;
+
+import com.today.fridge.shopping.dto.ShoppingItemDto;
+import com.today.fridge.shopping.external.coupang.CoupangShoppingClient;
+import com.today.fridge.shopping.type.ShippingType;
+import com.today.fridge.shopping.type.StockStatus;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClient;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+
+import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.ByteArrayInputStream;
+import java.io.InputStreamReader;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+@Slf4j
+@Primary
+@Component
+// Todo: 11번가가 쿠팡 클라이언트 상속 받고 있음 > 이후 shoppingClient 공통 인터페이스로 수정하기
+// 11번가의 XML 응답을'EUC-KR'로 읽고 다시 리스트로 변환하는 역할
+public class ElevenStShoppingClient extends CoupangShoppingClient {
+
+    private static final String BASE_URL = "http://openapi.11st.co.kr/openapi/OpenApiService.tmall";
+
+    private final RestClient restClient;
+
+    @Value("${elevenst.openapi.key:}")
+    private String apiKey;
+
+    public ElevenStShoppingClient(RestClient restClient) {
+        super(restClient);
+        this.restClient = restClient;
+    }
+
+    @Override
+    public List<ShoppingItemDto> search(String keyword) {
+
+        log.info("[ElevenStShoppingClient] API 호출 시작 - 검색어: {}", keyword); // 로그
+
+        if (apiKey.isBlank()) {
+            log.warn("[ElevenStShoppingClient] API 키 미설정, 건너뜀");
+            return Collections.emptyList();
+        }
+        try {
+            // encodedKeyword는 URLEncoder.encode를 사용해서 검색어에 띄어쓰기나 글자들을 컴퓨터용 언어로 바꿔주는 번역된 키워드
+            String encodedKeyword = URLEncoder.encode(keyword, java.nio.charset.StandardCharsets.UTF_8);
+            String url = BASE_URL + "?key=" + apiKey
+                    + "&apiCode=ProductSearch&keyword=" + encodedKeyword + "&pageSize=10";
+            // 데이터 가져오기 (byte배열) : EUC-KR 로 직접 해석하기 위해 가공되지 않은 '날것'의 데이터를 가져온다
+            byte[] body = restClient.get()
+                    .uri(java.net.URI.create(url))
+                    .retrieve()
+                    .body(byte[].class);
+
+            if (body == null || body.length == 0) {
+                log.warn("[ElevenStShoppingClient] 응답 데이터가 비어있음");
+                return Collections.emptyList();
+            }
+
+            List<ShoppingItemDto> results = parseXml(body);
+            log.info("[ElevenStShoppingClient] 검색 성공 - 결과 수: {}", results.size()); // 결과 확인용
+            return results;
+        } catch (Exception e) {
+            log.warn("[ElevenStShoppingClient] 검색 실패 keyword={}: {}", keyword, e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    // 11번가 api는 xml을 사용, 따라서 euc-kr 을 사용한다 : Charset.forName('EUC-KR')
+    // getElementsByTagName("Product") : <Products> wrapper 유무에 상관없이 Product 태그를 직접 탐색
+    private List<ShoppingItemDto> parseXml(byte[] body) throws Exception {
+        // EUC-KR로 변환한 원본 XML 로깅 (응답 구조 확인용)
+        String rawXml = new String(body, Charset.forName("EUC-KR"));
+        log.info("[ElevenStShoppingClient] XML 응답 (앞 400자): {}",
+                rawXml.length() > 400 ? rawXml.substring(0, 400) + "..." : rawXml);
+
+        Document doc = DocumentBuilderFactory.newInstance()
+                .newDocumentBuilder()
+                .parse(new InputSource(new InputStreamReader(
+                        new ByteArrayInputStream(body), Charset.forName("EUC-KR"))));
+
+        // <Product> 태그를 문서 전체에서 직접 탐색 (<Products> wrapper 유무 무관)
+        NodeList productNodes = doc.getElementsByTagName("Product");
+        if (productNodes.getLength() == 0) {
+            log.warn("[ElevenStShoppingClient] <Product> 태그 없음 — 응답 XML 확인 필요");
+            return Collections.emptyList();
+        }
+
+        List<ShoppingItemDto> result = new ArrayList<>();
+        for (int i = 0; i < productNodes.getLength(); i++) {
+            Node node = productNodes.item(i);
+            if (node.getNodeType() == Node.ELEMENT_NODE) {
+                ShoppingItemDto dto = toDto((Element) node);
+                if (dto != null) {
+                    result.add(dto);
+                }
+            }
+        }
+        return result;
+    }
+
+    // 가격에 콤마를 찍어서 보내줄때 콤마가 포함된 가격표시를 숫자로 바꿈
+    private ShoppingItemDto toDto(Element el) {
+        String productCode = getTagText(el, "ProductCode");
+        String productName = getTagText(el, "ProductName");
+        String salePriceStr = getTagText(el, "SalePrice");
+        String imageUrl = getTagText(el, "ProductImage");
+        String detailUrl = getTagText(el, "DetailPageUrl");
+        String seller = getTagText(el, "Seller");
+
+        if (salePriceStr == null || salePriceStr.isBlank())
+            return null;
+        int price;
+        try {
+            price = Integer.parseInt(salePriceStr.trim().replace(",", ""));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+        if (price <= 0)
+            return null;
+
+        return ShoppingItemDto.builder()
+                .mallName("11번가")
+                .mallProductId(productCode)
+                .productName(productName)
+                .price(price)
+                .purchaseUrl(detailUrl)
+                .imageUrl(imageUrl)
+                .brand(seller)
+                .shippingType(ShippingType.STANDARD)
+                .stockStatus(StockStatus.IN_STOCK)
+                .build();
+    }
+
+    private String getTagText(Element el, String tagName) {
+        NodeList nodes = el.getElementsByTagName(tagName);
+        if (nodes.getLength() == 0)
+            return null;
+        return nodes.item(0).getTextContent();
+    }
+}

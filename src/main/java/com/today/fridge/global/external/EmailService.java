@@ -38,7 +38,7 @@ public class EmailService {
      */
     @Async
     public void sendVerificationEmail(String toEmail, String token) {
-        String verifyUrl = baseUrl + "/api/v1/auth/verify-email?token=" + token;
+        String verifyUrl = baseUrl + "/api/v1/auth2/verify-email?token=" + token;
         String subject = "[오늘냉장고] 이메일 인증을 완료해주세요";
         String body = buildVerificationEmailBody(verifyUrl);
 

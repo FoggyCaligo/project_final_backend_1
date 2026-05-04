@@ -5,7 +5,7 @@ CREATE SCHEMA IF NOT EXISTS today_fridge;
 ALTER SCHEMA today_fridge OWNER TO postgres;
 
 -- pgvector 확장 활성화 (ingredient_master의 벡터 검색용)
-CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS vector SCHEMA today_fridge;
 
 
 -- ===================================================================================
@@ -118,7 +118,7 @@ CREATE TABLE today_fridge.ingredient_master (
     standard_unit VARCHAR(10) DEFAULT 'g',
     description TEXT,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    embedding vector(1536),
+    embedding today_fridge.vector(1536),
     embedding_updated_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP

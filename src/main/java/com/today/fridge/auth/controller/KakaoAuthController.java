@@ -16,8 +16,8 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
-@RestController
-@RequestMapping("/api/v1/auth/kakao")
+// @RestController
+// @RequestMapping("/api/v1/auth2/kakao")
 public class KakaoAuthController {
 
     private static final Logger log = LoggerFactory.getLogger(KakaoAuthController.class);
@@ -55,7 +55,8 @@ public class KakaoAuthController {
     }
 
     /** 카카오 인가 코드 콜백 — JWT 발급 후 프론트엔드로 리다이렉트 */
-    @GetMapping("/callback")
+    // AuthController와 매핑이 중복되므로 주석 처리합니다. (AuthController의 kakaoCallback 사용)
+    // @GetMapping("/callback")
     public void callback(@RequestParam String code,
                          @RequestParam(required = false) String error,
                          HttpServletResponse response) throws IOException {
