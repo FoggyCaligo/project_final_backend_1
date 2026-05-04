@@ -34,7 +34,7 @@ import java.util.Map;
 /**
  * Redis 기반 인증 컨트롤러 (AuthController + KakaoAuthController 통합).
  *
- * 기존 /api/v1/auth 경로를 유지하면서 /api/v1/auth2 경로로 분리하여,
+ * 기존 /api/v1/auth 경로를 유지하면서 /api/v1/auth 경로로 분리하여,
  * 팀원 코드에 영향 없이 Redis 기반 토큰 관리를 적용합니다.
  *
  * 변경 사항:
@@ -44,7 +44,7 @@ import java.util.Map;
  * - 이메일 인증 토큰을 Redis에 저장 (24시간 TTL)
  */
 @RestController
-@RequestMapping("/api/v1/auth2")
+@RequestMapping("/api/v1/auth")
 public class AuthController {
 
     private static final Logger log = LoggerFactory.getLogger(AuthController.class);
@@ -66,7 +66,7 @@ public class AuthController {
     private String restApiKey;
 
     // 카카오 redirect URI
-    @Value("${app.kakao.redirect-uri:http://localhost:8080/api/v1/auth2/kakao/callback}")
+    @Value("${app.kakao.redirect-uri:http://localhost:8080/api/v1/auth/kakao/callback}")
     private String redirectUri;
 
     @Value("${app.kakao.frontend-base-url}")
