@@ -216,7 +216,7 @@ public class MealServicePeriod {
         LocalDateTime endDateTime = endOfWeek.plusDays(1).atStartOfDay();
 
         // 주간 영양 섭취량 조회
-        MealNutritionSummaryDTO intake = mealRepository.getNutritionSummaryByDateRange(userId, startDateTime,
+        MealNutritionSummaryDTO intake = dayNutritionRepository.getNutritionSummaryByDateRange(userId, startDateTime,
                 endDateTime);
 
         // 남은 주간 영양 섭취량 계산 (7일 기준)
@@ -242,7 +242,7 @@ public class MealServicePeriod {
         LocalDateTime endDateTime = endOfMonth.plusDays(1).atStartOfDay();
 
         // 월간 영양 섭취량 조회
-        MealNutritionSummaryDTO intake = mealRepository.getNutritionSummaryByDateRange(userId, startDateTime,
+        MealNutritionSummaryDTO intake = dayNutritionRepository.getNutritionSummaryByDateRange(userId, startDateTime,
                 endDateTime);
 
         // 남은 월간 영양 섭취량 계산 (해당 월의 총 일수 기준)

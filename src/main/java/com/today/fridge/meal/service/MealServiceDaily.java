@@ -14,6 +14,7 @@ import com.today.fridge.meal.dto.response.DailyRecommendationResponse;
 import com.today.fridge.meal.dto.response.MealLogResponse;
 import com.today.fridge.meal.dto.response.MealNutritionSummaryDTO;
 import com.today.fridge.meal.dto.response.RemainingNutritionResponse;
+import com.today.fridge.meal.repository.DayNutritionRepository;
 import com.today.fridge.meal.repository.MealRepository;
 import com.today.fridge.user.entity.User;
 import com.today.fridge.user.repository.UserRepository;
@@ -35,6 +36,7 @@ public class MealServiceDaily {
 
     private final MealRepository mealRepository;
     private final UserRepository userRepository;
+    private final DayNutritionRepository dayNutritionRepository;
     private final MealServiceHelperMethods helperMethods;
 
     // ============================================================================================
@@ -55,7 +57,7 @@ public class MealServiceDaily {
         LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
 
         // 해당 날짜의 총 영양 섭취량 계산 및 반환
-        return mealRepository.getNutritionSummaryByDateRange(userId, startOfDay, endOfDay);
+        return dayNutritionRepository.getNutritionSummaryByDateRange(userId, startOfDay, endOfDay);
     }
 
     // ============================================================================================
@@ -69,10 +71,10 @@ public class MealServiceDaily {
         // 일일 권장 목표 계산 로직 호출 (중앙화된 기본값 처리 포함)
         MealServiceHelperMethods.NutritionTarget target = helperMethods.calculateTargetsWithDefaults(user);
 
-        // 지정된 날짜의 실시간 누적 영양 정보 조회 (MealRepository 사용으로 일관성 유지)
+        // 지정된 날짜의 실시간 누적 영양 정보 조회 (DayNutritionRepository 사용으로 일관성 유지)
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
-        MealNutritionSummaryDTO intake = mealRepository.getNutritionSummaryByDateRange(userId, startOfDay, endOfDay);
+        MealNutritionSummaryDTO intake = dayNutritionRepository.getNutritionSummaryByDateRange(userId, startOfDay, endOfDay);
 
         // 현재 영양 섭취량 초기화 (Null-Safe 처리)
         BigDecimal currentCalories = intake.getTotalCalories() != null ? intake.getTotalCalories() : BigDecimal.ZERO;
@@ -150,7 +152,7 @@ public class MealServiceDaily {
         // 지정된 날짜의 누적 영양 정보 조회
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
-        MealNutritionSummaryDTO intake = mealRepository.getNutritionSummaryByDateRange(userId, startOfDay, endOfDay);
+        MealNutritionSummaryDTO intake = dayNutritionRepository.getNutritionSummaryByDateRange(userId, startOfDay, endOfDay);
 
         // 남은 영양 섭취량 계산 및 응답 생성
         return helperMethods.buildRemainingResponse(target, intake, 1);
