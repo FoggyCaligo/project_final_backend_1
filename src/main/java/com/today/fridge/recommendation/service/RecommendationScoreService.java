@@ -33,13 +33,20 @@ public class RecommendationScoreService {
             penalty += MANY_MISSING_EXTRA_PENALTY;
         }
 
-        return (matchRate * MAX_INGREDIENT_SCORE) - penalty;
+        double score = (matchRate * MAX_INGREDIENT_SCORE) - penalty;
+        
+        if (matchedCount > 0) {
+            score += (matchedCount * 5);
+        }
+        
+        return score < 0 ? 3.0 : score;
     }
 
     public double calculateMatchRate(int matchedCount, int requiredCount) {
         if (requiredCount <= 0) {
             return 0.0;
         }
+        
 
         return ((double) matchedCount / requiredCount) * 100;
     }
@@ -79,6 +86,38 @@ public class RecommendationScoreService {
     }
 
     public double calculateTotalScore(double ingredientScore, double conditionScore) {
-        return ingredientScore + conditionScore;
+        double totalScore = (ingredientScore * 0.7) + (conditionScore * 0.3);
+
+        if (conditionScore > 0) {
+            totalScore += 5.0;
+        }
+
+        return totalScore;
+    }
+    public double calculateConditionScoreByCodes(
+            List<String> conditionCodes,
+            List<RecipeConditionMap> recipeConditions
+    ) {
+        if (conditionCodes == null || conditionCodes.isEmpty()
+                || recipeConditions == null || recipeConditions.isEmpty()) {
+            return 0.0;
+        }
+
+        boolean hasCaution = recipeConditions.stream()
+                .anyMatch(rc ->
+                        conditionCodes.contains(rc.getConditionCode().getConditionCode())
+                                && "CAUTION".equalsIgnoreCase(rc.getFitType())
+                );
+
+        if (hasCaution) {
+            return CAUTION_PENALTY;
+        }
+
+        long matchedCount = recipeConditions.stream()
+                .filter(rc -> conditionCodes.contains(rc.getConditionCode().getConditionCode()))
+                .filter(rc -> !"CAUTION".equalsIgnoreCase(rc.getFitType()))
+                .count();
+
+        return Math.min(matchedCount * CONDITION_MATCH_SCORE, MAX_CONDITION_SCORE);
     }
 }

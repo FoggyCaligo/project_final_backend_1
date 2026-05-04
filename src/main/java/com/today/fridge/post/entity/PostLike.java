@@ -4,13 +4,15 @@ import com.today.fridge.user.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-@Getter
-@NoArgsConstructor
 @Entity
 @Table(name = "post_like")
+@Getter
+@Setter
+@NoArgsConstructor
 public class PostLike {
 
     @Id
@@ -26,6 +28,6 @@ public class PostLike {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 }

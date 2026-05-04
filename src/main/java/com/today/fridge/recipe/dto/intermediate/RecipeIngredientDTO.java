@@ -7,13 +7,17 @@ package com.today.fridge.recipe.dto.intermediate;
  */
 import com.today.fridge.recipe.entity.RecipeIngredient;
 
+import java.math.BigDecimal;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
+@Setter
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -22,6 +26,10 @@ public class RecipeIngredientDTO {
     private String normalizedNameSnapshot;
     private String amountText;
     private String unit;
+    private Boolean owned;
+    private String sufficiency; // "OK", "NOT_ENOUGH", "MISSING"
+    private BigDecimal userQuantity; // 유저가 실제로 가진 양
+    private BigDecimal requiredQuantity; // 레시피에서 요구하는 양
     private Boolean isOptional;
     private Integer sortOrder;
 
@@ -36,5 +44,11 @@ public class RecipeIngredientDTO {
                 .isOptional(ingredient.getIsOptional())
                 .sortOrder(ingredient.getSortOrder())
                 .build();
+    }
+
+    public String getIngredientName() {
+        return (this.normalizedNameSnapshot != null && !this.normalizedNameSnapshot.isBlank()) 
+                ? this.normalizedNameSnapshot 
+                : this.rawText;
     }
 }
