@@ -1,8 +1,7 @@
 package com.today.fridge.recipe.service;
 
-import java.util.Comparator;
 /*
- * RecipeService는 현재 2개의 Method를 제공하고 있습니다.
+* RecipeService는 현재 2개의 Method를 제공하고 있습니다.
  * getRecipes: 페이지네이션을 적용한 레시피 목록을 반환합니다.
  * getRecipe: 특정 레시피를 반환합니다.
  * 
@@ -11,7 +10,8 @@ import java.util.Comparator;
  * RecipeStepDTO 및 RecipeIngredientDTO는 레시피의 재료 및 단계 정보를 제공하기 위한 DTO입니다.
  * 이것이 없으면 N+1이 발생할 가능성이 있다 판단하여 작성하였습니다.
  * 이것들은 밑에 존재하는 getRecipeAllSteps와 getRecipeAllIngredients에서 사용됩니다.
- */
+*/
+import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -144,26 +144,23 @@ public class RecipeService {
         recipeIngredients.forEach(dto -> {
             String ingredientName = dto.getIngredientName();
 
-            // 유저가 가진 해당 재료의 총 수량 합산
-            BigDecimal userQuantity = ownedIngredients.stream()
-                    // 재료 이름이 같은 지 확인 - 원본 이름, 스냅샷 이름, 마스터 테이블 이름 모두 확인
+            // 유저가 가진 해당 재료의 총 수량 합산 (정규화 적용)
+            BigDecimal userQuantityBase = ownedIngredients.stream()
                     .filter(ui -> isMatchingIngredient(ingredientName, ui))
-                    // 재료 양 가져오기 - null 처리 포함
-                    .map(ui -> ui.getQuantity() != null ? ui.getQuantity() : BigDecimal.ZERO)
-                    // 합산
+                    .map(this::getNormalizedUserQuantity)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            // 레시피 재료 양 가져오기
-            BigDecimal requiredQuantity = extractNumericAmount(dto.getAmountText());
+            // 레시피 재료 양 가져오기 (이미 정규화된 값: g, ml 등)
+            BigDecimal requiredQuantityBase = extractNumericAmount(dto.getAmountText());
 
             // 소유 여부 및 충분 여부 설정
-            dto.setUserQuantity(userQuantity);
-            dto.setRequiredQuantity(requiredQuantity);
+            dto.setUserQuantity(userQuantityBase);
+            dto.setRequiredQuantity(requiredQuantityBase);
 
-            if (userQuantity.compareTo(BigDecimal.ZERO) <= 0) {
+            if (userQuantityBase.compareTo(BigDecimal.ZERO) <= 0) {
                 dto.setOwned(false);
                 dto.setSufficiency("MISSING");
-            } else if (userQuantity.compareTo(requiredQuantity) >= 0) {
+            } else if (userQuantityBase.compareTo(requiredQuantityBase) >= 0) {
                 dto.setOwned(true);
                 dto.setSufficiency("OK");
             } else {
@@ -180,6 +177,11 @@ public class RecipeService {
     // ============================================================================================
     @Transactional
     public void ateRecipe(Long recipeId, Long userId) {
+        if (userId == null) {
+            log.warn("ateRecipe 호출 시 userId가 null입니다. 작업을 중단합니다. recipeId: {}", recipeId);
+            return;
+        }
+
         // 1. 레시피에 필요한 모든 재료 정보 조회
         List<RecipeIngredientDTO> recipeIngredients = getRecipeAllIngredients(recipeId);
 
@@ -195,10 +197,10 @@ public class RecipeService {
         // 4. 각 레시피 재료에 대해 차감 로직 수행
         recipeIngredients.forEach(ri -> {
             String ingredientName = ri.getIngredientName();
-            BigDecimal remainingRequired = extractNumericAmount(ri.getAmountText());
+            BigDecimal remainingRequiredBase = extractNumericAmount(ri.getAmountText());
 
             // 요구 수량이 0 이하라면 차감할 필요 없음
-            if (remainingRequired.compareTo(BigDecimal.ZERO) <= 0) {
+            if (remainingRequiredBase.compareTo(BigDecimal.ZERO) <= 0) {
                 return;
             }
 
@@ -213,27 +215,70 @@ public class RecipeService {
 
             // 6. 매칭된 재료들을 순차적으로 차감
             for (UserIngredient ui : targetIngredients) {
-                if (remainingRequired.compareTo(BigDecimal.ZERO) <= 0) {
+                if (remainingRequiredBase.compareTo(BigDecimal.ZERO) <= 0) {
                     break;
                 }
 
-                BigDecimal currentQuantity = ui.getQuantity() != null ? ui.getQuantity() : BigDecimal.ZERO;
-                BigDecimal consumedAmount = remainingRequired.min(currentQuantity);
+                // 유저 수량을 Base Unit(g, ml)으로 변환
+                BigDecimal currentQuantityBase = getNormalizedUserQuantity(ui);
+                BigDecimal consumedAmountBase = remainingRequiredBase.min(currentQuantityBase);
 
-                // 재료 수량 차감
-                BigDecimal newQuantity = currentQuantity.subtract(consumedAmount);
-                ui.setQuantity(newQuantity);
-                remainingRequired = remainingRequired.subtract(consumedAmount);
+                // 차감 후 남은 양 (Base Unit)
+                BigDecimal newQuantityBase = currentQuantityBase.subtract(consumedAmountBase);
+                remainingRequiredBase = remainingRequiredBase.subtract(consumedAmountBase);
 
-                // 수량이 0 이하라면 냉장고에서 삭제
-                if (newQuantity.compareTo(BigDecimal.ZERO) <= 0) {
+                if (newQuantityBase.compareTo(BigDecimal.ZERO) <= 0) {
+                    // 수량이 0 이하라면 냉장고에서 삭제
                     userIngredientRepository.delete(ui);
+                } else {
+                    // 수량이 남았다면 원래 단위로 De-normalize 하여 업데이트
+                    BigDecimal denormalizedQuantity = denormalizeQuantity(newQuantityBase, ui.getUnit());
+                    ui.setQuantity(denormalizedQuantity);
                 }
             }
-
-            // Note: remainingRequired가 여전히 0보다 크더라도 (재료가 부족한 경우),
-            // 별도의 에러를 던지지 않고 현재 보유한 만큼만 모두 소진(0으로 설정/삭제) 처리함.
         });
+    }
+
+    // ============================================================================================
+    // 유저 재료 수량을 Base Unit(g, ml)으로 정규화하는 헬퍼 함수
+    // ============================================================================================
+    private BigDecimal getNormalizedUserQuantity(UserIngredient ui) {
+        BigDecimal quantity = ui.getQuantity() != null ? ui.getQuantity() : BigDecimal.ZERO;
+        String unit = ui.getUnit();
+
+        if (unit == null) return quantity;
+
+        if (unit.equalsIgnoreCase("kg") || unit.equalsIgnoreCase("L")) {
+            return quantity.multiply(new BigDecimal("1000"));
+        }
+        // "컵"이나 "모"가 유저 단위로 명시적으로 저장되어 있는 경우도 처리
+        if (unit.contains("컵")) {
+            return quantity.multiply(new BigDecimal("100"));
+        }
+        if (unit.contains("모")) {
+            return quantity.multiply(new BigDecimal("300"));
+        }
+
+        return quantity;
+    }
+
+    // ============================================================================================
+    // Base Unit(g, ml) 수량을 유저의 원래 단위로 역변환하는 헬퍼 함수
+    // ============================================================================================
+    private BigDecimal denormalizeQuantity(BigDecimal baseQuantity, String originalUnit) {
+        if (originalUnit == null) return baseQuantity;
+
+        if (originalUnit.equalsIgnoreCase("kg") || originalUnit.equalsIgnoreCase("L")) {
+            return baseQuantity.divide(new BigDecimal("1000"), 3, java.math.RoundingMode.HALF_UP);
+        }
+        if (originalUnit.contains("컵")) {
+            return baseQuantity.divide(new BigDecimal("100"), 3, java.math.RoundingMode.HALF_UP);
+        }
+        if (originalUnit.contains("모")) {
+            return baseQuantity.divide(new BigDecimal("300"), 3, java.math.RoundingMode.HALF_UP);
+        }
+
+        return baseQuantity;
     }
 
     // 전체 레시피 조회(페이징 처리됨)
@@ -293,24 +338,23 @@ public class RecipeService {
     // 레시피 재료의 수량 텍스트(예: "300g", "1/2개", "1.5L")에서 숫자만 추출하는 헬퍼 함수
     // ============================================================================================
     private BigDecimal extractNumericAmount(String amountText) {
+        return extractNumericAmount(amountText, null);
+    }
+
+    private BigDecimal extractNumericAmount(String amountText, String unitField) {
         if (amountText == null || amountText.isBlank()) {
             return BigDecimal.ZERO;
         }
 
-        // 1. 특정 단위 변환 (컵 -> 100, 모 -> 300)
-        if (amountText.contains("컵")) {
-            return new BigDecimal("100");
-        }
-        if (amountText.contains("모")) {
-            return new BigDecimal("300");
-        }
-
-        // 2. 정량 비교가 필요한 단위가 포함되어 있는지 확인
-        boolean hasStandardUnit = amountText.contains("개") ||
-                amountText.contains("g") ||
-                amountText.contains("L") ||
-                amountText.contains("mL") ||
-                amountText.contains("kg");
+        // 1. 정량 비교가 필요한 단위가 포함되어 있는지 확인 (텍스트 또는 별도 단위 필드)
+        String combinedText = (amountText + (unitField != null ? unitField : "")).toLowerCase();
+        boolean hasStandardUnit = combinedText.contains("개") ||
+                combinedText.contains("g") ||
+                combinedText.contains("l") ||
+                combinedText.contains("ml") ||
+                combinedText.contains("kg") ||
+                combinedText.contains("컵") ||
+                combinedText.contains("모");
 
         if (!hasStandardUnit) {
             return BigDecimal.ZERO;
@@ -319,14 +363,25 @@ public class RecipeService {
         BigDecimal amount = BigDecimal.ZERO;
         boolean extracted = false;
 
-        // 3. 분수 형태 처리 (예: "1/2", "3/4")
+        // 2. 분수 형태 처리 (예: "1 1/2", "3/4")
         if (amountText.contains("/")) {
             try {
-                String[] parts = amountText.split("/");
-                if (parts.length == 2) {
-                    double num = Double.parseDouble(parts[0].replaceAll("[^0-9.]", ""));
-                    double den = Double.parseDouble(parts[1].replaceAll("[^0-9.]", ""));
-                    if (den != 0) {
+                // "1 1/2" 같은 믹스드 넘버 처리
+                Pattern mixedPattern = Pattern.compile("(\\d+)\\s+(\\d+)/(\\d+)");
+                Matcher mixedMatcher = mixedPattern.matcher(amountText);
+                if (mixedMatcher.find()) {
+                    double whole = Double.parseDouble(mixedMatcher.group(1));
+                    double num = Double.parseDouble(mixedMatcher.group(2));
+                    double den = Double.parseDouble(mixedMatcher.group(3));
+                    amount = BigDecimal.valueOf(whole + (num / den));
+                    extracted = true;
+                } else {
+                    // 일반 분수 "1/2" 처리
+                    Pattern fractionPattern = Pattern.compile("(\\d+)/(\\d+)");
+                    Matcher fractionMatcher = fractionPattern.matcher(amountText);
+                    if (fractionMatcher.find()) {
+                        double num = Double.parseDouble(fractionMatcher.group(1));
+                        double den = Double.parseDouble(fractionMatcher.group(2));
                         amount = BigDecimal.valueOf(num / den);
                         extracted = true;
                     }
@@ -336,7 +391,7 @@ public class RecipeService {
             }
         }
 
-        // 4. 일반 숫자 추출 (정수 또는 실수)
+        // 3. 일반 숫자 추출 (정수 또는 실수)
         if (!extracted) {
             Pattern pattern = Pattern.compile("(\\d+\\.?\\d*)");
             Matcher matcher = pattern.matcher(amountText);
@@ -350,10 +405,14 @@ public class RecipeService {
             }
         }
 
-        // 5. 단위 변환 (kg -> g, L -> mL)
+        // 4. 단위 변환 (Base Unit으로 정규화)
         if (extracted) {
-            if (amountText.contains("kg") || (amountText.contains("L") && !amountText.contains("mL"))) {
+            if (combinedText.contains("kg") || (combinedText.contains("l") && !combinedText.contains("ml"))) {
                 amount = amount.multiply(new BigDecimal("1000"));
+            } else if (combinedText.contains("컵")) {
+                amount = amount.multiply(new BigDecimal("100"));
+            } else if (combinedText.contains("모")) {
+                amount = amount.multiply(new BigDecimal("300"));
             }
         }
 
@@ -364,6 +423,8 @@ public class RecipeService {
     // 재료 매칭 여부 확인
     // ============================================================================================
     private boolean isMatchingIngredient(String ingredientName, UserIngredient ui) {
+        if (ingredientName == null) return false;
+
         return ingredientName.equals(ui.getRawName()) ||
                 ingredientName.equals(ui.getNormalizedNameSnapshot()) ||
                 (ui.getIngredientMaster() != null &&
