@@ -1,5 +1,6 @@
 package com.today.fridge.ingredient.entity;
 
+import com.today.fridge.file.entity.FileAsset;
 import com.today.fridge.user.entity.User;
 import jakarta.persistence.*;
 import com.today.fridge.ingredient.domain.FreshnessCalculator;
@@ -55,6 +56,13 @@ public class UserIngredient {
 
     @Column(name = "category_id")
     private Long categoryId;
+
+    /**
+     * 식재료 대표 이미지 — 업로드 스토어(아파치 등) 메타데이터가 등록된 {@code file_asset}.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "file_id")
+    private FileAsset fileAsset;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "freshness_status", length = 20)

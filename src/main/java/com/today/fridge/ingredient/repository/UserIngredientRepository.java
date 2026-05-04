@@ -14,7 +14,7 @@ import java.util.Optional;
 
 public interface UserIngredientRepository extends JpaRepository<UserIngredient, Long>, UserIngredientRepositoryCustom {
 
-    @EntityGraph(attributePaths = {"ingredientMaster"})
+    @EntityGraph(attributePaths = {"ingredientMaster", "fileAsset"})
     @Query("""
             select ui from UserIngredient ui
             where ui.userIngredientId = :id and ui.user.userId = :userId

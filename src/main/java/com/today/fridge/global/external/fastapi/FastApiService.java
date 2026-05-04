@@ -136,10 +136,15 @@ public class FastApiService {
             data.setFastApiRequestId(env.getRequestId());
             return data;
         } catch (RestClientException e) {
-            log.warn("[FastApiService] vision 호출 HTTP 실패: {}", e.getMessage());
+            log.warn("[FastApiService] vision 호출 HTTP 실패 url={} : {}", url, e.getMessage());
+            String detail = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+            String hint =
+                    " (로컬: FastAPI backend_2를 "
+                            + baseUrl
+                            + " 에서 실행했는지, 첫 추론은 시간이 걸릴 수 있습니다.)";
             throw new BusinessException(
                     ErrorCode.AI_RECOGNITION_FAILED,
-                    "이미지 인식 서버에 연결할 수 없습니다: " + e.getMessage());
+                    "이미지 인식 서버에 연결할 수 없습니다: " + detail + hint);
         }
     }
 
