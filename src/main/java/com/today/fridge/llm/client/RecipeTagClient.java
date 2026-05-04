@@ -17,7 +17,7 @@ public class RecipeTagClient {
             RecipeTagClassifyRequest request
     ) {
         return restClient.post()
-                .uri("http://localhost:8000/api/v1/internal/recipe-tags/classify")
+                .uri("http://192.168.0.6:8000/api/v1/internal/recipe-tags/classify")
                 .body(request)
                 .retrieve()
                 .body(RecipeTagClassifyResponse.class);
