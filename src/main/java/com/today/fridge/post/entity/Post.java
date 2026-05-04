@@ -37,7 +37,7 @@ public class Post {
     private Long likeCount = 0L;
 
     @Column(name = "report_count")
-    private Long reportCount;
+    private Long reportCount = 0L;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
