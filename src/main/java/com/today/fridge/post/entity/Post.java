@@ -34,7 +34,7 @@ public class Post {
     private String content;
 
     @Column(name = "like_count")
-    private Long likeCount;
+    private Long likeCount = 0L;
 
     @Column(name = "report_count")
     private Long reportCount;
