@@ -19,7 +19,9 @@ import java.math.BigDecimal;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 // Response DTO
@@ -237,10 +239,45 @@ public class RecipeService {
     }
 
     // 전체 레시피 조회(페이징 처리됨)
-    public PageResult<RecipeListResponse> getRecipes(Pageable pageable) {
+    public PageResult<RecipeListResponse> getRecipes(
+            String cookingType,
+            String sort,
+            Pageable pageable
+    ) {
+    	Sort sortSpec = Sort.unsorted();
 
-        Page<Recipe> recipePage = recipeRepository.findByIsActiveTrue(pageable);
+    	if (sort != null) {
+    	    switch (sort) {
+    	        case "time_asc":
+    	            sortSpec = Sort.by(Sort.Direction.ASC, "cookTimeText");
+    	            break;
+//    	        case "difficulty_asc":
+//    	            sortSpec = Sort.by(Sort.Direction.ASC, "difficulty");
+//    	            break;
+    	        case "name":
+    	            sortSpec = Sort.by(Sort.Direction.ASC, "title");
+    	            break;
+    	        default:
+    	            sortSpec = Sort.unsorted();
+    	    }
+    	}
 
+    	Pageable sortedPageable = PageRequest.of(
+    	        pageable.getPageNumber(),
+    	        pageable.getPageSize(),
+    	        sortSpec
+    	);
+        Page<Recipe> recipePage;
+
+        if (cookingType == null || "ALL".equalsIgnoreCase(cookingType)) {
+            recipePage = recipeRepository.findByIsActiveTrue(sortedPageable);
+        } else {
+            recipePage = recipeRepository.findActiveRecipesByCookingType(
+                    cookingType,
+                    sortedPageable
+            );
+        }
+        log.info("[RECIPE_SORT] sort={}, pageableSort={}", sort, sortedPageable.getSort());
         List<RecipeListResponse> content = recipePage.getContent()
                 .stream()
                 .map(RecipeListResponse::from)

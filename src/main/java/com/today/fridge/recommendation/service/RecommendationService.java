@@ -5,14 +5,18 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.today.fridge.embedding.service.RecipeEmbeddingSearchService;
+import com.today.fridge.global.response.PageResponse;
+import com.today.fridge.global.response.PageResult;
 import com.today.fridge.ingredient.repository.UserIngredientRepository;
 import com.today.fridge.llm.service.RecommendationExplanationService;
 import com.today.fridge.recipe.entity.Recipe;
 import com.today.fridge.recipe.entity.RecipeTag;
+import com.today.fridge.recipe.entity.RecipeTagSourceType;
 import com.today.fridge.recipe.repository.RecipeIngredientRepository;
 import com.today.fridge.recipe.repository.RecipeRepository;
 import com.today.fridge.recipe.repository.RecipeTagRepository;
@@ -95,16 +99,6 @@ public class RecommendationService {
                         tagScore
                 );
 
-        log.info(
-                "[HYBRID] recipeId={}, title={}, totalScore={}, semanticScore={}, tagScore={}, hybridScore={}",
-                recipe.getRecipeId(),
-                recipe.getTitle(),
-                Math.round(totalScore * 10) / 10.0,
-                Math.round(semanticScore * 1000) / 1000.0,
-                Math.round(tagScore * 10) / 10.0,
-                Math.round(hybridScore * 10) / 10.0
-        );
-
         String reason = recommendationReasonService.buildReason(
                 Math.round(matchRate * 10) / 10.0,
                 conditionTags,
@@ -177,7 +171,7 @@ public class RecommendationService {
                         .build())
                 .toList();
     }
-    public List<RecipeRecommendationResponse> recommend(Long userId) {
+    public PageResult<RecipeRecommendationResponse> recommend(Long userId, Pageable pageable) {
         return recommend(
                 RecommendationQuery.builder()
                         .userId(userId)
@@ -189,11 +183,12 @@ public class RecommendationService {
                         .source("HOME")
                         .useUserProfile(true)
                         .useUserFridge(true)
-                        .build()
+                        .build(),
+                   pageable
         );
     }
     
-    public List<RecipeRecommendationResponse> recommend(RecommendationQuery query) {
+    public PageResult<RecipeRecommendationResponse> recommend(RecommendationQuery query, Pageable pageable) {
     	List<String> ownedIngredients =
     	        query.isUseUserFridge() && query.getUserId() != null
     	                ? userIngredientRepository.findOwnedIngredientNamesByUserId(query.getUserId())
@@ -260,8 +255,12 @@ public class RecommendationService {
                             semanticQuery,
                             200
                     );
-            log.info("[SEMANTIC_QUERY] {}", semanticQuery);
-            log.info("[SEMANTIC_RESULT_SIZE] {}", semanticResults.size());
+            semanticResults.stream().limit(5).forEach(r ->
+            log.info("[SEMANTIC_TOP] recipeId={}, distance={}",
+                r.getRecipeId(),
+                r.getDistance()
+            )
+        );
 
             semanticScoreMap =
                     semanticResults.stream()
@@ -322,19 +321,26 @@ public class RecommendationService {
                             recipeConditions
                     );
                     double semanticScore =
-                            semanticScoreMap.containsKey(recipe.getRecipeId())
-                            ? semanticScoreMap.get(recipe.getRecipeId())
-                            : 0.3;
-                    List<RecipeTag> tags = recipeTagMap.getOrDefault(recipe.getRecipeId(), List.of());
+                            semanticScoreMap.getOrDefault(recipe.getRecipeId(), 0.0);
+                    List<RecipeTag> allTags =
+                            recipeTagMap.getOrDefault(recipe.getRecipeId(), List.of());
 
+                    List<RecipeTag> llmTags = allTags.stream()
+                            .filter(tag -> tag.getSourceType() == RecipeTagSourceType.LLM)
+                            .toList();
+
+                    List<RecipeTag> tags = llmTags.isEmpty() ? allTags : llmTags;
 
                     double tagScore = useHybridRanking
                             ? recommendationTagScoreService.calculateTagScore(
                                     String.join(" ", query.getKeywords()),
-                                    recipeTagMap.getOrDefault(recipe.getRecipeId(), List.of())
+                                    tags
                             )
                             : 0.0;
-                   
+                    // 태그는 맞는데 semantic 유사도가 너무 낮으면 태그 신뢰도 낮춤
+                    if (useHybridRanking && tagScore > 0 && semanticScore < 0.5) {
+                        tagScore = 0.0;
+                    }
                     return createRecipeResponse(
                             recipe,
                             requiredIngredients,
@@ -354,12 +360,39 @@ public class RecommendationService {
                     return Double.compare(b.getTotalScore(), a.getTotalScore());
                 })
                 .toList();
-        
         if (useHybridRanking) {
-            return attachLlmExplanationToTopN(responses, 3);
+            responses.stream()
+                    .limit(10)
+                    .forEach(r -> log.info(
+                            "[RANKING_TOP] recipeId={}, title={}, totalScore={}, semanticScore={}, tagScore={}, hybridScore={}",
+                            r.getRecipeId(),
+                            r.getTitle(),
+                            r.getTotalScore(),
+                            r.getSemanticScore(),
+                            r.getTagScore(),
+                            r.getHybridScore()
+                    ));
         }
+        List<RecipeRecommendationResponse> finalResponses = useHybridRanking
+                ? attachLlmExplanationToTopN(responses, 3)
+                : responses;
 
-        return responses;
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), finalResponses.size());
+
+        List<RecipeRecommendationResponse> content =
+                start >= finalResponses.size()
+                        ? List.of()
+                        : finalResponses.subList(start, end);
+
+        PageResponse pageInfo = new PageResponse(
+                finalResponses.size(),
+                (int) Math.ceil((double) finalResponses.size() / pageable.getPageSize()),
+                pageable.getPageNumber(),
+                pageable.getPageSize()
+        );
+
+        return new PageResult<>(content, pageInfo);
     }
     private List<RecipeRecommendationResponse> attachLlmExplanationToTopN(
             List<RecipeRecommendationResponse> responses,
