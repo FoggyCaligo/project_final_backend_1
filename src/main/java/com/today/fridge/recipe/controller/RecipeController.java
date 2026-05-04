@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.today.fridge.global.response.ApiResponse;
@@ -27,12 +28,16 @@ public class RecipeController {
 
 	@GetMapping
 	public ResponseEntity<ApiResponse<PageResult<RecipeListResponse>>> getRecipes(
-			@PageableDefault(size = 12) Pageable pageable) {
-
-		return ResponseEntity.ok(
-				ApiResponse.success(
-						recipeService.getRecipes(pageable),
-						"전체 레시피 조회 성공"));
+	        @RequestParam(name = "cookingType",required = false, defaultValue = "ALL") String cookingType,
+	        @RequestParam(name = "sort",required = false, defaultValue = "default") String sort,
+	        @PageableDefault(size = 12) Pageable pageable
+	) {
+	    return ResponseEntity.ok(
+	            ApiResponse.success(
+	                    recipeService.getRecipes(cookingType, sort, pageable),
+	                    "전체 레시피 조회 성공"
+	            )
+	    );
 	}
 
 	@GetMapping("/{recipeId}")
