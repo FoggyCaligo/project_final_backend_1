@@ -14,10 +14,10 @@ import java.util.List;
 /**
  * Redis 캐시 기반 쇼핑 컨트롤러 (ShoppingController2의 Redis 적용 버전).
  *
- * 추가: /api/v3/shopping/search?keyword=계란 — 키워드 기반 실시간 최저가 검색
+ * 추가: /api/v1/shopping/search?keyword=계란 — 키워드 기반 실시간 최저가 검색
  */
 @RestController
-@RequestMapping("/api/v3/shopping")
+@RequestMapping("/api/v1/shopping")
 @RequiredArgsConstructor
 public class ShoppingController {
 
@@ -50,7 +50,7 @@ public class ShoppingController {
      * 키워드 기반 실시간 최저가 검색.
      * DB의 ingredient_master에 없는 식재료도 직접 검색 가능합니다. -> 추후 냉장고에 재료가 있다면 냉장고에 재료가 있다는걸 알려주는 기능 도입 검토중
      *
-     * GET /api/v3/shopping/search?keyword=계란
+     * GET /api/v1/shopping/search?keyword=계란
      */
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<IngredientPriceResponse>> searchByKeyword(

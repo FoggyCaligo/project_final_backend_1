@@ -25,13 +25,13 @@ import java.io.IOException;
  */
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter2.class);
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     private final JwtProvider jwtProvider;
     private final UserDetailsService userDetailsService;
     private final RedisTokenService redisTokenService;
 
-    public JwtAuthenticationFilter2(JwtProvider jwtProvider,
+    public JwtAuthenticationFilter(JwtProvider jwtProvider,
                                     UserDetailsService userDetailsService,
                                     RedisTokenService redisTokenService) {
         this.jwtProvider = jwtProvider;

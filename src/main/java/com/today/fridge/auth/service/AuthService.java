@@ -56,7 +56,7 @@ public class AuthService {
     public void createSession(User user, String refreshToken, long validityMs) {
         String tokenHash = RedisTokenService.hashToken(refreshToken);
         redisTokenService.saveRefreshToken(tokenHash, user.getLoginId(), validityMs);
-        log.info("[AuthService2] Redis 세션 생성 완료 loginId={}", user.getLoginId());
+        log.info("[AuthService] Redis 세션 생성 완료 loginId={}", user.getLoginId());
     }
 
     /**
@@ -70,7 +70,7 @@ public class AuthService {
         if (accessToken != null) {
             redisTokenService.blacklistAccessToken(accessToken, accessTokenRemainingMs);
         }
-        log.info("[AuthService2] 세션 무효화 완료");
+        log.info("[AuthService] 세션 무효화 완료");
     }
 
     /**
@@ -89,7 +89,7 @@ public class AuthService {
 
         // 기존 토큰 삭제 (로테이션)
         redisTokenService.deleteRefreshToken(tokenHash);
-        log.info("[AuthService2] Refresh 로테이션 완료 loginId={}", loginId);
+        log.info("[AuthService] Refresh 로테이션 완료 loginId={}", loginId);
         return loginId;
     }
 }

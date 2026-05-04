@@ -39,7 +39,7 @@ public class ElevenStShoppingClient extends CoupangShoppingClient {
     private String apiKey;
 
     public ElevenStShoppingClient(RestClient restClient) {
-        super();
+        super(restClient);
         this.restClient = restClient;
     }
 

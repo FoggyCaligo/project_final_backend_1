@@ -84,7 +84,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/files/**").permitAll()
                         .requestMatchers("/api/fastapi-test").permitAll()
                         // v3 쇼핑 검색 (키워드 검색은 인증 없이 허용)
-                        .requestMatchers("/api/v3/shopping/search").permitAll()
+                        .requestMatchers("/api/v1/shopping/search").permitAll()
                         // 인증 필요한 API
                         .requestMatchers("/api/v1/auth/me").authenticated()
                         .requestMatchers("/api/v1/auth/logout").authenticated()

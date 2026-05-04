@@ -47,7 +47,7 @@ import java.util.Map;
 @RequestMapping("/api/v1/auth2")
 public class AuthController {
 
-    private static final Logger log = LoggerFactory.getLogger(AuthController2.class);
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
     // Access Token: 15분
     private static final long ACCESS_TOKEN_MS = 900_000L;
@@ -55,7 +55,7 @@ public class AuthController {
     private static final long REFRESH_TOKEN_MS = 604_800_000L;
 
     private final JwtProvider jwtProvider;
-    private final AuthService2 authService2;
+    private final AuthService authService2;
     private final UserService userService;
     private final RedisEmailVerifyService redisEmailVerifyService;
     private final EmailService emailService;
@@ -65,15 +65,15 @@ public class AuthController {
     @Value("${app.kakao.rest-api-key}")
     private String restApiKey;
 
-    // 카카오 redirect URI — auth2 경로로 변경
+    // 카카오 redirect URI
     @Value("${app.kakao.redirect-uri:http://localhost:8080/api/v1/auth2/kakao/callback}")
     private String redirectUri;
 
     @Value("${app.kakao.frontend-base-url}")
     private String frontendBaseUrl;
 
-    public AuthController2(JwtProvider jwtProvider,
-                           AuthService2 authService2,
+    public AuthController(JwtProvider jwtProvider,
+                           AuthService authService2,
                            UserService userService,
                            RedisEmailVerifyService redisEmailVerifyService,
                            EmailService emailService,
@@ -251,7 +251,7 @@ public class AuthController {
                               HttpServletResponse response) throws IOException {
         if (error != null) {
             log.warn("[KakaoOAuth2] 사용자가 카카오 로그인을 취소했습니다.");
-            response.sendRedirect(frontendBaseUrl + "?kakaoError=cancelled");
+            response.sendRedirect(frontendBaseUrl + "/login?error=true");
             return;
         }
 
@@ -275,16 +275,11 @@ public class AuthController {
             setTokenCookies(response, accessToken, refreshToken);
 
             // 6. 프론트엔드 리다이렉트
-            String encodedLoginId = URLEncoder.encode(user.getLoginId(), StandardCharsets.UTF_8);
-            String encodedNickname = URLEncoder.encode(user.getNickname(), StandardCharsets.UTF_8);
-            response.sendRedirect(frontendBaseUrl
-                    + "?kakaoLogin=success"
-                    + "&loginId=" + encodedLoginId
-                    + "&nickname=" + encodedNickname);
+            response.sendRedirect(frontendBaseUrl + "/dashboard");
 
         } catch (Exception e) {
             log.error("[KakaoOAuth2] 로그인 처리 중 오류: {} - {}", e.getClass().getSimpleName(), e.getMessage(), e);
-            response.sendRedirect(frontendBaseUrl + "?kakaoError=failed");
+            response.sendRedirect(frontendBaseUrl + "/login?error=true");
         }
     }
 
