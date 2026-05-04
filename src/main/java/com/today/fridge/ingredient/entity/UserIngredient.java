@@ -61,7 +61,7 @@ public class UserIngredient {
      * 식재료 대표 이미지 — 업로드 스토어(아파치 등) 메타데이터가 등록된 {@code file_asset}.
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "file_id")
+    @JoinColumn(name = "file_id", nullable = true)
     private FileAsset fileAsset;
 
     @Enumerated(EnumType.STRING)
