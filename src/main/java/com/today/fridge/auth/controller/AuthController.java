@@ -21,8 +21,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -178,14 +176,15 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ApiResponse<Map<String, String>> me() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+    public ApiResponse<Map<String, Object>> me(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+        if (userId == null) {
             return ApiResponse.error("UNAUTHORIZED", "인증이 필요합니다.");
         }
-        String loginId = auth.getName();
-        String nickname = userService.getProfile(loginId).getNickname();
-        return ApiResponse.success(Map.of("loginId", loginId, "nickname", nickname), "현재 사용자 정보입니다.");
+        var profile = userService.getProfileByUserId(userId);
+        return ApiResponse.success(
+                Map.of("userId", userId, "loginId", profile.getLoginId(), "nickname", profile.getNickname()),
+                "현재 사용자 정보입니다.");
     }
 
     // ──────────────────────────────────────────────
