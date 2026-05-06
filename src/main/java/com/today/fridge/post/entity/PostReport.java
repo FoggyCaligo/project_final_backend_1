@@ -4,13 +4,15 @@ import com.today.fridge.user.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-@Getter
-@NoArgsConstructor
 @Entity
 @Table(name = "post_report")
+@Getter
+@Setter
+@NoArgsConstructor
 public class PostReport {
 
     @Id
@@ -32,6 +34,6 @@ public class PostReport {
     @Column(name = "detail_text", length = 500)
     private String detailText;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 }
