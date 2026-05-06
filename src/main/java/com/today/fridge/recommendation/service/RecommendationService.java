@@ -2,9 +2,11 @@ package com.today.fridge.recommendation.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -68,11 +70,13 @@ public class RecommendationService {
         List<String> ignoredIngredients = List.of("물", "소금", "후추");
 
         List<String> matchedIngredients = requiredIngredients.stream()
+                .filter(Objects::nonNull)
                 .filter(ingredient -> !ignoredIngredients.contains(ingredient))
                 .filter(ownedIngredients::contains)
                 .toList();
 
         List<String> scoringRequiredIngredients = requiredIngredients.stream()
+                .filter(Objects::nonNull)
                 .filter(ingredient -> !ignoredIngredients.contains(ingredient))
                 .toList();
 
@@ -153,19 +157,26 @@ public class RecommendationService {
             List<RecipeConditionMap> recipeConditions
     ) {
         List<Long> userConditionIds = userConditions.stream()
-                .map(uc -> uc.getConditionCode().getConditionId())
+                .map(UserCondition::getConditionCode)
+                .filter(Objects::nonNull)
+                .map(conditionCode -> conditionCode.getConditionId())
+                .filter(Objects::nonNull)
                 .toList();
 
         return recipeConditions.stream()
                 .filter(rc -> userConditionIds.contains(
-                        rc.getConditionCode().getConditionId()
+                        rc.getConditionCode() != null
+                                ? rc.getConditionCode().getConditionId()
+                                : null
                 ))
                 .filter(rc -> "CAUTION".equals(rc.getFitType()))
-                .map(rc -> ConditionWarningDto.builder()
-                        .conditionCode(rc.getConditionCode().getConditionCode())
-                        .conditionName(rc.getConditionCode().getConditionName())
+                .map(RecipeConditionMap::getConditionCode)
+                .filter(Objects::nonNull)
+                .map(conditionCode -> ConditionWarningDto.builder()
+                        .conditionCode(conditionCode.getConditionCode())
+                        .conditionName(conditionCode.getConditionName())
                         .warningMessage(
-                                rc.getConditionCode().getConditionName()
+                                conditionCode.getConditionName()
                                         + " 조건에 주의가 필요한 레시피입니다."
                         )
                         .build())
@@ -187,6 +198,10 @@ public class RecommendationService {
                    pageable
         );
     }
+
+    public List<RecipeRecommendationResponse> recommend(RecommendationQuery query) {
+        return recommend(query, PageRequest.of(0, 9)).content();
+    }
     
     public PageResult<RecipeRecommendationResponse> recommend(RecommendationQuery query, Pageable pageable) {
     	List<String> ownedIngredients =
@@ -204,17 +219,24 @@ public class RecommendationService {
                         : List.of();
         List<String> activeConditionCodes = java.util.stream.Stream.concat(
                 userConditions.stream()
-                        .map(uc -> uc.getConditionCode().getConditionCode()),
+                        .map(UserCondition::getConditionCode)
+                        .filter(Objects::nonNull)
+                        .map(conditionCode -> conditionCode.getConditionCode())
+                        .filter(Objects::nonNull),
                 query.getConditionCodes() == null
                         ? java.util.stream.Stream.empty()
                         : query.getConditionCodes().stream()
+                            .filter(Objects::nonNull)
         )
         .distinct()
         .toList();
         // 사용자 알러지 코드 추출 (condition_code reuse 중이면)
         List<String> userAllergenCodes =
                 userConditions.stream()
-                        .map(uc -> uc.getConditionCode().getConditionCode())
+                        .map(UserCondition::getConditionCode)
+                        .filter(Objects::nonNull)
+                        .map(conditionCode -> conditionCode.getConditionCode())
+                        .filter(Objects::nonNull)
                         .filter(code -> code.startsWith("ALLERGY"))
                         .map(code -> code.replace("ALLERGY_", ""))
                         .toList();
@@ -302,10 +324,12 @@ public class RecommendationService {
                     if (useHybridRanking && query.getIncludeIngredients() != null && !query.getIncludeIngredients().isEmpty()) {
 
                     	Set<String> normalizedRequired = requiredIngredients.stream()
+                    	        .filter(Objects::nonNull)
                     	        .map(String::toLowerCase)
                     	        .collect(Collectors.toSet());
 
                     	boolean containsRequested = query.getIncludeIngredients().stream()
+                    	        .filter(Objects::nonNull)
                     	        .map(String::toLowerCase)
                     	        .anyMatch(req ->
                     	                normalizedRequired.stream()
@@ -385,11 +409,12 @@ public class RecommendationService {
                         ? List.of()
                         : finalResponses.subList(start, end);
 
+        int pageSize = pageable.getPageSize() <= 0 ? 9 : pageable.getPageSize();
         PageResponse pageInfo = new PageResponse(
                 finalResponses.size(),
-                (int) Math.ceil((double) finalResponses.size() / pageable.getPageSize()),
+                (int) Math.ceil((double) finalResponses.size() / pageSize),
                 pageable.getPageNumber(),
-                pageable.getPageSize()
+                pageSize
         );
 
         return new PageResult<>(content, pageInfo);
