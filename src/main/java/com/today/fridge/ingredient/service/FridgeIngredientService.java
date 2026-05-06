@@ -1,5 +1,8 @@
 package com.today.fridge.ingredient.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.today.fridge.file.dto.FileAssetDto;
+import com.today.fridge.file.service.FileAssetService;
 import com.today.fridge.global.exception.BusinessException;
 import com.today.fridge.global.exception.ErrorCode;
 import com.today.fridge.global.external.fastapi.EstimateExpirationResponse;
@@ -14,8 +17,13 @@ import com.today.fridge.ingredient.dto.FridgeIngredientListData;
 import com.today.fridge.ingredient.dto.FridgeSummaryResponse;
 import com.today.fridge.ingredient.dto.IngredientResponse;
 import com.today.fridge.ingredient.dto.SoonItemResponse;
+import com.today.fridge.global.upload.BytesMultipartFile;
 import com.today.fridge.ingredient.dto.vision.VisionRecognizeDataDto;
+import com.today.fridge.vision.dto.VisionRecognitionStatusDto;
+import com.today.fridge.vision.service.VisionRecognitionPersistenceService;
+import com.today.fridge.vision.service.VisionRecognitionQueryService;
 import com.today.fridge.ingredient.entity.IngredientCategory;
+import com.today.fridge.file.entity.FileAsset;
 import com.today.fridge.ingredient.entity.IngredientMaster;
 import com.today.fridge.ingredient.entity.UserIngredient;
 import com.today.fridge.ingredient.repository.IngredientCategoryRepository;
@@ -34,6 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -55,18 +64,30 @@ public class FridgeIngredientService {
     private final IngredientMasterRepository ingredientMasterRepository;
     private final IngredientCategoryRepository ingredientCategoryRepository;
     private final FastApiService fastApiService;
+    private final VisionRecognitionPersistenceService visionRecognitionPersistenceService;
+    private final VisionRecognitionQueryService visionRecognitionQueryService;
+    private final FileAssetService fileAssetService;
+    private final ObjectMapper objectMapper;
 
     public FridgeIngredientService(
             UserIngredientRepository userIngredientRepository,
             UserRepository userRepository,
             IngredientMasterRepository ingredientMasterRepository,
             IngredientCategoryRepository ingredientCategoryRepository,
-            FastApiService fastApiService) {
+            FastApiService fastApiService,
+            VisionRecognitionPersistenceService visionRecognitionPersistenceService,
+            VisionRecognitionQueryService visionRecognitionQueryService,
+            FileAssetService fileAssetService,
+            ObjectMapper objectMapper) {
         this.userIngredientRepository = userIngredientRepository;
         this.userRepository = userRepository;
         this.ingredientMasterRepository = ingredientMasterRepository;
         this.ingredientCategoryRepository = ingredientCategoryRepository;
         this.fastApiService = fastApiService;
+        this.visionRecognitionPersistenceService = visionRecognitionPersistenceService;
+        this.visionRecognitionQueryService = visionRecognitionQueryService;
+        this.fileAssetService = fileAssetService;
+        this.objectMapper = objectMapper;
     }
 
     public List<CategoryResponse> listCategories() {
@@ -74,6 +95,12 @@ public class FridgeIngredientService {
                 .stream()
                 .map(c -> new CategoryResponse(c.getCategoryId(), c.getCategoryCode(), c.getCategoryName(), c.getSortOrder()))
                 .toList();
+    }
+
+    public IngredientResponse getOne(Long userId, Long ingredientId) {
+        UserIngredient e = userIngredientRepository.findByIdAndUserId(ingredientId, userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INGREDIENT_NOT_FOUND));
+        return toResponse(e);
     }
 
     public FridgeIngredientListData list(
@@ -168,12 +195,24 @@ public class FridgeIngredientService {
             }
         }
         if (catId == null) {
-            catId = categoryIdFromLinkedMaster(e.getIngredientMaster());
-        }
-        if (catId == null) {
-            catId = inferCategoryFromNameHeuristic(e.getRawName());
+            Long fromMaster = categoryIdFromLinkedMaster(e.getIngredientMaster());
+            Long heuristic = inferCategoryFromNameHeuristic(e.getRawName());
+            if (fromMaster != null && isUnknownCategoryId(fromMaster) && heuristic != null) {
+                catId = heuristic;
+            } else if (fromMaster != null) {
+                catId = fromMaster;
+            } else {
+                catId = heuristic;
+            }
         }
         e.setCategoryId(catId);
+
+        if (req.getFileId() != null) {
+            e.setFileAsset(fileAssetService.getOwnedFileOrThrow(req.getFileId(), userId));
+        } else if (req.getImageFile() != null) {
+            var savedAsset = fileAssetService.saveFromUploadMetadata(user, req.getImageFile());
+            e.setFileAsset(savedAsset);
+        }
 
         if (req.getExpirationDate() != null) {
             e.setExpiresAt(req.getExpirationDate());
@@ -264,6 +303,8 @@ public class FridgeIngredientService {
                 e.setCategoryId(isUnknownCategoryId(validated) ? null : validated);
             }
         }
+        maybeApplyImageFilePatch(userId, e, body);
+        maybeApplyFileIdPatch(userId, e, body);
 
         tryAttachMaster(e);
         tryFillCategoryFromMasterWhenUnset(e, body.containsKey("categoryId"));
@@ -350,20 +391,32 @@ public class FridgeIngredientService {
         if (e.getCategoryId() != null) {
             return;
         }
-        Long cid = categoryIdFromLinkedMaster(e.getIngredientMaster());
-        if (cid != null) {
-            e.setCategoryId(cid);
+        Long fromMaster = categoryIdFromLinkedMaster(e.getIngredientMaster());
+        Long heuristic = inferCategoryFromNameHeuristic(e.getRawName());
+        if (fromMaster != null && isUnknownCategoryId(fromMaster) && heuristic != null) {
+            e.setCategoryId(heuristic);
             return;
         }
-        Long inferred = inferCategoryFromNameHeuristic(e.getRawName());
-        if (inferred != null) {
-            e.setCategoryId(inferred);
+        if (fromMaster != null) {
+            e.setCategoryId(fromMaster);
+            return;
+        }
+        if (heuristic != null) {
+            e.setCategoryId(heuristic);
         }
     }
 
     private IngredientResponse toResponse(UserIngredient ui) {
         LocalDate today = LocalDate.now(KST);
         FreshnessStatus status = FreshnessCalculator.computeStatus(ui.getExpiresAt(), today);
+        String imgPath = null;
+        String imgStored = null;
+        Long imgFileId = null;
+        if (ui.getFileAsset() != null) {
+            imgPath = ui.getFileAsset().getStoragePath();
+            imgStored = ui.getFileAsset().getStoredName();
+            imgFileId = ui.getFileAsset().getFileId();
+        }
         return new IngredientResponse(
                 ui.getUserIngredientId(),
                 ui.getRawName(),
@@ -374,7 +427,44 @@ public class FridgeIngredientService {
                 ui.getQuantity(),
                 ui.getUnit(),
                 ui.getStorageType(),
-                status.name());
+                status.name(),
+                imgPath,
+                imgStored,
+                imgFileId);
+    }
+
+    /**
+     * PATCH 본문의 {@code file_id}: 숫자면 소유 파일 연결, JSON {@code null}이면 이미지 해제.
+     * 인식 API 직후 같은 업로드 분을 식재료에 매칭한다 ({@code maybeApplyImageFilePatch} 다음 줄에서 실행된다 —
+     * 두 필드를 함께 보내면 {@code file_id}가 최종 반영).
+     */
+    private void maybeApplyFileIdPatch(Long userId, UserIngredient e, Map<String, Object> body) {
+        if (!body.containsKey("file_id")) {
+            return;
+        }
+        Object raw = body.get("file_id");
+        if (raw == null) {
+            e.setFileAsset(null);
+            return;
+        }
+        long fid = raw instanceof Number n ? n.longValue() : Long.parseLong(raw.toString());
+        FileAsset fa = fileAssetService.getOwnedFileOrThrow(fid, userId);
+        e.setFileAsset(fa);
+    }
+
+    private void maybeApplyImageFilePatch(Long userId, UserIngredient e, Map<String, Object> body) {
+        if (!body.containsKey("image_file") && !body.containsKey("imageFile")) {
+            return;
+        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        Object raw = body.containsKey("image_file") ? body.get("image_file") : body.get("imageFile");
+        if (raw == null) {
+            e.setFileAsset(null);
+            return;
+        }
+        FileAssetDto dto = objectMapper.convertValue(raw, FileAssetDto.class);
+        e.setFileAsset(fileAssetService.saveFromUploadMetadata(user, dto));
     }
 
     private String resolveCategoryName(UserIngredient ui) {
@@ -446,10 +536,10 @@ public class FridgeIngredientService {
      * 채소(VEGETABLE)를 육류(MEAT)보다 먼저 두어 "고추" 등과 충돌을 줄인다.
      */
     private static final String[][] HEURISTIC_CATEGORY_KEYWORDS = {
-            {"VEGETABLE", "당근", "양파", "감자", "토마토", "마늘", "오이", "배추", "상추", "브로콜리", "버섯",
+            {"VEGETABLE", "당근", "양파", "감자", "토마토", "마늘", "오이", "배추", "상추", "양상추", "브로콜리", "버섯", "섬초",
                     "피망", "파프리카", "시금치", "무", "순무", "깻잎", "쪽파", "대파", "아스파라거스", "가지",
                     "애호박", "생강", "양배추", "케일", "청경채", "콩나물", "숙주", "미나리", "시래기"},
-            {"MEAT", "돼지고기", "돼지", "삼겹살", "목살", "소고기", "쇠고기", "한우", "닭고기", "닭", "오리고기",
+            {"MEAT", "돼지고기", "돼지", "삼겹살", "목살", "소고기", "쇠고기", "한우", "닭고기", "닭가슴살", "가슴살", "닭", "오리고기",
                     "양고기", "베이컨", "햄", "소세지", "소시지", "육류"},
             {"SEAFOOD", "생선", "연어", "고등어", "새우", "게", "조개", "멸치", "참치", "오징어", "문어", "해산물"},
             {"DAIRY", "우유", "치즈", "버터", "요거트", "요구르트", "두유", "크림"},
@@ -500,13 +590,34 @@ public class FridgeIngredientService {
 
     /**
      * 식재료 이미지 인식 — FastAPI 비전 파이프라인 프록시 (공개 API 계약 잠금 경로).
+     * 성공 시 vision_recognition_request에 analysis_result(JSONB) 저장 시도.
      */
+    @Transactional(readOnly = false)
     public VisionRecognizeDataDto recognizeIngredientImage(Long userId, MultipartFile file, int topK) {
         userRepository.findById(userId).orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         if (file == null || file.isEmpty()) {
             throw new BusinessException(ErrorCode.VALIDATION_ERROR, "이미지 파일이 필요합니다.");
         }
         FastApiService.validateVisionImageContentType(file.getContentType());
-        return fastApiService.recognizeIngredientImage(file, topK);
+        final byte[] bytes;
+        try {
+            bytes = file.getBytes();
+        } catch (IOException e) {
+            throw new BusinessException(ErrorCode.FILE_UPLOAD_ERROR, "이미지를 읽을 수 없습니다.");
+        }
+        String orig = file.getOriginalFilename() != null ? file.getOriginalFilename() : "upload.jpg";
+        String ct = file.getContentType() != null ? file.getContentType() : "image/jpeg";
+        MultipartFile forVision = new BytesMultipartFile(bytes, orig, ct);
+
+        VisionRecognizeDataDto data = fastApiService.recognizeIngredientImage(forVision, topK);
+        visionRecognitionPersistenceService
+                .persistAfterRecognition(userId, bytes, orig, ct, data)
+                .ifPresent(data::setRecognitionRequestId);
+        return data;
+    }
+
+    public VisionRecognitionStatusDto getRecognitionStatus(Long userId, Long requestId) {
+        userRepository.findById(userId).orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        return visionRecognitionQueryService.getByRequestIdAndUser(requestId, userId);
     }
 }

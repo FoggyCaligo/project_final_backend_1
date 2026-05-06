@@ -47,6 +47,7 @@ public class UserIngredientRepositoryImpl implements UserIngredientRepositoryCus
         Root<UserIngredient> root = cq.from(UserIngredient.class);
 
         root.fetch("ingredientMaster", JoinType.LEFT);
+        root.fetch("fileAsset", JoinType.LEFT);
 
         List<Predicate> predicates =
                 buildPredicates(cb, root, userId, today, soonEnd, freshnessStatus, storageType, keyword, categoryId);
