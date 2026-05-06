@@ -51,7 +51,7 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
-class RecipeServiceTest {
+class RecipeServiceMockTest {
 
     @Mock
     private RecipeRepository recipeRepository;
