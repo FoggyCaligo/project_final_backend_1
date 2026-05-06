@@ -10,6 +10,7 @@ import com.today.fridge.ingredient.dto.FridgeIngredientListData;
 import com.today.fridge.ingredient.dto.FridgeSummaryResponse;
 import com.today.fridge.ingredient.dto.IngredientResponse;
 import com.today.fridge.ingredient.dto.vision.VisionRecognizeDataDto;
+import com.today.fridge.vision.dto.VisionRecognitionStatusDto;
 import com.today.fridge.ingredient.service.FridgeIngredientService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -47,6 +48,15 @@ public class FridgeIngredientController {
         return ResponseEntity.ok(ApiResponse.success(data, "카테고리 목록 조회 성공"));
     }
 
+    @GetMapping("/ingredients/{ingredientId}")
+    public ResponseEntity<ApiResponse<IngredientResponse>> getOne(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @PathVariable("ingredientId") Long ingredientId) {
+        long uid = requireUserId(userId);
+        IngredientResponse data = fridgeIngredientService.getOne(uid, ingredientId);
+        return ResponseEntity.ok(ApiResponse.success(data, "식재료 조회 성공"));
+    }
+
     @GetMapping("/ingredients")
     public ResponseEntity<ApiResponse<FridgeIngredientListData>> list(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
@@ -80,6 +90,15 @@ public class FridgeIngredientController {
         long uid = requireUserId(userId);
         VisionRecognizeDataDto data = fridgeIngredientService.recognizeIngredientImage(uid, file, topK);
         return ResponseEntity.ok(ApiResponse.success(data, "이미지 인식 완료"));
+    }
+
+    @GetMapping("/ingredients/recognize-image/status/{requestId}")
+    public ResponseEntity<ApiResponse<VisionRecognitionStatusDto>> recognitionStatus(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @PathVariable("requestId") Long requestId) {
+        long uid = requireUserId(userId);
+        VisionRecognitionStatusDto data = fridgeIngredientService.getRecognitionStatus(uid, requestId);
+        return ResponseEntity.ok(ApiResponse.success(data, "인식 요청 조회 성공"));
     }
 
     @PostMapping("/ingredients")

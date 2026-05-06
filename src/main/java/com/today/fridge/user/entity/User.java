@@ -33,6 +33,18 @@ public class User {
     @Column(name = "profile_image_url", length = 2048)
     private String profileImageUrl;
 
+    @Column(name = "height_cm", nullable = true)
+    private Double heightCm;
+
+    @Column(name = "weight_kg", nullable = true)
+    private Double weightKg;
+
+    @Column(name = "age", nullable = true)
+    private Integer age;
+
+    @Column(name = "gender", length = 10, nullable = true)
+    private String gender;
+
     @Column(name = "status", length = 20)
     private String status;
 
