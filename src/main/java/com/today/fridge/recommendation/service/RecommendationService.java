@@ -377,20 +377,33 @@ public class RecommendationService {
                 ? attachLlmExplanationToTopN(responses, 3)
                 : responses;
 
-        int start = (int) pageable.getOffset();
-        int end = Math.min(start + pageable.getPageSize(), finalResponses.size());
+        List<RecipeRecommendationResponse> content;
+        PageResponse pageInfo;
 
-        List<RecipeRecommendationResponse> content =
-                start >= finalResponses.size()
-                        ? List.of()
-                        : finalResponses.subList(start, end);
+        if (pageable.isUnpaged()) {
+            content = finalResponses;
 
-        PageResponse pageInfo = new PageResponse(
-                finalResponses.size(),
-                (int) Math.ceil((double) finalResponses.size() / pageable.getPageSize()),
-                pageable.getPageNumber(),
-                pageable.getPageSize()
-        );
+            pageInfo = new PageResponse(
+                    finalResponses.size(),
+                    1,
+                    0,
+                    finalResponses.size()
+            );
+        } else {
+            int start = (int) pageable.getOffset();
+            int end = Math.min(start + pageable.getPageSize(), finalResponses.size());
+
+            content = start >= finalResponses.size()
+                    ? List.of()
+                    : finalResponses.subList(start, end);
+
+            pageInfo = new PageResponse(
+                    finalResponses.size(),
+                    (int) Math.ceil((double) finalResponses.size() / pageable.getPageSize()),
+                    pageable.getPageNumber(),
+                    pageable.getPageSize()
+            );
+        }
 
         return new PageResult<>(content, pageInfo);
     }
