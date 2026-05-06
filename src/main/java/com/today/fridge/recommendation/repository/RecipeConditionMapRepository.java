@@ -6,8 +6,8 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.today.fridge.recommendation.entity.RecipeConditionMap;
-import com.fasterxml.jackson.databind.node.LongNode;
-import com.today.fridge.recipe.entity.Recipe;
+//import com.fasterxml.jackson.databind.node.LongNode;
+//import com.today.fridge.recipe.entity.Recipe;
 
 
 public interface RecipeConditionMapRepository extends JpaRepository<RecipeConditionMap, Long> {
