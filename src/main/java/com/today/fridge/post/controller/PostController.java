@@ -1,5 +1,8 @@
 package com.today.fridge.post.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.today.fridge.post.dto.PostCreateRequest;
 import com.today.fridge.post.dto.PostDetailResponse;
 import com.today.fridge.post.service.PostService;
@@ -16,6 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
+@Tag(name = "Post", description = "PostController API")
 @RequestMapping("/api/v1/posts")
 @RequiredArgsConstructor
 public class PostController {
@@ -23,6 +27,7 @@ public class PostController {
     private final PostService postService;
 
     @PostMapping
+    @Operation(summary = "Post API")
     public ResponseEntity<Map<String, Object>> createPost(@RequestBody PostCreateRequest request) {
         postService.createPostWithImages(request);
 
@@ -34,7 +39,8 @@ public class PostController {
     // 2. 새로 추가된 특정 유저의 최근 게시글 조회 API
     // 💡 수정: @PathVariable("userId") 명시
     @GetMapping("/users/{userId}")
-    public ResponseEntity<List<PostSummaryResponse>> getUserPosts(@PathVariable("userId") Long userId) {
+    @Operation(summary = "Post API")
+    public ResponseEntity<List<PostSummaryResponse>> getUserPosts(@Parameter(description = "userId") @PathVariable("userId") Long userId) {
         
         List<PostSummaryResponse> response = postService.getUserPosts(userId);
         
@@ -46,21 +52,24 @@ public class PostController {
     // ==========================================
     // 💡 수정: @RequestParam(name = "...", defaultValue = "...") 명시
     @GetMapping
+    @Operation(summary = "Post API")
     public ResponseEntity<Page<PostSummaryResponse>> getAllPosts(
-            @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "10") int size) {
+            @Parameter(description = "page") @RequestParam(name = "page", defaultValue = "0") int page,
+            @Parameter(description = "size") @RequestParam(name = "size", defaultValue = "10") int size) {
         return ResponseEntity.ok(postService.getAllPosts(page, size));
     }
     
     // 💡 수정: @PathVariable("postId") 명시
     @GetMapping("/{postId}")
-    public ResponseEntity<PostDetailResponse> getPostDetail(@PathVariable("postId") Long postId) {
+    @Operation(summary = "Post API")
+    public ResponseEntity<PostDetailResponse> getPostDetail(@Parameter(description = "postId") @PathVariable("postId") Long postId) {
         return ResponseEntity.ok(postService.getPostDetail(postId));
     }
     
     // 💡 수정: @PathVariable("postId") 명시
     @DeleteMapping("/{postId}")
-    public ResponseEntity<Void> deletePost(@PathVariable("postId") Long postId) {
+    @Operation(summary = "Post API")
+    public ResponseEntity<Void> deletePost(@Parameter(description = "postId") @PathVariable("postId") Long postId) {
         postService.deletePost(postId);
         return ResponseEntity.noContent().build();
     }
@@ -70,8 +79,9 @@ public class PostController {
     // ==========================================
     // 💡 수정: @PathVariable("postId") 명시
     @PatchMapping("/{postId}")
+    @Operation(summary = "Post API")
     public ResponseEntity<Map<String, Object>> updatePost(
-            @PathVariable("postId") Long postId, 
+            @Parameter(description = "postId") @PathVariable("postId") Long postId, 
             @RequestBody PostUpdateRequest request) {
         
         postService.updatePost(postId, request);

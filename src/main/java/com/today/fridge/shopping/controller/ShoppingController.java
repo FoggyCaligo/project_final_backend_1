@@ -34,9 +34,9 @@ public class ShoppingController {
     @GetMapping("/ingredients/{ingredientId}/prices")
     public ResponseEntity<ApiResponse<IngredientPriceResponse>> getIngredientPrices(
             @Parameter(description = "사용자 ID (JWT 인증 헤더에서 자동 주입)", example = "1")
-            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @Parameter(description = "userId") @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @Parameter(description = "식재료 ID", example = "1")
-            @PathVariable("ingredientId") Long ingredientId) {
+            @Parameter(description = "ingredientId") @PathVariable("ingredientId") Long ingredientId) {
         requireUserId(userId);
         IngredientPriceResponse data = shoppingService3.getIngredientPrices(ingredientId);
         return ResponseEntity.ok(ApiResponse.success(data, "식재료 최저가 조회 성공"));
@@ -49,7 +49,7 @@ public class ShoppingController {
     @GetMapping("/fridge/prices")
     public ResponseEntity<ApiResponse<List<IngredientPriceResponse>>> getFridgePrices(
             @Parameter(description = "사용자 ID (JWT 인증 헤더에서 자동 주입)", example = "1")
-            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+            @Parameter(description = "userId") @RequestHeader(value = "X-User-Id", required = false) Long userId) {
         long uid = requireUserId(userId);
         List<IngredientPriceResponse> data = shoppingService3.getFridgePrices(uid);
         return ResponseEntity.ok(ApiResponse.success(data, "냉장고 식재료 최저가 조회 성공"));
@@ -65,7 +65,7 @@ public class ShoppingController {
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<IngredientPriceResponse>> searchByKeyword(
             @Parameter(description = "검색할 식재료 키워드", example = "계란")
-            @RequestParam("keyword") String keyword) {
+            @Parameter(description = "keyword") @RequestParam("keyword") String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error("INVALID_INPUT", "검색어를 입력해주세요."));

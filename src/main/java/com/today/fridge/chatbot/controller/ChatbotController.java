@@ -1,5 +1,7 @@
 package com.today.fridge.chatbot.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,13 +19,15 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/v1/chat")
 @RestController
 @RequiredArgsConstructor
+@Tag(name = "Chatbot", description = "ChatbotController API")
 public class ChatbotController {
 
 	private final IntentParserService intentParserService;
 	private final ChatbotOrchestratorService chatbotOrchestratorService;
 	
 	@PostMapping("/interpret")
-	public ResponseEntity<ApiResponse<ChatInterpretResponse>> interpret(
+	@Operation(summary = "Chatbot API")
+    public ResponseEntity<ApiResponse<ChatInterpretResponse>> interpret(
 	        @RequestBody ChatInterpretRequest request
 	) {
 	    ChatInterpretResponse response =
@@ -35,7 +39,8 @@ public class ChatbotController {
 	}
 	
 	@PostMapping("/recommend")
-	public ResponseEntity<ApiResponse<?>> recommend(
+	@Operation(summary = "Chatbot API")
+    public ResponseEntity<ApiResponse<?>> recommend(
 	        @RequestBody ChatInterpretRequest request
 	) {
 

@@ -14,6 +14,7 @@ import com.today.fridge.user.entity.User;
 import com.today.fridge.user.repository.UserRepository;
 import com.today.fridge.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -174,7 +175,7 @@ public class AuthController {
 
     @Operation(summary = "아이디 중복 확인", description = "로그인 아이디 사용 가능 여부를 확인합니다.")
     @GetMapping("/check-login-id")
-    public ApiResponse<Map<String, Boolean>> checkLoginId(@RequestParam String loginId) {
+    public ApiResponse<Map<String, Boolean>> checkLoginId(@Parameter(description = "loginId") @RequestParam String loginId) {
         boolean available = userService.isLoginIdAvailable(loginId);
         return ApiResponse.success(
                 Map.of("available", available),
@@ -184,7 +185,7 @@ public class AuthController {
     @Operation(summary = "현재 로그인 사용자 정보 조회", description = "JWT에서 파싱된 현재 로그인 사용자의 기본 정보를 반환합니다.")
     @GetMapping("/me")
     public ApiResponse<Map<String, Object>> me(
-            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+            @Parameter(description = "userId") @RequestHeader(value = "X-User-Id", required = false) Long userId) {
         if (userId == null) {
             return ApiResponse.error("UNAUTHORIZED", "인증이 필요합니다.");
         }
@@ -200,7 +201,7 @@ public class AuthController {
 
     @Operation(summary = "이메일 인증", description = "이메일로 발송된 인증 토큰을 검증하고 계정을 활성화합니다.")
     @GetMapping("/verify-email")
-    public org.springframework.http.ResponseEntity<Void> verifyEmail(@RequestParam String token) {
+    public org.springframework.http.ResponseEntity<Void> verifyEmail(@Parameter(description = "token") @RequestParam String token) {
         // Redis에서 토큰 검증
         String loginId = redisEmailVerifyService.verifyToken(token);
 
@@ -223,7 +224,7 @@ public class AuthController {
 
     @Operation(summary = "인증 이메일 재발송", description = "미인증 계정에 인증 이메일을 다시 발송합니다.")
     @PostMapping("/resend-verification")
-    public ApiResponse<Void> resendVerification(@RequestParam String email) {
+    public ApiResponse<Void> resendVerification(@Parameter(description = "email") @RequestParam String email) {
         String normalizedEmail = userService.normalizeEmail(email);
         User user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
@@ -256,8 +257,8 @@ public class AuthController {
 
     @Operation(summary = "카카오 로그인 콜백", description = "카카오 인가 코드를 받아 JWT 토큰을 발급하고 프론트엔드로 리다이렉트합니다.")
     @GetMapping("/kakao/callback")
-    public void kakaoCallback(@RequestParam String code,
-                              @RequestParam(required = false) String error,
+    public void kakaoCallback(@Parameter(description = "code") @RequestParam String code,
+                              @Parameter(description = "error") @RequestParam(required = false) String error,
                               HttpServletResponse response) throws IOException {
         if (error != null) {
             log.warn("[KakaoOAuth2] 사용자가 카카오 로그인을 취소했습니다.");
