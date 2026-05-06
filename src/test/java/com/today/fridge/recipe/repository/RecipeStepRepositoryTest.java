@@ -31,7 +31,7 @@ class RecipeStepRepositoryTest {
         private RecipeStepRepository recipeStepRepository;
 
         @Test
-        @DisplayName("레시피 ID로 해당 레시피의 조리단계를 정상적으로 조회하는지 확인")
+        @DisplayName("UT-RECIPE-03 - 레시피 ID로 조리단계 조회")
         void testFindByRecipe_RecipeId() {
                 // Given
                 Recipe recipe = Recipe.builder()
