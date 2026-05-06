@@ -1,17 +1,18 @@
 package com.today.fridge.recipe.service;
 
 /*
- * RecipeServiceTest는 RecipeService의 getRecipe(비회원) 메서드를 통합 테스트하는 클래스입니다.
+ * RecipeServiceTest는 RecipeService의 비즈니스 로직을 단위 테스트하는 클래스입니다.
  *
- * @SpringBootTest를 사용하여 실제 데이터베이스(H2) 환경에서 테스트합니다.
- * @Transactional로 각 테스트 후 데이터가 롤백됩니다.
- *
- * 주요 테스트 시나리오:
- * 1. 정상적인 recipeId로 조회 시 레시피 정보, 영양정보, 단계, 재료가 올바르게 반환되는지 확인
- * 2. 존재하지 않는 recipeId로 조회 시 ExceptionTemplate 예외가 발생하는지 확인
+ * @ExtendWith(MockitoExtension.class)를 사용하여 Spring Context나 DB를 로드하지 않고,
+ * Mock 객체를 주입하여 서비스 계층만 격리하여 빠르고 안정적으로 테스트합니다.
  */
 
+import com.today.fridge.global.exception.ErrorCode;
 import com.today.fridge.global.exception.ExceptionTemplate;
+import com.today.fridge.global.response.PageResult;
+import com.today.fridge.ingredient.entity.UserIngredient;
+import com.today.fridge.ingredient.repository.UserIngredientRepository;
+import com.today.fridge.recipe.dto.response.RecipeListResponse;
 import com.today.fridge.recipe.dto.response.RecipeResponse;
 import com.today.fridge.recipe.entity.Recipe;
 import com.today.fridge.recipe.entity.RecipeIngredient;
@@ -22,117 +23,220 @@ import com.today.fridge.recipe.repository.RecipeNutritionRepository;
 import com.today.fridge.recipe.repository.RecipeRepository;
 import com.today.fridge.recipe.repository.RecipeStepRepository;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.times;
 
-@SpringBootTest
-@ActiveProfiles("test")
-@Transactional
+@ExtendWith(MockitoExtension.class)
 class RecipeServiceTest {
 
-        @Autowired
-        private RecipeRepository recipeRepository;
+    @Mock
+    private RecipeRepository recipeRepository;
+    @Mock
+    private RecipeNutritionRepository recipeNutritionRepository;
+    @Mock
+    private RecipeStepRepository recipeStepRepository;
+    @Mock
+    private RecipeIngredientRepository recipeIngredientRepository;
+    @Mock
+    private UserIngredientRepository userIngredientRepository;
 
-        @Autowired
-        private RecipeNutritionRepository recipeNutritionRepository;
+    @InjectMocks
+    private RecipeService recipeService;
 
-        @Autowired
-        private RecipeStepRepository recipeStepRepository;
+    @Nested
+    @DisplayName("getRecipe() - 레시피 상세 조회")
+    class GetRecipeTest {
 
-        @Autowired
-        private RecipeIngredientRepository recipeIngredientRepository;
-
-        @Autowired
-        private RecipeService recipeService;
-
-        // ========================================================================
-        // 비회원 전용 레시피 조회 - 정상 시나리오
-        // ========================================================================
         @Test
-        @DisplayName("Service Integration Test for getRecipe")
-        void testGetRecipe() {
-                // 1. 레시피 데이터 저장
-                Recipe recipe = Recipe.builder()
-                                .sourceSite("test.com")
-                                .sourceRecipeKey("test")
-                                .title("Test Recipe")
-                                .thumbnailUrl("test.jpg")
-                                .summary("This is a test recipe")
-                                .servingsText("1")
-                                .cookTimeText("10분")
-                                .sourceUrl("test.com")
-                                .isActive(true)
-                                .createdAt(LocalDateTime.now())
-                                .updatedAt(LocalDateTime.now())
-                                .build();
-                Recipe savedRecipe = recipeRepository.save(recipe);
-                Long recipeId = savedRecipe.getRecipeId();
+        @DisplayName("비회원: 정상적으로 레시피를 조회")
+        void getRecipe_NonMember_Success() {
+            // given
+            Long recipeId = 1L;
+            Recipe recipe = Recipe.builder().recipeId(recipeId).title("김치찌개").build();
+            RecipeNutrition nutrition = RecipeNutrition.builder().calories(new BigDecimal("500")).build();
+            RecipeStep step = RecipeStep.builder().stepNo(1).instructionText("김치를 썬다").build();
+            RecipeIngredient ingredient = RecipeIngredient.builder().rawText("김치").amountText("200g").build();
 
-                // 2. 레시피 영양정보 저장
-                RecipeNutrition nutrition = RecipeNutrition.builder()
-                                .recipe(savedRecipe)
-                                .calories(BigDecimal.valueOf(500))
-                                .carbs(BigDecimal.valueOf(50))
-                                .protein(BigDecimal.valueOf(20))
-                                .fat(BigDecimal.valueOf(10))
-                                .build();
-                recipeNutritionRepository.save(nutrition);
+            given(recipeRepository.findById(recipeId)).willReturn(Optional.of(recipe));
+            given(recipeNutritionRepository.findByRecipe_RecipeId(recipeId)).willReturn(Optional.of(nutrition));
+            given(recipeStepRepository.findByRecipe_RecipeId(recipeId)).willReturn(List.of(step));
+            given(recipeIngredientRepository.findByRecipe_RecipeId(recipeId)).willReturn(List.of(ingredient));
 
-                // 3. 레시피 단계 저장
-                RecipeStep step1 = RecipeStep.builder()
-                                .recipe(savedRecipe)
-                                .stepNo(1)
-                                .instructionText("Chop the onions")
-                                .build();
-                RecipeStep step2 = RecipeStep.builder()
-                                .recipe(savedRecipe)
-                                .stepNo(2)
-                                .instructionText("Cook the onions")
-                                .build();
-                recipeStepRepository.saveAll(List.of(step1, step2));
+            // when
+            RecipeResponse response = recipeService.getRecipe(recipeId);
 
-                // 4. 레시피 재료 저장
-                RecipeIngredient ingredient1 = RecipeIngredient.builder()
-                                .recipe(savedRecipe)
-                                .rawText("Onion")
-                                .amountText("1")
-                                .build();
-                recipeIngredientRepository.save(ingredient1);
-
-                // 5. 서비스 메서드 호출
-                RecipeResponse response = recipeService.getRecipe(recipeId);
-
-                // 6. 결과 검증
-                assertThat(response.getRecipeId()).isEqualTo(recipeId);
-                assertThat(response.getTitle()).isEqualTo("Test Recipe");
-                assertThat(response.getCalories()).isEqualByComparingTo(BigDecimal.valueOf(500));
-
-                assertThat(response.getRecipeSteps()).hasSize(2);
-                assertThat(response.getRecipeSteps().get(0).getInstructionText()).isEqualTo("Chop the onions");
-
-                assertThat(response.getRecipeIngredients()).hasSize(1);
-                assertThat(response.getRecipeIngredients().get(0).getRawText()).isEqualTo("Onion");
+            // then
+            assertThat(response.getTitle()).isEqualTo("김치찌개");
+            assertThat(response.getCalories()).isEqualByComparingTo(new BigDecimal("500"));
+            assertThat(response.getRecipeSteps()).hasSize(1);
+            assertThat(response.getRecipeIngredients()).hasSize(1);
         }
 
-        // ========================================================================
-        // 비회원 전용 레시피 조회 - 존재하지 않는 레시피 예외 시나리오
-        // ========================================================================
         @Test
-        @DisplayName("Service throws exception when Recipe is not found")
-        void testGetRecipe_NotFound() {
-                // 존재하지 않는 recipeId로 조회 시 ExceptionTemplate 예외가 발생해야 함
-                assertThrows(ExceptionTemplate.class, () -> {
-                        recipeService.getRecipe(9999L);
-                });
+        @DisplayName("회원: 소유한 재료(충분함)와 함께 레시피를 조회")
+        void getRecipe_Member_Success_WithIngredients() {
+            // given
+            Long recipeId = 1L;
+            Long userId = 100L;
+
+            Recipe recipe = Recipe.builder().recipeId(recipeId).title("양파볶음").build();
+            RecipeNutrition nutrition = RecipeNutrition.builder().calories(new BigDecimal("200")).build();
+            RecipeStep step = RecipeStep.builder().stepNo(1).instructionText("양파를 볶는다").build();
+
+            // 레시피에는 양파 100g이 필요함
+            RecipeIngredient ingredient = RecipeIngredient.builder()
+                    .rawText("양파")
+                    .normalizedNameSnapshot("양파")
+                    .amountText("100g")
+                    .build();
+
+            // 유저는 냉장고에 양파 150g을 가지고 있음
+            UserIngredient userIngredient = new UserIngredient();
+            userIngredient.setRawName("양파");
+            userIngredient.setQuantity(new BigDecimal("150"));
+            userIngredient.setUnit("g");
+
+            given(recipeRepository.findById(recipeId)).willReturn(Optional.of(recipe));
+            given(recipeNutritionRepository.findByRecipe_RecipeId(recipeId)).willReturn(Optional.of(nutrition));
+            given(recipeStepRepository.findByRecipe_RecipeId(recipeId)).willReturn(List.of(step));
+            given(recipeIngredientRepository.findByRecipe_RecipeId(recipeId)).willReturn(List.of(ingredient));
+            given(userIngredientRepository.findByUserIdAndIngredientNameIn(eq(userId), any()))
+                    .willReturn(List.of(userIngredient));
+
+            // when
+            RecipeResponse response = recipeService.getRecipe(recipeId, userId);
+
+            // then
+            assertThat(response.getRecipeIngredients().get(0).getOwned()).isTrue();
+            assertThat(response.getRecipeIngredients().get(0).getSufficiency()).isEqualTo("OK");
+            assertThat(response.getRecipeIngredients().get(0).getUserQuantity()).isEqualByComparingTo("150");
         }
+
+        @Test
+        @DisplayName("레시피가 존재하지 않으면 예외가 발생")
+        void getRecipe_NotFound_ThrowsException() {
+            // given
+            Long recipeId = 999L;
+            given(recipeRepository.findById(recipeId)).willReturn(Optional.empty());
+
+            // when & then
+            ExceptionTemplate exception = assertThrows(ExceptionTemplate.class, () -> {
+                recipeService.getRecipe(recipeId);
+            });
+            assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.RECIPE_NOT_FOUND);
+        }
+    }
+
+    @Nested
+    @DisplayName("getRecipes() - 전체 레시피 페이징 조회")
+    class GetRecipesTest {
+
+        @Test
+        @DisplayName("조건 없이(ALL) 활성화된 레시피 목록을 페이징하여 반환")
+        void getRecipes_Success_All() {
+            // given
+            String cookingType = "ALL";
+            String sort = "name";
+            Pageable pageable = PageRequest.of(0, 10);
+
+            Recipe recipe = Recipe.builder().recipeId(1L).title("계란말이").build();
+            Page<Recipe> recipePage = new PageImpl<>(List.of(recipe), pageable, 1);
+
+            // Service 내부에서 sort 조건이 적용된 새로운 Pageable 객체를 생성하여 전달하므로 any() 사용
+            given(recipeRepository.findByIsActiveTrue(any(Pageable.class))).willReturn(recipePage);
+
+            // when
+            PageResult<RecipeListResponse> result = recipeService.getRecipes(cookingType, sort, pageable);
+
+            // then
+            assertThat(result.content()).hasSize(1);
+            assertThat(result.content().get(0).title()).isEqualTo("계란말이");
+            assertThat(result.pageInfo().totalElements()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("특정 카테고리(cookingType) 레시피 목록을 페이징하여 반환")
+        void getRecipes_Success_WithCookingType() {
+            // given
+            String cookingType = "국&찌개";
+            String sort = "time_asc";
+            Pageable pageable = PageRequest.of(0, 10);
+
+            Recipe recipe = Recipe.builder().recipeId(2L).title("김치찌개").build();
+            Page<Recipe> recipePage = new PageImpl<>(List.of(recipe), pageable, 1);
+
+            // cookingType이 지정되었으므로 findActiveRecipesByCookingType 호출 확인
+            given(recipeRepository.findActiveRecipesByCookingType(eq(cookingType), any(Pageable.class)))
+                    .willReturn(recipePage);
+
+            // when
+            PageResult<RecipeListResponse> result = recipeService.getRecipes(cookingType, sort, pageable);
+
+            // then
+            assertThat(result.content()).hasSize(1);
+            assertThat(result.content().get(0).title()).isEqualTo("김치찌개");
+        }
+    }
+
+    @Nested
+    @DisplayName("ateRecipe() - 레시피 조리 완료 (재료 차감)")
+    class AteRecipeTest {
+
+        @Test
+        @DisplayName("레시피 조리 완료 시 냉장고에서 필요한 만큼 재료가 차감/삭제")
+        void ateRecipe_Success() {
+            // given
+            Long recipeId = 1L;
+            Long userId = 100L;
+
+            // 레시피에는 양파 100g이 필요함
+            RecipeIngredient recipeIngredient = RecipeIngredient.builder()
+                    .rawText("양파")
+                    .normalizedNameSnapshot("양파")
+                    .amountText("100g")
+                    .build();
+
+            // 유저는 냉장고에 양파 150g을 가지고 있음
+            UserIngredient userIngredient = new UserIngredient();
+            userIngredient.setUserIngredientId(10L);
+            userIngredient.setRawName("양파");
+            userIngredient.setQuantity(new BigDecimal("150"));
+            userIngredient.setUnit("g");
+
+            given(recipeIngredientRepository.findByRecipe_RecipeId(recipeId))
+                    .willReturn(List.of(recipeIngredient));
+            given(userIngredientRepository.findByUserIdAndIngredientNameIn(eq(userId), any()))
+                    .willReturn(List.of(userIngredient));
+
+            // when
+            recipeService.ateRecipe(recipeId, userId);
+
+            // then
+            // 150g 중 100g 차감되어 50g이 남아야 함
+            assertThat(userIngredient.getQuantity()).isEqualByComparingTo("50");
+
+            // 수량이 남았으므로 delete는 호출되지 않아야 함
+            then(userIngredientRepository).should(times(0)).delete(any());
+        }
+    }
 }

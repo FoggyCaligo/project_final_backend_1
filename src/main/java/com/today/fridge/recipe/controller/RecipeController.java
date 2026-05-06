@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 // DTO
@@ -53,16 +54,13 @@ public class RecipeController {
 
 	@GetMapping
 	public ResponseEntity<ApiResponse<PageResult<RecipeListResponse>>> getRecipes(
-	        @RequestParam(name = "cookingType",required = false, defaultValue = "ALL") String cookingType,
-	        @RequestParam(name = "sort",required = false, defaultValue = "default") String sort,
-	        @PageableDefault(size = 12) Pageable pageable
-	) {
-	    return ResponseEntity.ok(
-	            ApiResponse.success(
-	                    recipeService.getRecipes(cookingType, sort, pageable),
-	                    "전체 레시피 조회 성공"
-	            )
-	    );
+			@RequestParam(name = "cookingType", required = false, defaultValue = "ALL") String cookingType,
+			@RequestParam(name = "sort", required = false, defaultValue = "default") String sort,
+			@PageableDefault(size = 12) Pageable pageable) {
+		return ResponseEntity.ok(
+				ApiResponse.success(
+						recipeService.getRecipes(cookingType, sort, pageable),
+						"전체 레시피 조회 성공"));
 	}
 
 	@GetMapping("/{recipeId}")
