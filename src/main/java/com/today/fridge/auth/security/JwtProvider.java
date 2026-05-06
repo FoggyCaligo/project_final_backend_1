@@ -84,4 +84,27 @@ public class JwtProvider {
         Claims claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
         return claims.getSubject();
     }
+
+    /**
+     * 토큰의 남은 만료 시간(밀리초)을 반환합니다.
+     * 이미 만료된 토큰이면 0을 반환합니다.
+     */
+    public long getRemainingMs(String token) {
+        try {
+            Claims claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
+            long expirationMs = claims.getExpiration().getTime();
+            long remaining = expirationMs - System.currentTimeMillis();
+            return Math.max(remaining, 0);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    public long getAccessTokenValidity() {
+        return accessTokenValidity;
+    }
+
+    public long getRefreshTokenValidity() {
+        return refreshTokenValidity;
+    }
 }
