@@ -9,30 +9,27 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "post_report")
+// 💡 DB 테이블은 DDL에 맞춰 "user_follow"로 유지하면서 클래스명만 통일합니다.
+@Table(name = "user_follow") 
 @Getter
 @Setter
 @NoArgsConstructor
-public class PostReport {
+public class PostFollow {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "post_report_id")
-    private Long postReportId;
+    @Column(name = "follow_id")
+    private Long followId;
 
+    // 팔로우를 하는 사람 (나)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id", nullable = false)
-    private Post post;
+    @JoinColumn(name = "follower_user_id", nullable = false)
+    private User followerUser;
 
+    // 팔로우를 받는 사람 (상대방)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reporter_user_id", nullable = false)
-    private User reporterUser;
-
-    @Column(name = "reason_code", length = 30)
-    private String reasonCode;
-
-    @Column(name = "detail_text", length = 500)
-    private String detailText;
+    @JoinColumn(name = "followee_user_id", nullable = false)
+    private User followeeUser;
 
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;

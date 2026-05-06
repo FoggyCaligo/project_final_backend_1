@@ -123,6 +123,14 @@ public class UserService {
         return ProfileResponse.from(user);
     }
 
+    // 마이페이지 조회: userId(PK)로 사용자 프로필 반환
+    @Transactional(readOnly = true)
+    public ProfileResponse getProfileByUserId(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
+        return ProfileResponse.from(user);
+    }
+
     // 마이페이지 수정: 닉네임, 프로필 이미지 URL 변경
     @Transactional
     public ProfileResponse updateProfile(String loginId, ProfileUpdateRequest request) {

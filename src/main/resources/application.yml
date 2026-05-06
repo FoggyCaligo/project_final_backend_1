@@ -8,36 +8,31 @@ spring:
       max-file-size: 5MB
       max-request-size: 25MB
   datasource:
-    url: jdbc:postgresql://ep-wispy-art-amny04jt-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+    url: jdbc:postgresql://ep-wispy-art-amny04jt-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require&prepareThreshold=0
     username: postgres
     password: FoggyCaligo123!
     driver-class-name: org.postgresql.Driver
     hikari:
       connection-init-sql: CREATE EXTENSION IF NOT EXISTS vector
-      maximum-pool-size: 5
-      minimum-idle: 1
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 10000
+      leak-detection-threshold: 20000
   jpa:
     open-in-view: false
     properties:
       hibernate:
         default_schema: today_fridge
     hibernate:
-      ddl-auto: update
+      # 최종 SQL 기준 운영/개발 스키마 드리프트 방지
+      ddl-auto: validate
   flyway:
     enabled: false
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
-      timeout: 3000ms
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    protocol: smtp
-    debug: true
+    username: ${MAIL_USERNAME:your-email@gmail.com}
+    password: ${MAIL_PASSWORD:your-app-password}
     properties:
       mail:
         smtp:
@@ -56,8 +51,8 @@ app:
   security:
     jwt:
       secret: "VG9kYXlGcmlkZ2VQcm9qZWN0QmFja2VuZDFTdGFydGVyU2VjcmV0S2V5Rm9ySldU"
-      access-token-validity-seconds: 900
-      refresh-token-validity-seconds: 604800
+      access-token-validity-seconds: 3600
+      refresh-token-validity-seconds: 1209600
     cookie:
       secure: false
       same-site: Lax
@@ -74,7 +69,7 @@ app:
     # 인식 완료 후 vision_recognition_request + file_asset 저장 (JSON analysis_result)
     persist-recognition: true
   mail:
-    from: ${MAIL_USERNAME}
+    from: ${MAIL_FROM:noreply@todayfridge.com}
     base-url: ${APP_BASE_URL:http://localhost:8080}
     verification-required: ${MAIL_VERIFICATION_REQUIRED:true}
   kakao:
@@ -85,4 +80,6 @@ app:
 
 logging:
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{requestId}] %-5level %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{requestId}] %-5level
+      %logger{36} - %msg%n"
+    #file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{requestId}] %-5level %logger{36} - %msg%n"
