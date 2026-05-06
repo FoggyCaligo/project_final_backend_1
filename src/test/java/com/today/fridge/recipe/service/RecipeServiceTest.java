@@ -15,6 +15,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.PageRequest;
+import com.today.fridge.global.response.PageResult;
+import com.today.fridge.recipe.dto.response.RecipeListResponse;
+import com.today.fridge.recipe.entity.RecipeTag;
+import com.today.fridge.recipe.entity.RecipeTagSourceType;
+import com.today.fridge.recipe.entity.RecipeTagType;
+import com.today.fridge.recipe.repository.RecipeTagRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -42,6 +49,8 @@ class RecipeServiceTest {
     @Autowired
     private RecipeService recipeService;
 
+    @Autowired
+    private RecipeTagRepository recipeTagRepository;
     @Test
     @DisplayName("Service Integration Test for getRecipe")
     void testGetRecipe() {
@@ -115,4 +124,121 @@ class RecipeServiceTest {
             recipeService.getRecipe(9999L);
         });
     }
+    @Test
+    @DisplayName("전체 레시피를 페이징으로 조회한다")
+    void testGetRecipes_All() {
+        Recipe recipe = Recipe.builder()
+                .sourceSite("test.com")
+                .sourceRecipeKey("list-test-1")
+                .title("A Recipe")
+                .thumbnailUrl("test.jpg")
+                .summary("summary")
+                .servingsText("1")
+                .cookTimeText("10분")
+                .sourceUrl("test.com")
+                .isActive(true)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        recipeRepository.save(recipe);
+
+        PageResult<RecipeListResponse> result =
+                recipeService.getRecipes(
+                        "ALL",
+                        null,
+                        PageRequest.of(0, 10)
+                );
+
+        assertThat(result.content()).isNotEmpty();
+        assertThat(result.pageInfo().page()).isEqualTo(0);
+        assertThat(result.pageInfo().size()).isEqualTo(10);
+    }
+
+    @Test
+    @DisplayName("이름순 정렬을 적용한다")
+    void testGetRecipes_SortByName() {
+        Recipe recipeB = Recipe.builder()
+                .sourceSite("test.com")
+                .sourceRecipeKey("sort-b")
+                .title("ZZZ_TEST_B Recipe")
+                .thumbnailUrl("b.jpg")
+                .summary("summary")
+                .servingsText("1")
+                .cookTimeText("20분")
+                .sourceUrl("test.com")
+                .isActive(true)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        Recipe recipeA = Recipe.builder()
+                .sourceSite("test.com")
+                .sourceRecipeKey("sort-a")
+                .title("ZZZ_TEST_A Recipe")
+                .thumbnailUrl("a.jpg")
+                .summary("summary")
+                .servingsText("1")
+                .cookTimeText("10분")
+                .sourceUrl("test.com")
+                .isActive(true)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        recipeRepository.saveAll(List.of(recipeB, recipeA));
+
+        PageResult<RecipeListResponse> result =
+                recipeService.getRecipes(
+                        "ALL",
+                        "name",
+                        PageRequest.of(0, 3000)
+                );
+
+        assertThat(result.content())
+        .extracting(RecipeListResponse::title)
+        .containsSubsequence("ZZZ_TEST_A Recipe", "ZZZ_TEST_B Recipe");
+    }
+
+    @Test
+    @DisplayName("cookingType 필터를 적용한다")
+    void testGetRecipes_FilterByCookingType() {
+        Recipe recipe = Recipe.builder()
+                .sourceSite("test.com")
+                .sourceRecipeKey("soup-test")
+                .title("어묵국")
+                .thumbnailUrl("soup.jpg")
+                .summary("summary")
+                .servingsText("1")
+                .cookTimeText("10분")
+                .sourceUrl("test.com")
+                .isActive(true)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        Recipe savedRecipe = recipeRepository.save(recipe);
+
+        recipeTagRepository.save(
+                RecipeTag.builder()
+                        .recipeId(savedRecipe.getRecipeId())
+                        .tagType(RecipeTagType.COOKING_TYPE)
+                        .tagCode("SOUP")
+                        .confidence(0.9)
+                        .sourceType(RecipeTagSourceType.LLM)
+                        .build()
+        );
+
+        PageResult<RecipeListResponse> result =
+                recipeService.getRecipes(
+                        "SOUP",
+                        null,
+                        PageRequest.of(0, 10)
+                );
+
+        assertThat(result.content())
+                .extracting(RecipeListResponse::title)
+                .contains("어묵국");
+    }
+    
 }
