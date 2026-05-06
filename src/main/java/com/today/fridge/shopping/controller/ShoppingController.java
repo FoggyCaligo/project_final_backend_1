@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.today.fridge.recipe.service.RecipeService;
+import com.today.fridge.recipe.dto.response.RecipeResponse;
 import java.util.List;
 
 /**
@@ -26,6 +28,7 @@ import java.util.List;
 public class ShoppingController {
 
     private final ShoppingService3 shoppingService3;
+    private final RecipeService recipeService;
 
     /**
      * 식재료 ID로 최저가 조회 (Redis 캐시 우선)
@@ -34,9 +37,9 @@ public class ShoppingController {
     @GetMapping("/ingredients/{ingredientId}/prices")
     public ResponseEntity<ApiResponse<IngredientPriceResponse>> getIngredientPrices(
             @Parameter(description = "사용자 ID (JWT 인증 헤더에서 자동 주입)", example = "1")
-            @Parameter(description = "userId") @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @Parameter(description = "식재료 ID", example = "1")
-            @Parameter(description = "ingredientId") @PathVariable("ingredientId") Long ingredientId) {
+            @PathVariable("ingredientId") Long ingredientId) {
         requireUserId(userId);
         IngredientPriceResponse data = shoppingService3.getIngredientPrices(ingredientId);
         return ResponseEntity.ok(ApiResponse.success(data, "식재료 최저가 조회 성공"));
@@ -49,7 +52,7 @@ public class ShoppingController {
     @GetMapping("/fridge/prices")
     public ResponseEntity<ApiResponse<List<IngredientPriceResponse>>> getFridgePrices(
             @Parameter(description = "사용자 ID (JWT 인증 헤더에서 자동 주입)", example = "1")
-            @Parameter(description = "userId") @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
         long uid = requireUserId(userId);
         List<IngredientPriceResponse> data = shoppingService3.getFridgePrices(uid);
         return ResponseEntity.ok(ApiResponse.success(data, "냉장고 식재료 최저가 조회 성공"));
@@ -65,13 +68,37 @@ public class ShoppingController {
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<IngredientPriceResponse>> searchByKeyword(
             @Parameter(description = "검색할 식재료 키워드", example = "계란")
-            @Parameter(description = "keyword") @RequestParam("keyword") String keyword) {
+            @RequestParam("keyword") String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error("INVALID_INPUT", "검색어를 입력해주세요."));
         }
         IngredientPriceResponse data = shoppingService3.searchByKeyword(keyword);
         return ResponseEntity.ok(ApiResponse.success(data, "실시간 최저가 검색 성공"));
+    }
+
+    /**
+     * 레시피 부족 재료 일괄 최저가 조회
+     * GET /api/v1/shopping/recipes/{recipeId}/missing-ingredients-prices
+     */
+    @Operation(summary = "레시피 부족 재료 일괄 최저가 조회", description = "레시피 ID를 받아 사용자의 냉장고에 부족한(MISSING, NOT_ENOUGH) 재료들의 실시간 최저가를 조회합니다.")
+    @GetMapping("/recipes/{recipeId}/missing-ingredients-prices")
+    public ResponseEntity<ApiResponse<List<IngredientPriceResponse>>> getMissingIngredientsPrices(
+            @Parameter(description = "userId") @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @PathVariable("recipeId") Long recipeId) {
+        
+        long uid = requireUserId(userId);
+        
+        // 1. 레시피 상세 정보에서 재료 상태 파악
+        RecipeResponse recipeResponse = recipeService.getRecipe(recipeId, uid);
+        
+        // 2. 부족하거나 없는 재료를 필터링하여 일괄 최저가 검색 (각각 Redis 혹은 외부 API 호출)
+        List<IngredientPriceResponse> missingIngredientsPrices = recipeResponse.getRecipeIngredients().stream()
+                .filter(ing -> "MISSING".equals(ing.getSufficiency()) || "NOT_ENOUGH".equals(ing.getSufficiency()))
+                .map(ing -> shoppingService3.searchByKeyword(ing.getIngredientName()))
+                .toList();
+
+        return ResponseEntity.ok(ApiResponse.success(missingIngredientsPrices, "레시피 부족 재료 일괄 최저가 검색 성공"));
     }
 
     private static long requireUserId(Long userId) {

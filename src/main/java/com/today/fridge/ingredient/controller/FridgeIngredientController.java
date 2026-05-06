@@ -57,7 +57,7 @@ public class FridgeIngredientController {
     @Operation(summary = "FridgeIngredient API")
     public ResponseEntity<ApiResponse<IngredientResponse>> getOne(
             @Parameter(description = "userId") @RequestHeader(value = "X-User-Id", required = false) Long userId,
-            @Parameter(description = "ingredientId") @PathVariable("ingredientId") Long ingredientId) {
+            @PathVariable("ingredientId") Long ingredientId) {
         long uid = requireUserId(userId);
         IngredientResponse data = fridgeIngredientService.getOne(uid, ingredientId);
         return ResponseEntity.ok(ApiResponse.success(data, "식재료 조회 성공"));
@@ -67,13 +67,13 @@ public class FridgeIngredientController {
     @Operation(summary = "FridgeIngredient API")
     public ResponseEntity<ApiResponse<FridgeIngredientListData>> list(
             @Parameter(description = "userId") @RequestHeader(value = "X-User-Id", required = false) Long userId,
-            @Parameter(description = "page") @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "size") @RequestParam(defaultValue = "20") int size,
-            @Parameter(description = "sort") @RequestParam(required = false) String sort,
+            @RequestParam(required = false) String sort,
             @Parameter(description = "freshnessStatus") @RequestParam(required = false) String freshnessStatus,
-            @Parameter(description = "storageType") @RequestParam(required = false) String storageType,
+            @RequestParam(required = false) String storageType,
             @Parameter(description = "keyword") @RequestParam(required = false) String keyword,
-            @Parameter(description = "categoryId") @RequestParam(required = false) Long categoryId) {
+            @RequestParam(required = false) Long categoryId) {
         long uid = requireUserId(userId);
         FridgeIngredientListData data =
                 fridgeIngredientService.list(
@@ -105,7 +105,7 @@ public class FridgeIngredientController {
     @Operation(summary = "FridgeIngredient API")
     public ResponseEntity<ApiResponse<VisionRecognitionStatusDto>> recognitionStatus(
             @Parameter(description = "userId") @RequestHeader(value = "X-User-Id", required = false) Long userId,
-            @Parameter(description = "requestId") @PathVariable("requestId") Long requestId) {
+            @PathVariable("requestId") Long requestId) {
         long uid = requireUserId(userId);
         VisionRecognitionStatusDto data = fridgeIngredientService.getRecognitionStatus(uid, requestId);
         return ResponseEntity.ok(ApiResponse.success(data, "인식 요청 조회 성공"));
@@ -126,7 +126,7 @@ public class FridgeIngredientController {
     @Operation(summary = "FridgeIngredient API")
     public ResponseEntity<ApiResponse<IngredientResponse>> patch(
             @Parameter(description = "userId") @RequestHeader(value = "X-User-Id", required = false) Long userId,
-            @Parameter(description = "ingredientId") @PathVariable("ingredientId") Long ingredientId,
+            @PathVariable("ingredientId") Long ingredientId,
             @RequestBody Map<String, Object> body) {
         long uid = requireUserId(userId);
         IngredientResponse updated = fridgeIngredientService.patch(uid, ingredientId, body);
@@ -137,7 +137,7 @@ public class FridgeIngredientController {
     @Operation(summary = "FridgeIngredient API")
     public ResponseEntity<ApiResponse<DeleteIngredientData>> delete(
             @Parameter(description = "userId") @RequestHeader(value = "X-User-Id", required = false) Long userId,
-            @Parameter(description = "ingredientId") @PathVariable("ingredientId") Long ingredientId) {
+            @PathVariable("ingredientId") Long ingredientId) {
         long uid = requireUserId(userId);
         DeleteIngredientData data = fridgeIngredientService.delete(uid, ingredientId);
         return ResponseEntity.ok(ApiResponse.success(data, "식재료 삭제 성공"));

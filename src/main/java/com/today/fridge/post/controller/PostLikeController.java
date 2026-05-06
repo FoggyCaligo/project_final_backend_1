@@ -23,7 +23,7 @@ public class PostLikeController {
     @Operation(summary = "PostLike API")
     public ResponseEntity<Map<String, Object>> addLike(
             @Parameter(description = "postId") @PathVariable("postId") Long postId, 
-            @Parameter(description = "userId") @RequestParam("userId") Long userId) {
+            @RequestParam("userId") Long userId) {
         postLikeService.addLike(postId, userId);
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
@@ -34,7 +34,7 @@ public class PostLikeController {
     @Operation(summary = "PostLike API")
     public ResponseEntity<Map<String, Object>> removeLike(
             @Parameter(description = "postId") @PathVariable("postId") Long postId, 
-            @Parameter(description = "userId") @RequestParam("userId") Long userId) {
+            @RequestParam("userId") Long userId) {
         postLikeService.removeLike(postId, userId);
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
@@ -45,7 +45,7 @@ public class PostLikeController {
     @Operation(summary = "PostLike API")
     public ResponseEntity<Map<String, Object>> getStatus(
             @Parameter(description = "postId") @PathVariable("postId") Long postId, 
-            @Parameter(description = "userId") @RequestParam("userId") Long userId) {
+            @RequestParam("userId") Long userId) {
         Map<String, Object> statusAndCount = postLikeService.getLikeStatusAndCount(postId, userId);
         return ResponseEntity.ok(statusAndCount);
     }

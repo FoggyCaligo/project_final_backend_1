@@ -24,7 +24,7 @@ public class PostFollowController {
     @Operation(summary = "PostFollow API")
     public ResponseEntity<Map<String, Object>> addFollow(
             @Parameter(description = "followeeId") @PathVariable("userId") Long followeeId,
-            @Parameter(description = "followerId") @RequestParam("followerId") Long followerId) {
+            @RequestParam("followerId") Long followerId) {
         
         postFollowService.addFollow(followerId, followeeId);
         
@@ -38,7 +38,7 @@ public class PostFollowController {
     @Operation(summary = "PostFollow API")
     public ResponseEntity<Map<String, Object>> removeFollow(
             @Parameter(description = "followeeId") @PathVariable("userId") Long followeeId,
-            @Parameter(description = "followerId") @RequestParam("followerId") Long followerId) {
+            @RequestParam("followerId") Long followerId) {
         
         postFollowService.removeFollow(followerId, followeeId);
         
@@ -52,7 +52,7 @@ public class PostFollowController {
     @Operation(summary = "PostFollow API")
     public ResponseEntity<Map<String, Boolean>> checkStatus(
             @Parameter(description = "followeeId") @PathVariable("userId") Long followeeId,
-            @Parameter(description = "followerId") @RequestParam("followerId") Long followerId) {
+            @RequestParam("followerId") Long followerId) {
         
         boolean isFollowing = postFollowService.checkFollowStatus(followerId, followeeId);
         

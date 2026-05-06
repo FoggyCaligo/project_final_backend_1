@@ -55,7 +55,7 @@ public class PostController {
     @Operation(summary = "Post API")
     public ResponseEntity<Page<PostSummaryResponse>> getAllPosts(
             @Parameter(description = "page") @RequestParam(name = "page", defaultValue = "0") int page,
-            @Parameter(description = "size") @RequestParam(name = "size", defaultValue = "10") int size) {
+            @RequestParam(name = "size", defaultValue = "10") int size) {
         return ResponseEntity.ok(postService.getAllPosts(page, size));
     }
     

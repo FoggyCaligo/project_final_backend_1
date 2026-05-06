@@ -24,9 +24,9 @@ public class PostReportController {
     @Operation(summary = "PostReport API")
     public ResponseEntity<Map<String, Object>> reportPost(
             @Parameter(description = "postId") @PathVariable("postId") Long postId,
-            @Parameter(description = "userId") @RequestParam("userId") Long userId,
+            @RequestParam("userId") Long userId,
             @Parameter(description = "reasonCode") @RequestParam(value = "reasonCode", required = false) String reasonCode,
-            @Parameter(description = "detailText") @RequestParam(value = "detailText", required = false) String detailText) {
+            @RequestParam(value = "detailText", required = false) String detailText) {
 
         postReportService.addReport(postId, userId, reasonCode, detailText);
 
@@ -40,7 +40,7 @@ public class PostReportController {
     @Operation(summary = "PostReport API")
     public ResponseEntity<Map<String, Boolean>> getReportStatus(
             @Parameter(description = "postId") @PathVariable("postId") Long postId,
-            @Parameter(description = "userId") @RequestParam("userId") Long userId) {
+            @RequestParam("userId") Long userId) {
 
         boolean isReported = postReportService.checkReportStatus(postId, userId);
 

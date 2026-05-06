@@ -34,7 +34,7 @@ public class BookmarkController {
     @Operation(summary = "Bookmark API")
     public ResponseEntity<Map<String, Object>> addBookmark(
             @Parameter(description = "recipeId") @PathVariable("recipeId") Long recipeId, 
-            @Parameter(description = "userId") @RequestParam("userId") Long userId) {
+            @RequestParam("userId") Long userId) {
         
         bookmarkService.addBookmark(userId, recipeId);
         
@@ -48,7 +48,7 @@ public class BookmarkController {
     @Operation(summary = "Bookmark API")
     public ResponseEntity<Map<String, Object>> removeBookmark(
             @Parameter(description = "recipeId") @PathVariable("recipeId") Long recipeId, 
-            @Parameter(description = "userId") @RequestParam("userId") Long userId) {
+            @RequestParam("userId") Long userId) {
         
         bookmarkService.removeBookmark(userId, recipeId);
         
@@ -62,7 +62,7 @@ public class BookmarkController {
     @Operation(summary = "Bookmark API")
     public ResponseEntity<Map<String, Boolean>> checkStatus(
             @Parameter(description = "recipeId") @PathVariable("recipeId") Long recipeId, 
-            @Parameter(description = "userId") @RequestParam("userId") Long userId) {
+            @RequestParam("userId") Long userId) {
         
         boolean isBookmarked = bookmarkService.checkBookmarkStatus(userId, recipeId);
         

@@ -62,7 +62,7 @@ public class RecipeController {
 	@GetMapping
 	public ResponseEntity<ApiResponse<PageResult<RecipeListResponse>>> getRecipes(
 			@Parameter(description = "cookingType") @RequestParam(name = "cookingType", required = false, defaultValue = "ALL") String cookingType,
-			@Parameter(description = "sort") @RequestParam(name = "sort", required = false, defaultValue = "default") String sort,
+			@RequestParam(name = "sort", required = false, defaultValue = "default") String sort,
 			@PageableDefault(size = 12) Pageable pageable) {
 		return ResponseEntity.ok(
 				ApiResponse.success(
@@ -73,7 +73,7 @@ public class RecipeController {
 	@GetMapping("/{recipeId}")
 	public ResponseEntity<ApiResponse<RecipeResponse>> getRecipe(
 			@Parameter(description = "recipeId") @PathVariable("recipeId") Long recipeId,
-			@Parameter(description = "userId") @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+			@RequestHeader(value = "X-User-Id", required = false) Long userId) {
 		return ResponseEntity.ok(
 				ApiResponse.success(
 						recipeService.getRecipe(recipeId, userId),
@@ -83,7 +83,7 @@ public class RecipeController {
 	@PostMapping("/{recipeId}/cooked")
 	public ResponseEntity<ApiResponse<Void>> ateRecipe(
 			@Parameter(description = "recipeId") @PathVariable("recipeId") Long recipeId,
-			@Parameter(description = "userId") @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+			@RequestHeader(value = "X-User-Id", required = false) Long userId) {
 		recipeService.ateRecipe(recipeId, userId);
 		return ResponseEntity.ok(
 				ApiResponse.success(

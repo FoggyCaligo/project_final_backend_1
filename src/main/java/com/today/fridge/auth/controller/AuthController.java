@@ -258,7 +258,7 @@ public class AuthController {
     @Operation(summary = "카카오 로그인 콜백", description = "카카오 인가 코드를 받아 JWT 토큰을 발급하고 프론트엔드로 리다이렉트합니다.")
     @GetMapping("/kakao/callback")
     public void kakaoCallback(@Parameter(description = "code") @RequestParam String code,
-                              @Parameter(description = "error") @RequestParam(required = false) String error,
+                              @RequestParam(required = false) String error,
                               HttpServletResponse response) throws IOException {
         if (error != null) {
             log.warn("[KakaoOAuth2] 사용자가 카카오 로그인을 취소했습니다.");
