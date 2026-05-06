@@ -24,10 +24,10 @@ public class NaverShoppingClient {
 
     private final RestClient restClient;
 
-    @Value("${naver.shopping.client-id:}")
+    @Value("${app.naver.shopping.client-id:}")
     private String clientId;
 
-    @Value("${naver.shopping.client-secret:}")
+    @Value("${app.naver.shopping.client-secret:}")
     private String clientSecret;
 
     public NaverShoppingClient(RestClient restClient) {

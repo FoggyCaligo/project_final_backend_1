@@ -137,7 +137,7 @@ public class ElevenStShoppingClient extends CoupangShoppingClient {
         } catch (NumberFormatException e) {
             return null;
         }
-        if (price < 1000)
+        if (price <= 0)
             return null;
 
         ShippingType shippingType = resolveShippingType(deliveryFeeStr, isConditionDelivery);
@@ -153,20 +153,6 @@ public class ElevenStShoppingClient extends CoupangShoppingClient {
                 .shippingType(shippingType)
                 .stockStatus(StockStatus.IN_STOCK)
                 .build();
-    }
-
-    private static final java.util.Set<String> NON_FOOD_WORDS = java.util.Set.of(
-            "도구", "칼세트", "커터", "절단기", "자르개", "나이프", "써는기",
-            "조각기", "케이스", "스티커", "모형", "미니어처", "장난감", "인형", "소품", "인테리어"
-    );
-
-    private boolean isFoodProductName(String productName, String keyword) {
-        if (!productName.contains(keyword)) return false;
-        String lower = productName.toLowerCase();
-        for (String nonFood : NON_FOOD_WORDS) {
-            if (lower.contains(nonFood)) return false;
-        }
-        return true;
     }
 
     private String getTagText(Element el, String tagName) {
