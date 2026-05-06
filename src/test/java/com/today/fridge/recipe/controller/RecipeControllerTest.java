@@ -44,7 +44,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
-@ActiveProfiles("test")
+@ActiveProfiles("recipe")
 @AutoConfigureMockMvc
 class RecipeControllerTest {
 
@@ -63,8 +63,8 @@ class RecipeControllerTest {
 
                 @Test
                 @WithMockUser
-                @DisplayName("페이징된 레시피 목록을 정상적으로 반환한다")
-                void 전체목록_정상조회() throws Exception {
+                @DisplayName("RecipeControllerTest - getRecipes - 페이징된 레시피 목록을 정상적으로 반환한다")
+                void getRecipes_Success() throws Exception {
                         // given - 서비스에서 레시피 목록을 반환하도록 설정
                         RecipeListResponse item = RecipeListResponse.builder()
                                         .recipeId(1L)
@@ -75,7 +75,7 @@ class RecipeControllerTest {
                         PageResponse pageInfo = new PageResponse(1, 1, 0, 12);
                         PageResult<RecipeListResponse> pageResult = new PageResult<>(List.of(item), pageInfo);
 
-                        given(recipeService.getRecipes(any())).willReturn(pageResult);
+                        given(recipeService.getRecipes(any(), any(), any())).willReturn(pageResult);
 
                         // when & then - HTTP 응답 검증
                         mockMvc.perform(get("/api/v1/recipes"))
@@ -96,8 +96,8 @@ class RecipeControllerTest {
 
                 @Test
                 @WithMockUser
-                @DisplayName("비회원(userId 없음)으로 상세 레시피를 정상 조회한다")
-                void 비회원_상세조회() throws Exception {
+                @DisplayName("RecipeControllerTest - getRecipe - 비회원(userId 없음)으로 상세 레시피를 정상 조회한다")
+                void getRecipe_Guest_Success() throws Exception {
                         // given - RecipeResponse 생성
                         RecipeResponse response = createTestRecipeResponse();
                         given(recipeService.getRecipe(eq(1L), isNull())).willReturn(response);
@@ -112,8 +112,8 @@ class RecipeControllerTest {
 
                 @Test
                 @WithMockUser
-                @DisplayName("회원(userId 포함)으로 상세 레시피를 조회한다")
-                void 회원_상세조회() throws Exception {
+                @DisplayName("RecipeControllerTest - getRecipe - 회원(userId 포함)으로 상세 레시피를 조회한다")
+                void getRecipe_Member_Success() throws Exception {
                         // given
                         RecipeResponse response = createTestRecipeResponse();
                         given(recipeService.getRecipe(eq(1L), eq(10L))).willReturn(response);
@@ -127,8 +127,8 @@ class RecipeControllerTest {
 
                 @Test
                 @WithMockUser
-                @DisplayName("존재하지 않는 recipeId 조회 시 예외가 발생한다")
-                void 레시피_미존재_예외() throws Exception {
+                @DisplayName("RecipeControllerTest - getRecipe - 존재하지 않는 recipeId 조회 시 예외가 발생한다")
+                void getRecipe_NotFound_ThrowsException() throws Exception {
                         // given
                         given(recipeService.getRecipe(eq(999L), isNull()))
                                         .willThrow(new ExceptionTemplate(ErrorCode.RECIPE_NOT_FOUND));
@@ -148,8 +148,8 @@ class RecipeControllerTest {
 
                 @Test
                 @WithMockUser
-                @DisplayName("레시피 조리 완료 시 성공 응답을 반환한다")
-                void 조리완료_성공() throws Exception {
+                @DisplayName("RecipeControllerTest - ateRecipe - 레시피 조리 완료 시 성공 응답을 반환한다")
+                void ateRecipe_Success() throws Exception {
                         // given - ateRecipe는 void 메서드이므로 아무 설정 필요 없음
                         willDoNothing().given(recipeService).ateRecipe(eq(1L), eq(10L));
 

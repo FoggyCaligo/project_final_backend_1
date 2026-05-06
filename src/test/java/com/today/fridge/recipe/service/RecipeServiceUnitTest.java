@@ -130,12 +130,12 @@ class RecipeServiceUnitTest {
     // getRecipe(Long recipeId) - 비회원 전용 레시피 1개 조회 테스트
     // ========================================================================
     @Nested
-    @DisplayName("getRecipe(recipeId) - 비회원 전용 레시피 조회")
+    @DisplayName("RecipeServiceUnitTest - getRecipe(guest) - 비회원 전용 레시피 조회")
     class GetRecipeForGuest {
 
         @Test
-        @DisplayName("정상적인 recipeId로 조회 시 RecipeResponse를 반환한다")
-        void 정상조회_성공() {
+        @DisplayName("RecipeServiceUnitTest - getRecipe - 정상적인 recipeId로 조회 시 RecipeResponse를 반환한다")
+        void getRecipe_Success() {
             // given - 모든 Repository에서 정상 데이터를 반환하도록 설정
             given(recipeRepository.findById(1L)).willReturn(Optional.of(testRecipe));
             given(recipeNutritionRepository.findByRecipe_RecipeId(1L)).willReturn(Optional.of(testNutrition));
@@ -155,8 +155,8 @@ class RecipeServiceUnitTest {
         }
 
         @Test
-        @DisplayName("존재하지 않는 recipeId로 조회 시 RECIPE_NOT_FOUND 예외가 발생한다")
-        void 레시피_미존재시_예외발생() {
+        @DisplayName("RecipeServiceUnitTest - getRecipe - 존재하지 않는 recipeId로 조회 시 RECIPE_NOT_FOUND 예외가 발생한다")
+        void getRecipe_NotFound_ThrowsException() {
             // given - 레시피 없음
             given(recipeRepository.findById(999L)).willReturn(Optional.empty());
 
@@ -168,8 +168,8 @@ class RecipeServiceUnitTest {
         }
 
         @Test
-        @DisplayName("레시피 영양정보가 없을 때 RECIPE_NUTRITION_NOT_FOUND 예외가 발생한다")
-        void 영양정보_미존재시_예외발생() {
+        @DisplayName("RecipeServiceUnitTest - getRecipe - 레시피 영양정보가 없을 때 RECIPE_NUTRITION_NOT_FOUND 예외가 발생한다")
+        void getRecipe_NutritionNotFound_ThrowsException() {
             // given - 레시피는 있지만 영양정보 없음
             given(recipeRepository.findById(1L)).willReturn(Optional.of(testRecipe));
             given(recipeNutritionRepository.findByRecipe_RecipeId(1L)).willReturn(Optional.empty());
@@ -182,8 +182,8 @@ class RecipeServiceUnitTest {
         }
 
         @Test
-        @DisplayName("레시피 단계가 없을 때 RECIPE_STEP_NOT_FOUND 예외가 발생한다")
-        void 단계정보_미존재시_예외발생() {
+        @DisplayName("RecipeServiceUnitTest - getRecipe - 레시피 단계가 없을 때 RECIPE_STEP_NOT_FOUND 예외가 발생한다")
+        void getRecipe_StepNotFound_ThrowsException() {
             // given - 레시피, 영양정보는 있지만 단계 정보 없음
             given(recipeRepository.findById(1L)).willReturn(Optional.of(testRecipe));
             given(recipeNutritionRepository.findByRecipe_RecipeId(1L)).willReturn(Optional.of(testNutrition));
@@ -197,8 +197,8 @@ class RecipeServiceUnitTest {
         }
 
         @Test
-        @DisplayName("레시피 재료가 없을 때 RECIPE_INGREDIENT_NOT_FOUND 예외가 발생한다")
-        void 재료정보_미존재시_예외발생() {
+        @DisplayName("RecipeServiceUnitTest - getRecipe - 레시피 재료가 없을 때 RECIPE_INGREDIENT_NOT_FOUND 예외가 발생한다")
+        void getRecipe_IngredientNotFound_ThrowsException() {
             // given - 레시피, 영양정보, 단계 정보는 있지만 재료 정보 없음
             given(recipeRepository.findById(1L)).willReturn(Optional.of(testRecipe));
             given(recipeNutritionRepository.findByRecipe_RecipeId(1L)).willReturn(Optional.of(testNutrition));
@@ -217,12 +217,12 @@ class RecipeServiceUnitTest {
     // getRecipe(Long recipeId, Long userId) - 회원 전용 레시피 1개 조회 테스트
     // ========================================================================
     @Nested
-    @DisplayName("getRecipe(recipeId, userId) - 회원 전용 레시피 조회")
+    @DisplayName("RecipeServiceUnitTest - getRecipe(member) - 회원 전용 레시피 조회")
     class GetRecipeForMember {
 
         @Test
-        @DisplayName("userId가 null이면 비회원용 getRecipe가 호출된다")
-        void userId가_null이면_비회원용_호출() {
+        @DisplayName("RecipeServiceUnitTest - getRecipe - userId가 null이면 비회원용 getRecipe가 호출된다")
+        void getRecipe_NullUserId_CallsGuestMethod() {
             // given - 비회원 경로의 Repository 호출 설정
             given(recipeRepository.findById(1L)).willReturn(Optional.of(testRecipe));
             given(recipeNutritionRepository.findByRecipe_RecipeId(1L)).willReturn(Optional.of(testNutrition));
@@ -240,8 +240,8 @@ class RecipeServiceUnitTest {
         }
 
         @Test
-        @DisplayName("재료가 충분하면 sufficiency가 OK로 설정된다")
-        void 재료충분_OK() {
+        @DisplayName("RecipeServiceUnitTest - getRecipe - 재료가 충분하면 sufficiency가 OK로 설정된다")
+        void getRecipe_SufficiencyOk() {
             // given - 레시피 재료: 김치 200g, 유저 보유: 300g
             given(recipeRepository.findById(1L)).willReturn(Optional.of(testRecipe));
             given(recipeNutritionRepository.findByRecipe_RecipeId(1L)).willReturn(Optional.of(testNutrition));
@@ -264,8 +264,8 @@ class RecipeServiceUnitTest {
         }
 
         @Test
-        @DisplayName("재료가 부족하면 sufficiency가 NOT_ENOUGH로 설정된다")
-        void 재료부족_NOT_ENOUGH() {
+        @DisplayName("RecipeServiceUnitTest - getRecipe - 재료가 부족하면 sufficiency가 NOT_ENOUGH로 설정된다")
+        void getRecipe_SufficiencyNotEnough() {
             // given - 레시피 재료: 김치 200g, 유저 보유: 50g
             given(recipeRepository.findById(1L)).willReturn(Optional.of(testRecipe));
             given(recipeNutritionRepository.findByRecipe_RecipeId(1L)).willReturn(Optional.of(testNutrition));
@@ -287,8 +287,8 @@ class RecipeServiceUnitTest {
         }
 
         @Test
-        @DisplayName("재료가 없으면 sufficiency가 MISSING으로 설정된다")
-        void 재료없음_MISSING() {
+        @DisplayName("RecipeServiceUnitTest - getRecipe - 재료가 없으면 sufficiency가 MISSING으로 설정된다")
+        void getRecipe_SufficiencyMissing() {
             // given - 레시피 재료: 김치 200g, 유저 보유: 없음
             given(recipeRepository.findById(1L)).willReturn(Optional.of(testRecipe));
             given(recipeNutritionRepository.findByRecipe_RecipeId(1L)).willReturn(Optional.of(testNutrition));
@@ -308,8 +308,8 @@ class RecipeServiceUnitTest {
         }
 
         @Test
-        @DisplayName("여러 레코드의 동일 재료 수량이 합산된다")
-        void 동일재료_수량합산() {
+        @DisplayName("RecipeServiceUnitTest - getRecipe - 여러 레코드의 동일 재료 수량이 합산된다")
+        void getRecipe_SumQuantities() {
             // given - 레시피: 김치 200g, 유저: 김치 100g + 김치 150g = 250g → OK
             given(recipeRepository.findById(1L)).willReturn(Optional.of(testRecipe));
             given(recipeNutritionRepository.findByRecipe_RecipeId(1L)).willReturn(Optional.of(testNutrition));
@@ -337,8 +337,8 @@ class RecipeServiceUnitTest {
         }
 
         @Test
-        @DisplayName("IngredientMaster의 normalizedName으로도 재료 매칭이 가능하다")
-        void 마스터테이블_이름매칭() {
+        @DisplayName("RecipeServiceUnitTest - getRecipe - IngredientMaster의 normalizedName으로도 재료 매칭이 가능하다")
+        void getRecipe_MasterNameMatch() {
             // given - 재료 마스터 테이블을 통한 매칭 시나리오
             given(recipeRepository.findById(1L)).willReturn(Optional.of(testRecipe));
             given(recipeNutritionRepository.findByRecipe_RecipeId(1L)).willReturn(Optional.of(testNutrition));
@@ -370,12 +370,12 @@ class RecipeServiceUnitTest {
     // getRecipes(Pageable) - 전체 레시피 목록 페이징 조회 테스트
     // ========================================================================
     @Nested
-    @DisplayName("getRecipes(Pageable) - 전체 레시피 목록 조회")
+    @DisplayName("RecipeServiceUnitTest - getRecipes - 전체 레시피 목록 조회")
     class GetRecipesList {
 
         @Test
-        @DisplayName("페이징된 레시피 목록을 정상 반환한다")
-        void 페이징_정상조회() {
+        @DisplayName("RecipeServiceUnitTest - getRecipes - 페이징된 레시피 목록을 정상 반환한다")
+        void getRecipes_Success() {
             // given - 2개의 레시피가 포함된 페이지 생성
             Recipe r1 = Recipe.builder().recipeId(1L).title("김치찌개").build();
             Recipe r2 = Recipe.builder().recipeId(2L).title("된장찌개").build();
@@ -386,7 +386,7 @@ class RecipeServiceUnitTest {
             given(recipeRepository.findByIsActiveTrue(pageable)).willReturn(recipePage);
 
             // when
-            PageResult<RecipeListResponse> result = recipeService.getRecipes(pageable);
+            PageResult<RecipeListResponse> result = recipeService.getRecipes(null, null, pageable);
 
             // then - 페이지 정보 및 콘텐츠 검증
             assertThat(result.content()).hasSize(2);
@@ -398,8 +398,8 @@ class RecipeServiceUnitTest {
         }
 
         @Test
-        @DisplayName("레시피가 없을 때 빈 목록을 반환한다")
-        void 빈목록_반환() {
+        @DisplayName("RecipeServiceUnitTest - getRecipes - 레시피가 없을 때 빈 목록을 반환한다")
+        void getRecipes_EmptyList() {
             // given - 빈 페이지
             Pageable pageable = PageRequest.of(0, 12);
             Page<Recipe> emptyPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
@@ -407,7 +407,7 @@ class RecipeServiceUnitTest {
             given(recipeRepository.findByIsActiveTrue(pageable)).willReturn(emptyPage);
 
             // when
-            PageResult<RecipeListResponse> result = recipeService.getRecipes(pageable);
+            PageResult<RecipeListResponse> result = recipeService.getRecipes(null, null, pageable);
 
             // then
             assertThat(result.content()).isEmpty();
@@ -419,12 +419,12 @@ class RecipeServiceUnitTest {
     // ateRecipe(Long recipeId, Long userId) - 레시피 조리 완료 시 재료 차감 테스트
     // ========================================================================
     @Nested
-    @DisplayName("ateRecipe(recipeId, userId) - 레시피 조리 완료 재료 차감")
+    @DisplayName("RecipeServiceUnitTest - ateRecipe - 레시피 조리 완료 재료 차감")
     class AteRecipe {
 
         @Test
-        @DisplayName("재료가 충분할 때 수량이 올바르게 차감된다")
-        void 충분한_재료_차감() {
+        @DisplayName("RecipeServiceUnitTest - ateRecipe - 재료가 충분할 때 수량이 올바르게 차감된다")
+        void ateRecipe_DeductQuantity() {
             // given - 레시피: 김치 200g, 유저: 김치 300g
             given(recipeIngredientRepository.findByRecipe_RecipeId(1L)).willReturn(List.of(testIngredient));
 
@@ -445,8 +445,8 @@ class RecipeServiceUnitTest {
         }
 
         @Test
-        @DisplayName("재료 수량이 정확히 요구량과 같으면 삭제된다")
-        void 정확히_일치하면_삭제() {
+        @DisplayName("RecipeServiceUnitTest - ateRecipe - 재료 수량이 정확히 요구량과 같으면 삭제된다")
+        void ateRecipe_DeleteWhenZero() {
             // given - 레시피: 김치 200g, 유저: 김치 200g → 차감 후 0 → 삭제
             given(recipeIngredientRepository.findByRecipe_RecipeId(1L)).willReturn(List.of(testIngredient));
 
@@ -466,8 +466,8 @@ class RecipeServiceUnitTest {
         }
 
         @Test
-        @DisplayName("재료가 아예 없는 경우 에러 없이 정상 동작한다")
-        void 재료없음_정상동작() {
+        @DisplayName("RecipeServiceUnitTest - ateRecipe - 재료가 아예 없는 경우 에러 없이 정상 동작한다")
+        void ateRecipe_NoIngredients_Success() {
             // given - 레시피에 필요한 재료가 있지만 유저가 보유하지 않음
             given(recipeIngredientRepository.findByRecipe_RecipeId(1L)).willReturn(List.of(testIngredient));
             given(userIngredientRepository.findByUserIdAndIngredientNameIn(eq(10L), anyList()))
@@ -478,8 +478,8 @@ class RecipeServiceUnitTest {
         }
 
         @Test
-        @DisplayName("여러 레코드에서 유통기한 임박순으로 차감된다")
-        void 유통기한_임박순_차감() {
+        @DisplayName("RecipeServiceUnitTest - ateRecipe - 여러 레코드에서 유통기한 임박순으로 차감된다")
+        void ateRecipe_SortByExpiry() {
             // given - 레시피: 김치 150g
             // 유저: 김치 100g(오늘 만료) + 김치 200g(7일 후 만료)
             // 예상: 100g 전량 소진(삭제) + 50g 추가 차감 → 150g 남음
