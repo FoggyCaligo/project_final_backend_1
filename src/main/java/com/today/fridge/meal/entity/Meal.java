@@ -45,7 +45,7 @@ public class Meal {
 
     // Foreign Key linking to recipes.recipe_id
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "recipe_id", nullable = false)
+    @JoinColumn(name = "recipe_nutrition_id", nullable = false)
     private Recipe recipe;
 
     // 일반 기능에 필요 몇 인분 (1인분 기준)

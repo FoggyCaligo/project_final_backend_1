@@ -33,7 +33,7 @@ import static org.mockito.Mockito.times;
  */
 @ExtendWith(MockitoExtension.class)
 @ActiveProfiles("recipe")
-@DisplayName("MealServiceUnitTest 단위 테스트 (Write Operations)")
+@DisplayName("식단 서비스 단위 테스트 (저장 작업)")
 public class MealServiceUnitTest {
 
     @InjectMocks

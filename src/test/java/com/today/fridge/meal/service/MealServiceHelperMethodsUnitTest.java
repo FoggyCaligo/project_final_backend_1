@@ -30,7 +30,7 @@ import static org.mockito.Mockito.times;
  * MealServiceHelperMethods 컴포넌트에 대한 단위 테스트입니다.
  */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("MealServiceHelperMethods 단위 테스트")
+@DisplayName("식단 서비스 헬퍼 메서드 단위 테스트")
 public class MealServiceHelperMethodsUnitTest {
 
     @InjectMocks

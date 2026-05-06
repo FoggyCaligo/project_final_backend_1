@@ -36,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @ActiveProfiles("recipe")
 @Transactional
-@DisplayName("Meal 도메인 E2E 통합 테스트 (H2 DB)")
+@DisplayName("식단 도메인 E2E 통합 테스트 (로컬 데이터베이스)")
 public class MealFlowIntegrationTest {
 
         @Autowired
@@ -70,7 +70,7 @@ public class MealFlowIntegrationTest {
         // 통합 테스트: 식단 기록부터 일일 권장량 조회 및 통계 리포트 생성까지 연동 확인
         // ========================================================================
         @Test
-        @DisplayName("Service Integration Test for E2E Meal Tracking Flow")
+        @DisplayName("E2E 식단 추적 흐름 통합 테스트")
         void testMealEndToEndFlow() {
                 // given (1. 유저 데이터 준비)
                 User user = User.create("tester_integration", "integration@todayfridge.com", "hashedpassword", "통합테스터");

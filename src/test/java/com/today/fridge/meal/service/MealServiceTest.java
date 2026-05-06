@@ -64,7 +64,7 @@ class MealServiceTest {
     // 통합 테스트: 식단 기록 및 영양소 반영 시나리오
     // ========================================================================
     @Test
-    @DisplayName("Service Integration Test for recordMeal and DailyNutrition tracking")
+    @DisplayName("식단 기록 및 일일 영양소 추적 통합 테스트")
     void testRecordMealAndNutritionTracking() {
         // 1. 유저 데이터 준비
         User user = User.create("testmeal", "testmeal@todayfridge.com", "hashedpassword", "식단테스터");
@@ -137,7 +137,7 @@ class MealServiceTest {
     // 통합 테스트: 존재하지 않는 레시피 기록 예외 시나리오
     // ========================================================================
     @Test
-    @DisplayName("Service throws exception when recording non-existent recipe")
+    @DisplayName("존재하지 않는 레시피 기록 시 예외 발생 테스트")
     void testRecordMeal_RecipeNotFound() {
         // 1. 유저 데이터 준비
         User user = User.create("failtest", "failtest@todayfridge.com", "hashedpassword", "실패테스터");

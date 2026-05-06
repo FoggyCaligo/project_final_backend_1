@@ -33,7 +33,7 @@ import static org.mockito.BDDMockito.given;
  */
 @ExtendWith(MockitoExtension.class)
 @ActiveProfiles("recipe")
-@DisplayName("MealServicePeriod 단위 테스트 (Period Reads)")
+@DisplayName("기간별 식단 서비스 단위 테스트 (기간별 조회)")
 public class MealServicePeriodUnitTest {
 
     @InjectMocks
