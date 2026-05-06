@@ -2,6 +2,7 @@ package com.today.fridge.chatbot.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -79,6 +80,6 @@ public class ChatbotOrchestratorService {
                         .useUserFridge(isMember)
                         .build();
 
-        return recommendationService.recommend(query);
+        return recommendationService.recommend(query, Pageable.unpaged()).content().stream().limit(3).toList();
     }
 }
