@@ -1,12 +1,18 @@
 package com.today.fridge.ingredient.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Getter
+@Setter
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor
 @Entity
 @Table(name = "ingredient_master")
@@ -19,7 +25,8 @@ public class IngredientMaster {
     private Long ingredientMasterId;
 
     /**
-     * DDL 근거: {@code 오늘냉장고_MariaDB_CREATE_TABLE_초안.sql} — {@code canonical_name VARCHAR(100) NOT NULL UNIQUE}.
+     * DDL 근거: {@code 오늘냉장고_MariaDB_CREATE_TABLE_초안.sql} —
+     * {@code canonical_name VARCHAR(100) NOT NULL UNIQUE}.
      * 애플리케이션에서는 ERD v1.1의 정규화 표준명과 동일한 문자열을 저장한다 ({@link #normalizedName}과 값 동일).
      */
     @Column(name = "canonical_name", nullable = false, unique = true, length = 100)
