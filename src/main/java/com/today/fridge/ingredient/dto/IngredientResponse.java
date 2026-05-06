@@ -14,6 +14,10 @@ public record IngredientResponse(
         BigDecimal quantity,
         String unit,
         String storageType,
-        String freshnessStatus
+        String freshnessStatus,
+        /** 스토리지 상대 경로(게시글 이미지와 동일 용도). */
+        String imageStoragePath,
+        String imageStoredName,
+        Long imageFileId
 ) {
 }

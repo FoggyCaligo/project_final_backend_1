@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: today_fridge_postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: today_fridge
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+
+volumes:
+  postgres_data:
