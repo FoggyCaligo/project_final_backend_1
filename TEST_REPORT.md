@@ -53,8 +53,10 @@ server/src/test/java/com/today/fridge/
 │
 └── shopping/
     ├── external/
+    │   ├── naver/
+    │   │   └── NaverShoppingClientTest.java    ★ 신규 단위 테스트 (JSON 파싱·필터링 검증)
     │   └── elevenst/
-    │       └── ElevenStShoppingClientTest.java ★ 신규 단위 테스트 (필터링 검증)
+    │       └── ElevenStShoppingClientTest.java ★ 신규 단위 테스트 (XML 파싱·필터링 검증)
     ├── service/
     │   └── ShoppingService3Test.java        ★ 신규 단위 테스트
     ├── controller/
@@ -136,7 +138,18 @@ frontend/src/__tests__/api/
 | 5 | `getIngredientPrices` | DB 캐시 HIT | DB 결과 반환, Redis 재저장 |
 | 6 | `getIngredientPrices` | 완전 캐시 MISS | 외부 API 호출, DB 저장 |
 
-### 4-2. ElevenStShoppingClientTest (신규 단위 테스트) — 5개
+### 4-2. NaverShoppingClientTest (신규 단위 테스트) — 6개
+
+| # | 시나리오 | Given (JSON 응답) | 기댓값 |
+|---|----------|-------------------|--------|
+| 1 | 정상 응답 → 최저가 1건 반환 | 사과 15000원 | 결과 1건, price=15000 |
+| 2 | 가격 < 500원 → 필터 | 사과 스티커 300원 | 결과 0건 |
+| 3 | items 빈 배열 → 빈 리스트 | items: [] | 결과 0건 |
+| 4 | 여러 상품 → 최저가(3500원)만 반환 | [5000원, 3500원, 7000원] | 결과 1건, price=3500 |
+| 5 | RestClientException → 빈 리스트 | 네트워크 오류 | 결과 0건 (예외 전파 X) |
+| 6 | API 키 미설정 → 빈 리스트 | clientId="" | 결과 0건 |
+
+### 4-3. ElevenStShoppingClientTest (신규 단위 테스트) — 5개
 
 | # | 시나리오 | Given (XML 상품명/가격) | 기댓값 |
 |---|----------|------------------------|--------|
@@ -146,7 +159,7 @@ frontend/src/__tests__/api/
 | 4 | 식품+비식품 혼합 → 식품만 반환 | ["수박 5kg" 15000원, "수박 도구" 900원] | 결과 1건 |
 | 5 | 키워드 미포함 상품 → 필터 | "참외 1통", 5000원, keyword="수박" | 결과 0건 |
 
-### 4-3. ShoppingControllerTest (신규 단위 테스트) — 9개
+### 4-4. ShoppingControllerTest (신규 단위 테스트) — 9개
 
 | # | 엔드포인트 | 시나리오 | 기댓값 |
 |---|-----------|----------|--------|
@@ -161,7 +174,7 @@ frontend/src/__tests__/api/
 | 9 | `GET /recipes/1/missing-ingredients-prices` | MISSING 재료 있음 | 200, 1건(수박) |
 | 10 | `GET /recipes/1/missing-ingredients-prices` | 모든 재료 OK | 200, 빈 리스트 `[]` |
 
-### 4-4. ShoppingApiIntegrationTest (신규 통합 테스트) — 9개
+### 4-5. ShoppingApiIntegrationTest (신규 통합 테스트) — 9개
 
 | # | 엔드포인트 | 시나리오 | 기댓값 |
 |---|-----------|----------|--------|
@@ -212,6 +225,8 @@ cd server
 
 # 특정 클래스만 실행
 ./gradlew test --tests "com.today.fridge.shopping.integration.ShoppingApiIntegrationTest"
+./gradlew test --tests "com.today.fridge.shopping.external.naver.NaverShoppingClientTest"
+./gradlew test --tests "com.today.fridge.shopping.external.elevenst.ElevenStShoppingClientTest"
 ```
 
 ### 프론트엔드 (Jest)
