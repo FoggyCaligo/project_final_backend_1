@@ -121,7 +121,7 @@ public interface MealRepository extends JpaRepository<Meal, Long> {
      * @param endDate   조회 종료 일시
      * @return 해당 기간 중 가장 많이 식사한 날의 식사 횟수
      */
-    @Query(value = "SELECT COALESCE(MAX(meal_count), 0) FROM (SELECT COUNT(*) as meal_count FROM today_fridge.meal WHERE user_id = :userId AND consumed_at >= :startDate AND consumed_at < :endDate GROUP BY CAST(consumed_at AS DATE)) as daily_counts", nativeQuery = true)
+    @Query(value = "SELECT COALESCE(MAX(meal_count), 0) FROM (SELECT COUNT(*) as meal_count FROM meal WHERE user_id = :userId AND consumed_at >= :startDate AND consumed_at < :endDate GROUP BY CAST(consumed_at AS DATE)) as daily_counts", nativeQuery = true)
     Integer findMaxMealsPerDayInPeriodNative(
             @Param("userId") Long userId,
             @Param("startDate") LocalDateTime startDate,

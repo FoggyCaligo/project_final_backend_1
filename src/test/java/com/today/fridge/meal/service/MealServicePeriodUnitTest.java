@@ -32,7 +32,7 @@ import static org.mockito.BDDMockito.given;
  * MealServicePeriod (Period Reads)에 대한 단위 테스트입니다.
  */
 @ExtendWith(MockitoExtension.class)
-@ActiveProfiles("test")
+@ActiveProfiles("recipe")
 @DisplayName("MealServicePeriod 단위 테스트 (Period Reads)")
 public class MealServicePeriodUnitTest {
 

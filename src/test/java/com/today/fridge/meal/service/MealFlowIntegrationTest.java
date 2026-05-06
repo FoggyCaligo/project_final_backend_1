@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Meal 서비스들의 전체적인 데이터 흐름을 검증하는 통합 테스트입니다.
  */
 @SpringBootTest
-@ActiveProfiles("test")
+@ActiveProfiles("recipe")
 @Transactional
 @DisplayName("Meal 도메인 E2E 통합 테스트 (H2 DB)")
 public class MealFlowIntegrationTest {

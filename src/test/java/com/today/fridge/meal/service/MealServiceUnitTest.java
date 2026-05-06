@@ -32,7 +32,7 @@ import static org.mockito.Mockito.times;
  * MealService (Writes)에 대한 단위 테스트입니다.
  */
 @ExtendWith(MockitoExtension.class)
-@ActiveProfiles("test")
+@ActiveProfiles("recipe")
 @DisplayName("MealServiceUnitTest 단위 테스트 (Write Operations)")
 public class MealServiceUnitTest {
 

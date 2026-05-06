@@ -33,7 +33,7 @@ import static org.mockito.BDDMockito.given;
  * MealServiceDaily (Daily Reads)에 대한 단위 테스트입니다.
  */
 @ExtendWith(MockitoExtension.class)
-@ActiveProfiles("test")
+@ActiveProfiles("recipe")
 @DisplayName("MealServiceDaily 단위 테스트 (Daily Reads)")
 public class MealServiceDailyUnitTest {
 
