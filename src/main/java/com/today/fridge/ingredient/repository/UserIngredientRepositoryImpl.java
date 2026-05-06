@@ -1,6 +1,6 @@
 package com.today.fridge.ingredient.repository;
 
-import com.today.fridge.ingredient.entity.IngredientMaster;
+//import com.today.fridge.ingredient.entity.IngredientMaster;
 import com.today.fridge.ingredient.entity.UserIngredient;
 import com.today.fridge.ingredient.type.FreshnessStatus;
 import jakarta.persistence.EntityManager;
@@ -9,7 +9,7 @@ import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
-import jakarta.persistence.criteria.Fetch;
+//import jakarta.persistence.criteria.Fetch;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Order;
 import jakarta.persistence.criteria.Predicate;
@@ -49,8 +49,8 @@ public class UserIngredientRepositoryImpl implements UserIngredientRepositoryCus
         root.fetch("ingredientMaster", JoinType.LEFT);
         root.fetch("fileAsset", JoinType.LEFT);
 
-        List<Predicate> predicates =
-                buildPredicates(cb, root, userId, today, soonEnd, freshnessStatus, storageType, keyword, categoryId);
+        List<Predicate> predicates = buildPredicates(cb, root, userId, today, soonEnd, freshnessStatus, storageType,
+                keyword, categoryId);
         cq.where(predicates.toArray(Predicate[]::new));
         // DISTINCT + ORDER BY(CASE…) 는 H2에서 거부된다. 본 쿼리는 ManyToOne 페치만 있어 행 중복이 없다.
         applyOrder(cb, cq, root, today, soonEnd, sort);
@@ -95,7 +95,8 @@ public class UserIngredientRepositoryImpl implements UserIngredientRepositoryCus
     }
 
     /**
-     * {@link com.today.fridge.ingredient.domain.FreshnessCalculator} 와 동일한 조건을 Criteria로 표현한다.
+     * {@link com.today.fridge.ingredient.domain.FreshnessCalculator} 와 동일한 조건을
+     * Criteria로 표현한다.
      */
     private static List<Predicate> freshnessPredicates(
             CriteriaBuilder cb,
@@ -128,11 +129,11 @@ public class UserIngredientRepositoryImpl implements UserIngredientRepositoryCus
             Order primary;
             switch (field) {
                 case "expiresAt" ->
-                        primary = asc ? cb.asc(root.get("expiresAt")) : cb.desc(root.get("expiresAt"));
+                    primary = asc ? cb.asc(root.get("expiresAt")) : cb.desc(root.get("expiresAt"));
                 case "updatedAt" ->
-                        primary = asc ? cb.asc(root.get("updatedAt")) : cb.desc(root.get("updatedAt"));
+                    primary = asc ? cb.asc(root.get("updatedAt")) : cb.desc(root.get("updatedAt"));
                 case "createdAt" ->
-                        primary = asc ? cb.asc(root.get("createdAt")) : cb.desc(root.get("createdAt"));
+                    primary = asc ? cb.asc(root.get("createdAt")) : cb.desc(root.get("createdAt"));
                 default -> {
                     applyDefaultFridgeOrder(cb, cq, root, today, soonEnd);
                     return;
@@ -172,8 +173,8 @@ public class UserIngredientRepositoryImpl implements UserIngredientRepositoryCus
             Long categoryId) {
         CriteriaQuery<Long> cq = cb.createQuery(Long.class);
         Root<UserIngredient> root = cq.from(UserIngredient.class);
-        List<Predicate> predicates =
-                buildPredicates(cb, root, userId, today, soonEnd, freshnessStatus, storageType, keyword, categoryId);
+        List<Predicate> predicates = buildPredicates(cb, root, userId, today, soonEnd, freshnessStatus, storageType,
+                keyword, categoryId);
         cq.select(cb.count(root));
         cq.where(predicates.toArray(Predicate[]::new));
         return em.createQuery(cq).getSingleResult();
