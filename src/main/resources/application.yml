@@ -8,7 +8,7 @@ spring:
       max-file-size: 5MB
       max-request-size: 25MB
   datasource:
-    url: jdbc:postgresql://ep-wispy-art-amny04jt-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+    url: jdbc:postgresql://ep-wispy-art-amny04jt-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require&prepareThreshold=0
     username: postgres
     password: FoggyCaligo123!
     driver-class-name: org.postgresql.Driver
@@ -25,7 +25,7 @@ spring:
         default_schema: today_fridge
     hibernate:
       # 최종 SQL 기준 운영/개발 스키마 드리프트 방지
-      ddl-auto: update
+      ddl-auto: validate
   flyway:
     enabled: false
   mail:
