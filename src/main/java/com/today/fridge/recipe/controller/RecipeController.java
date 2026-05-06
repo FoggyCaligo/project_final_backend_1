@@ -45,6 +45,11 @@ import com.today.fridge.recipe.service.RecipeService;
 // Lombok
 import lombok.RequiredArgsConstructor;
 
+// Swagger
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+@Tag(name = "Recipe", description = "레시피 API (목록 조회, 상세 조회, 조리 완료)")
 @RestController
 @RequestMapping("/api/v1/recipes")
 @RequiredArgsConstructor
@@ -52,6 +57,7 @@ public class RecipeController {
 
 	private final RecipeService recipeService;
 
+	@Operation(summary = "레시피 목록 조회", description = "조리 유형 및 정렬 조건으로 레시피 목록을 페이징 조회합니다.")
 	@GetMapping
 	public ResponseEntity<ApiResponse<PageResult<RecipeListResponse>>> getRecipes(
 			@RequestParam(name = "cookingType", required = false, defaultValue = "ALL") String cookingType,

@@ -68,7 +68,7 @@ public class ElevenStShoppingClient extends CoupangShoppingClient {
                 return Collections.emptyList();
             }
 
-            List<ShoppingItemDto> results = parseXml(body);
+            List<ShoppingItemDto> results = parseXml(body, keyword);
             log.info("[ElevenStShoppingClient] 검색 성공 - 결과 수: {}", results.size()); // 결과 확인용
             return results;
         } catch (Exception e) {
@@ -80,6 +80,10 @@ public class ElevenStShoppingClient extends CoupangShoppingClient {
     // 11번가 api는 xml을 사용, 따라서 euc-kr 을 사용한다 : Charset.forName('EUC-KR')
     // getElementsByTagName("Product") : <Products> wrapper 유무에 상관없이 Product 태그를 직접 탐색
     private List<ShoppingItemDto> parseXml(byte[] body) throws Exception {
+        return parseXml(body, null);
+    }
+
+    private List<ShoppingItemDto> parseXml(byte[] body, String filterKeyword) throws Exception {
         // EUC-KR로 변환한 원본 XML 로깅 (응답 구조 확인용)
         String rawXml = new String(body, Charset.forName("EUC-KR"));
         log.info("[ElevenStShoppingClient] XML 응답 (앞 400자): {}",
@@ -103,7 +107,11 @@ public class ElevenStShoppingClient extends CoupangShoppingClient {
             if (node.getNodeType() == Node.ELEMENT_NODE) {
                 ShoppingItemDto dto = toDto((Element) node);
                 if (dto != null) {
-                    result.add(dto);
+                    // 검색어가 상품명에 포함된 경우만 포함 (식재료 외 결과 필터링)
+                    if (filterKeyword == null || dto.getProductName() == null ||
+                            dto.getProductName().contains(filterKeyword)) {
+                        result.add(dto);
+                    }
                 }
             }
         }
@@ -118,6 +126,8 @@ public class ElevenStShoppingClient extends CoupangShoppingClient {
         String imageUrl = getTagText(el, "ProductImage");
         String detailUrl = getTagText(el, "DetailPageUrl");
         String seller = getTagText(el, "Seller");
+        String deliveryFeeStr = getTagText(el, "DeliveryFee");         // 배송비 (0=무료)
+        String isConditionDelivery = getTagText(el, "IsConditionDelivery"); // 조건부 무료배송
 
         if (salePriceStr == null || salePriceStr.isBlank())
             return null;
@@ -130,6 +140,8 @@ public class ElevenStShoppingClient extends CoupangShoppingClient {
         if (price <= 0)
             return null;
 
+        ShippingType shippingType = resolveShippingType(deliveryFeeStr, isConditionDelivery);
+
         return ShoppingItemDto.builder()
                 .mallName("11번가")
                 .mallProductId(productCode)
@@ -138,7 +150,7 @@ public class ElevenStShoppingClient extends CoupangShoppingClient {
                 .purchaseUrl(detailUrl)
                 .imageUrl(imageUrl)
                 .brand(seller)
-                .shippingType(ShippingType.STANDARD)
+                .shippingType(shippingType)
                 .stockStatus(StockStatus.IN_STOCK)
                 .build();
     }
@@ -148,5 +160,21 @@ public class ElevenStShoppingClient extends CoupangShoppingClient {
         if (nodes.getLength() == 0)
             return null;
         return nodes.item(0).getTextContent();
+    }
+
+    /**
+     * 11번가 배송비/조건부 무료배송으로 ShippingType 결정
+     * DeliveryFee=0 또는 IsConditionDelivery=1 → FREE, 그 외 → STANDARD
+     */
+    private ShippingType resolveShippingType(String deliveryFeeStr, String isConditionDelivery) {
+        try {
+            if (deliveryFeeStr != null && Integer.parseInt(deliveryFeeStr.trim()) == 0) {
+                return ShippingType.FREE;
+            }
+        } catch (NumberFormatException ignored) { }
+        if ("1".equals(isConditionDelivery)) {
+            return ShippingType.FREE;
+        }
+        return ShippingType.STANDARD;
     }
 }
