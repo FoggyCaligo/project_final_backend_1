@@ -1,6 +1,6 @@
 package com.today.fridge.recommendation.controller;
 
-import java.util.List;
+//import java.util.List;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -22,17 +22,15 @@ import lombok.RequiredArgsConstructor;
 public class RecommendationController {
 
 	private final RecommendationService recommendationService;
-	
+
 	@GetMapping("/recommendations")
 	public ResponseEntity<ApiResponse<PageResult<RecipeRecommendationResponse>>> recommend(
-	        @PageableDefault(size = 9) Pageable pageable
-	) {
+			@PageableDefault(size = 9) Pageable pageable) {
 		// TODO : user 연결 해야
 		Long mockUserId = 1L;
-		
-		PageResult<RecipeRecommendationResponse> result =
-	            recommendationService.recommend(mockUserId, pageable);
 
-	    return ResponseEntity.ok(ApiResponse.success(result, "추천 레시피 조회 성"));
+		PageResult<RecipeRecommendationResponse> result = recommendationService.recommend(mockUserId, pageable);
+
+		return ResponseEntity.ok(ApiResponse.success(result, "추천 레시피 조회 성"));
 	}
 }
