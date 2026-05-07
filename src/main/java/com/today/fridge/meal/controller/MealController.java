@@ -4,8 +4,11 @@ import java.util.List;
 import java.time.LocalDate;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,7 +44,7 @@ public class MealController {
     private final UserRepository userRepository;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<MealLogResponse>>> getMeals(UserDetails userDetails,
+    public ResponseEntity<ApiResponse<List<MealLogResponse>>> getMeals(@AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(value = "date", required = false) LocalDate date) {
         User user = userRepository.findByLoginId(userDetails.getUsername())
                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
@@ -52,7 +55,7 @@ public class MealController {
     }
 
     @PostMapping("/record")
-    public ResponseEntity<ApiResponse<Void>> recordMeal(UserDetails userDetails,
+    public ResponseEntity<ApiResponse<Void>> recordMeal(@AuthenticationPrincipal UserDetails userDetails,
             @RequestBody MealLogRequest request) {
         User user = userRepository.findByLoginId(userDetails.getUsername())
                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
@@ -62,7 +65,7 @@ public class MealController {
     }
 
     @PostMapping("/physical-metrics")
-    public ResponseEntity<ApiResponse<Void>> recordPhysicalMetrics(UserDetails userDetails,
+    public ResponseEntity<ApiResponse<Void>> recordPhysicalMetrics(@AuthenticationPrincipal UserDetails userDetails,
             @RequestBody PhysicalMetricsRequest request) {
         User user = userRepository.findByLoginId(userDetails.getUsername())
                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
@@ -73,7 +76,7 @@ public class MealController {
 
     @GetMapping("/daily-nutrition")
     public ResponseEntity<ApiResponse<DailyRecommendationResponse>> getDailyNutrition(
-            UserDetails userDetails, @RequestParam(value = "date", required = false) LocalDate date) {
+            @AuthenticationPrincipal UserDetails userDetails, @RequestParam(value = "date", required = false) LocalDate date) {
         User user = userRepository.findByLoginId(userDetails.getUsername())
                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
         if (date == null)
@@ -84,7 +87,7 @@ public class MealController {
     }
 
     @GetMapping("/reports/weekly")
-    public ResponseEntity<ApiResponse<ReportSummaryResponse>> getWeeklyReport(UserDetails userDetails,
+    public ResponseEntity<ApiResponse<ReportSummaryResponse>> getWeeklyReport(@AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(value = "date", required = false) LocalDate date) {
         User user = userRepository.findByLoginId(userDetails.getUsername())
                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
@@ -97,7 +100,7 @@ public class MealController {
     }
 
     @GetMapping("/reports/monthly")
-    public ResponseEntity<ApiResponse<ReportSummaryResponse>> getMonthlyReport(UserDetails userDetails,
+    public ResponseEntity<ApiResponse<ReportSummaryResponse>> getMonthlyReport(@AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(value = "date", required = false) LocalDate date) {
         User user = userRepository.findByLoginId(userDetails.getUsername())
                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
@@ -107,5 +110,15 @@ public class MealController {
         log.info("월간 보고서 조회 - 사용자 ID: {}, 기간: {} ~ {}", user.getUserId(), startDate, date);
         ReportSummaryResponse report = mealServicePeriod.getReportSummary(user.getUserId(), startDate, date);
         return ResponseEntity.ok(ApiResponse.success(report, "월간 영양 보고서 조회 성공"));
+    }
+
+    @DeleteMapping("/{mealId}")
+    public ResponseEntity<ApiResponse<Void>> deleteMeal(@AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable("mealId") Long mealId) {
+        User user = userRepository.findByLoginId(userDetails.getUsername())
+                .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
+        log.info("식단 기록 삭제 - 사용자 ID: {}, 식단 ID: {}", user.getUserId(), mealId);
+        mealService.deleteMeal(user.getUserId(), mealId);
+        return ResponseEntity.ok(ApiResponse.success(null, "식단 기록 삭제 성공"));
     }
 }

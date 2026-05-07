@@ -44,12 +44,17 @@ public class MealService {
         // ============================================================================================
         @Transactional
         public void recordMeal(Long userId, MealLogRequest request) {
+                recordMeal(userId, request.getRecipeId(), request.getServings(), request.getConsumedAt());
+        }
+
+        @Transactional
+        public void recordMeal(Long userId, Long recipeId, BigDecimal servings, LocalDateTime consumedAt) {
                 // 사용자 정보 조회
                 User user = userRepository.findById(userId)
                                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
 
                 // 레시피 정보 조회
-                Recipe recipe = recipeRepository.findById(request.getRecipeId())
+                Recipe recipe = recipeRepository.findById(recipeId)
                                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.RECIPE_NOT_FOUND));
 
                 // 식단 엔티티 생성 및 설정
@@ -58,18 +63,17 @@ public class MealService {
                 meal.setRecipe(recipe);
 
                 // 인분 수 및 섭취 시간 설정 (기본값 처리)
-                BigDecimal servings = request.getServings() != null ? request.getServings() : BigDecimal.ONE;
-                meal.setServings(servings);
-                LocalDateTime consumedAt = request.getConsumedAt() != null ? request.getConsumedAt()
-                                : LocalDateTime.now();
-                meal.setConsumedAt(consumedAt);
+                BigDecimal finalServings = servings != null ? servings : BigDecimal.ONE;
+                meal.setServings(finalServings);
+                LocalDateTime finalConsumedAt = consumedAt != null ? consumedAt : LocalDateTime.now();
+                meal.setConsumedAt(finalConsumedAt);
 
                 // 식단 기록 저장
                 mealRepository.save(meal);
-                log.info("식단 저장 완료 - 사용자 ID: {}, 레시피: {}, 섭취량: {}", userId, recipe.getTitle(), servings);
+                log.info("식단 저장 완료 - 사용자 ID: {}, 레시피: {}, 섭취량: {}", userId, recipe.getTitle(), finalServings);
 
                 // 일일 영양 섭취량 업데이트 로직 호출
-                helperMethods.updateDayNutrition(user, recipe, servings, consumedAt);
+                helperMethods.updateDayNutrition(user, recipe, finalServings, finalConsumedAt);
         }
 
         // ============================================================================================

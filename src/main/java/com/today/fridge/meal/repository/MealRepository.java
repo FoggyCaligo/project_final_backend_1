@@ -53,13 +53,13 @@ public interface MealRepository extends JpaRepository<Meal, Long> {
     // 계산: (1.5 / 2.0) * r.calories
     @Query("""
                 SELECT new com.today.fridge.meal.dto.response.MealNutritionSummaryDTO(
-                    COALESCE(SUM((m.servings / cast(REPLACE(REPLACE(r.servingsText, '인분 이상', ''), '인분', '') as double)) * rn.calories), 0),
-                    COALESCE(SUM((m.servings / cast(REPLACE(REPLACE(r.servingsText, '인분 이상', ''), '인분', '') as double)) * rn.carbs), 0),
-                    COALESCE(SUM((m.servings / cast(REPLACE(REPLACE(r.servingsText, '인분 이상', ''), '인분', '') as double)) * rn.protein), 0),
-                    COALESCE(SUM((m.servings / cast(REPLACE(REPLACE(r.servingsText, '인분 이상', ''), '인분', '') as double)) * rn.fat), 0),
-                    COALESCE(SUM((m.servings / cast(REPLACE(REPLACE(r.servingsText, '인분 이상', ''), '인분', '') as double)) * rn.sugar), 0),
-                    COALESCE(SUM((m.servings / cast(REPLACE(REPLACE(r.servingsText, '인분 이상', ''), '인분', '') as double)) * rn.sodium), 0),
-                    COALESCE(SUM((m.servings / cast(REPLACE(REPLACE(r.servingsText, '인분 이상', ''), '인분', '') as double)) * rn.cholesterol), 0)
+                    COALESCE(SUM((m.servings / cast(NULLIF(REPLACE(REPLACE(r.servingsText, '인분 이상', ''), '인분', ''), '') as double)) * rn.calories), 0),
+                    COALESCE(SUM((m.servings / cast(NULLIF(REPLACE(REPLACE(r.servingsText, '인분 이상', ''), '인분', ''), '') as double)) * rn.carbs), 0),
+                    COALESCE(SUM((m.servings / cast(NULLIF(REPLACE(REPLACE(r.servingsText, '인분 이상', ''), '인분', ''), '') as double)) * rn.protein), 0),
+                    COALESCE(SUM((m.servings / cast(NULLIF(REPLACE(REPLACE(r.servingsText, '인분 이상', ''), '인분', ''), '') as double)) * rn.fat), 0),
+                    COALESCE(SUM((m.servings / cast(NULLIF(REPLACE(REPLACE(r.servingsText, '인분 이상', ''), '인분', ''), '') as double)) * rn.sugar), 0),
+                    COALESCE(SUM((m.servings / cast(NULLIF(REPLACE(REPLACE(r.servingsText, '인분 이상', ''), '인분', ''), '') as double)) * rn.sodium), 0),
+                    COALESCE(SUM((m.servings / cast(NULLIF(REPLACE(REPLACE(r.servingsText, '인분 이상', ''), '인분', ''), '') as double)) * rn.cholesterol), 0)
                 )
                 FROM Meal m
                 JOIN m.recipe r
@@ -121,7 +121,7 @@ public interface MealRepository extends JpaRepository<Meal, Long> {
      * @param endDate   조회 종료 일시
      * @return 해당 기간 중 가장 많이 식사한 날의 식사 횟수
      */
-    @Query(value = "SELECT COALESCE(MAX(meal_count), 0) FROM (SELECT COUNT(*) as meal_count FROM meal WHERE user_id = :userId AND consumed_at >= :startDate AND consumed_at < :endDate GROUP BY CAST(consumed_at AS DATE)) as daily_counts", nativeQuery = true)
+    @Query(value = "SELECT COALESCE(MAX(meal_count), 0) FROM (SELECT COUNT(*) as meal_count FROM today_fridge.meal WHERE user_id = :userId AND consumed_at >= :startDate AND consumed_at < :endDate GROUP BY CAST(consumed_at AS DATE)) as daily_counts", nativeQuery = true)
     Integer findMaxMealsPerDayInPeriodNative(
             @Param("userId") Long userId,
             @Param("startDate") LocalDateTime startDate,
