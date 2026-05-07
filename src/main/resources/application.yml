@@ -77,6 +77,14 @@ app:
     client-secret: ${KAKAO_CLIENT_SECRET:}
     redirect-uri: ${KAKAO_REDIRECT_URI:http://localhost:8080/api/v1/auth/kakao/callback}
     frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
+  naver:
+    shopping:
+      client-id: ${NAVER_CLIENT_ID:N9SUyMRGr8Dt6N1zgCVl}
+      client-secret: ${NAVER_CLIENT_SECRET:1gqwYIfDIH}
+
+  elevenst:
+    openapi:
+      key: ${ELEVENST_API_KEY:bbc4b7aeadd92902ac44aa5e932d39af}
 
 logging:
   pattern:
