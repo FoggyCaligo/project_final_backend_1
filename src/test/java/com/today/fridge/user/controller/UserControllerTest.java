@@ -21,7 +21,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Collections;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -88,7 +88,7 @@ class UserControllerTest {
                 .email("test@example.com")
                 .nickname("테스터")
                 .status("ACTIVE")
-                .createdAt(LocalDateTime.now())
+                .createdAt(OffsetDateTime.now())
                 .build();
         given(userService.getProfile("testuser1")).willReturn(profile);
 

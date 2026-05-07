@@ -1,6 +1,8 @@
 package com.today.fridge.recommendation.controller;
 
-//import java.util.List;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -17,6 +19,7 @@ import com.today.fridge.recommendation.service.RecommendationService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
+@Tag(name = "Recommendation", description = "RecommendationController API")
 @RequestMapping("/api/v1/recipes")
 @RequiredArgsConstructor
 public class RecommendationController {
@@ -24,7 +27,8 @@ public class RecommendationController {
 	private final RecommendationService recommendationService;
 
 	@GetMapping("/recommendations")
-	public ResponseEntity<ApiResponse<PageResult<RecipeRecommendationResponse>>> recommend(
+	@Operation(summary = "Recommendation API")
+    public ResponseEntity<ApiResponse<PageResult<RecipeRecommendationResponse>>> recommend(
 			@PageableDefault(size = 9) Pageable pageable) {
 		// TODO : user 연결 해야
 		Long mockUserId = 1L;

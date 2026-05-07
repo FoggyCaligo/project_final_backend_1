@@ -1,5 +1,7 @@
 package com.today.fridge.global.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.today.fridge.global.response.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -9,9 +11,11 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 @RestController
+@Tag(name = "Root", description = "RootController API")
 public class RootController {
 
     @GetMapping("/")
+    @Operation(summary = "Root API")
     public ResponseEntity<ApiResponse<Map<String, String>>> root() {
         return ResponseEntity.ok(ApiResponse.success(
                 Map.of(
@@ -21,6 +25,7 @@ public class RootController {
 
     /** 브라우저 기본 favicon 요청으로 인한 불필요한 404/500 로그 방지 */
     @GetMapping("/favicon.ico")
+    @Operation(summary = "Root API")
     public ResponseEntity<Void> favicon() {
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
