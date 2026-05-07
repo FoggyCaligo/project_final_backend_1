@@ -13,6 +13,9 @@ import com.today.fridge.user.dto.request.SignupRequest;
 import com.today.fridge.user.entity.User;
 import com.today.fridge.user.repository.UserRepository;
 import com.today.fridge.user.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -41,14 +44,13 @@ import java.util.Map;
  * - Refresh Token을 Redis에 저장 (TTL 기반 자동 만료)
  * - 이메일 인증 토큰을 Redis에 저장 (24시간 TTL)
  */
+@Tag(name = "Auth", description = "인증 API (로그인/로그아웃/회원가입/이메일 인증/카카오 소셜 로그인)")
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
 
     private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
-    // Access Token: 15분
-    private static final long ACCESS_TOKEN_MS = 900_000L;
     // Refresh Token: 7일
     private static final long REFRESH_TOKEN_MS = 604_800_000L;
 
@@ -90,6 +92,7 @@ public class AuthController {
     // 일반 로그인 / 로그아웃 / 토큰 갱신
     // ──────────────────────────────────────────────
 
+    @Operation(summary = "로그인", description = "아이디/비밀번호로 로그인하고 JWT 토큰 쿠키를 발급합니다.")
     @PostMapping("/login")
     public ApiResponse<Void> login(@RequestBody LoginRequest request, HttpServletResponse response) {
         User user = authService2.authenticate(request.getLoginId(), request.getPassword());
@@ -111,6 +114,7 @@ public class AuthController {
         return ApiResponse.success(null, "로그인되었습니다.");
     }
 
+    @Operation(summary = "로그아웃", description = "Access Token을 블랙리스트에 등록하고 쿠키를 삭제합니다.")
     @PostMapping("/logout")
     public ApiResponse<Void> logout(HttpServletRequest request, HttpServletResponse response) {
         String accessToken = jwtProvider.resolveTokenFromCookie(request, "accessToken");
@@ -126,6 +130,7 @@ public class AuthController {
         return ApiResponse.success(null, "로그아웃되었습니다.");
     }
 
+    @Operation(summary = "토큰 갱신", description = "Refresh Token을 이용해 새 Access/Refresh Token을 재발급합니다.")
     @PostMapping("/refresh")
     public ApiResponse<Void> refresh(HttpServletRequest request, HttpServletResponse response) {
         String refreshToken = jwtProvider.resolveTokenFromCookie(request, "refreshToken");
@@ -150,6 +155,7 @@ public class AuthController {
     // 회원가입 / 사용자 정보
     // ──────────────────────────────────────────────
 
+    @Operation(summary = "회원가입", description = "신규 사용자를 등록하고 인증 이메일을 발송합니다.")
     @PostMapping("/signup")
     public ApiResponse<Void> signup(@Valid @RequestBody SignupRequest request) {
         // 기존 UserService의 회원가입 로직 사용
@@ -167,17 +173,19 @@ public class AuthController {
         return ApiResponse.success(null, "회원가입이 완료되었습니다. 인증 이메일을 확인해주세요.");
     }
 
+    @Operation(summary = "아이디 중복 확인", description = "로그인 아이디 사용 가능 여부를 확인합니다.")
     @GetMapping("/check-login-id")
-    public ApiResponse<Map<String, Boolean>> checkLoginId(@RequestParam String loginId) {
+    public ApiResponse<Map<String, Boolean>> checkLoginId(@Parameter(description = "loginId") @RequestParam String loginId) {
         boolean available = userService.isLoginIdAvailable(loginId);
         return ApiResponse.success(
                 Map.of("available", available),
                 available ? "사용 가능한 아이디입니다." : "이미 사용 중인 아이디입니다.");
     }
 
+    @Operation(summary = "현재 로그인 사용자 정보 조회", description = "JWT에서 파싱된 현재 로그인 사용자의 기본 정보를 반환합니다.")
     @GetMapping("/me")
     public ApiResponse<Map<String, Object>> me(
-            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+            @Parameter(description = "userId") @RequestHeader(value = "X-User-Id", required = false) Long userId) {
         if (userId == null) {
             return ApiResponse.error("UNAUTHORIZED", "인증이 필요합니다.");
         }
@@ -191,8 +199,9 @@ public class AuthController {
     // 이메일 인증 (Redis 기반)
     // ──────────────────────────────────────────────
 
+    @Operation(summary = "이메일 인증", description = "이메일로 발송된 인증 토큰을 검증하고 계정을 활성화합니다.")
     @GetMapping("/verify-email")
-    public org.springframework.http.ResponseEntity<Void> verifyEmail(@RequestParam String token) {
+    public org.springframework.http.ResponseEntity<Void> verifyEmail(@Parameter(description = "token") @RequestParam String token) {
         // Redis에서 토큰 검증
         String loginId = redisEmailVerifyService.verifyToken(token);
 
@@ -213,8 +222,9 @@ public class AuthController {
                 .build();
     }
 
+    @Operation(summary = "인증 이메일 재발송", description = "미인증 계정에 인증 이메일을 다시 발송합니다.")
     @PostMapping("/resend-verification")
-    public ApiResponse<Void> resendVerification(@RequestParam String email) {
+    public ApiResponse<Void> resendVerification(@Parameter(description = "email") @RequestParam String email) {
         String normalizedEmail = userService.normalizeEmail(email);
         User user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
@@ -234,6 +244,7 @@ public class AuthController {
     // 카카오 소셜 로그인
     // ──────────────────────────────────────────────
 
+    @Operation(summary = "카카오 로그인 리다이렉트", description = "카카오 OAuth2 인증 페이지로 리다이렉트합니다.")
     @GetMapping("/kakao/login")
     public void kakaoLogin(HttpServletResponse response) throws IOException {
         String kakaoAuthUrl = "https://kauth.kakao.com/oauth/authorize"
@@ -244,8 +255,9 @@ public class AuthController {
         response.sendRedirect(kakaoAuthUrl);
     }
 
+    @Operation(summary = "카카오 로그인 콜백", description = "카카오 인가 코드를 받아 JWT 토큰을 발급하고 프론트엔드로 리다이렉트합니다.")
     @GetMapping("/kakao/callback")
-    public void kakaoCallback(@RequestParam String code,
+    public void kakaoCallback(@Parameter(description = "code") @RequestParam String code,
                               @RequestParam(required = false) String error,
                               HttpServletResponse response) throws IOException {
         if (error != null) {
@@ -289,7 +301,7 @@ public class AuthController {
     // ──────────────────────────────────────────────
 
     private void setTokenCookies(HttpServletResponse response, String accessToken, String refreshToken) {
-        ResponseCookie accessCookie = jwtProvider.createTokenCookie("accessToken", accessToken, ACCESS_TOKEN_MS);
+        ResponseCookie accessCookie = jwtProvider.createTokenCookie("accessToken", accessToken, jwtProvider.getAccessTokenValidity());
         ResponseCookie refreshCookie = jwtProvider.createTokenCookie("refreshToken", refreshToken, REFRESH_TOKEN_MS);
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());

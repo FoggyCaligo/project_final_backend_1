@@ -18,9 +18,9 @@ class JwtProviderTest {
 
     @BeforeEach
     void setUp() {
-        jwtProvider = new JwtProvider(SECRET, 3_600_000L, 1_209_600_000L);
+        jwtProvider = new JwtProvider(SECRET, 3_600_000L, 1_209_600_000L, true);
         // validity < 0 → 발급 즉시 만료된 토큰 생성용
-        expiredJwtProvider = new JwtProvider(SECRET, -1000L, -1000L);
+        expiredJwtProvider = new JwtProvider(SECRET, -1000L, -1000L, false);
     }
 
     // ===== 토큰 생성 =====
