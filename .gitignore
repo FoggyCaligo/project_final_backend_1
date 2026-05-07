@@ -15,3 +15,6 @@ src/main/resources/application-local.yml
 
 # AI 에이전트 문서
 .ai/
+
+model/venv/*
+model/.venv/*

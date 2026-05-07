@@ -1,0 +1,28 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD}
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+  mail:
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+
+app:
+  security:
+    jwt:
+      secret: ${JWT_SECRET}
+    cookie:
+      secure: true
+      same-site: None
+  fastapi:
+    base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
+    service-key: ${INTERNAL_API_TOKEN:change-me}
+  kakao:
+    redirect-uri: ${KAKAO_REDIRECT_URI}
+    frontend-base-url: ${FRONTEND_BASE_URL}
+  mail:
+    base-url: ${APP_BASE_URL}
+    verification-required: true
