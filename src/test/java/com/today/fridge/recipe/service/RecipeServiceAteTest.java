@@ -65,7 +65,7 @@ class RecipeServiceAteTest {
         // ateRecipe: 여러 개의 레코드가 있을 경우 - 유통기한 임박순 차감 테스트
         // ========================================================================
         @Test
-        @DisplayName("ateRecipe: Sufficient ingredients across multiple records - Should prioritize expiry date")
+        @DisplayName("UT-RECIPE-04 - 유통기한 임박순 차감")
         void ateRecipe_SufficientMultipleRecords() {
                 // 1. 사용자 추가
                 User user = userRepository.save(User.create("ateuser1", "ate1@example.com", "password", "ater1"));
@@ -115,7 +115,7 @@ class RecipeServiceAteTest {
         // ateRecipe: 재료가 부족할 경우 - 모두 소진 및 삭제 테스트
         // ========================================================================
         @Test
-        @DisplayName("ateRecipe: Insufficient ingredients - Should consume everything and set to 0 (delete)")
+        @DisplayName("UT-RECIPE-05 - 재료 부족시 모두 소진 및 삭제")
         void ateRecipe_InsufficientIngredients() {
                 // 1. 사용자 추가
                 User user = userRepository.save(User.create("ateuser2", "ate2@example.com", "password", "ater2"));
@@ -156,7 +156,7 @@ class RecipeServiceAteTest {
         // ateRecipe: 재료가 아예 없는 경우 - 에러 없이 통과 확인 테스트
         // ========================================================================
         @Test
-        @DisplayName("ateRecipe: Missing ingredients - Should not crash")
+        @DisplayName("UT-RECIPE-06 - 재료 없음")
         void ateRecipe_MissingIngredients() {
                 // 1. 사용자 추가
                 User user = userRepository.save(User.create("ateuser3", "ate3@example.com", "password", "ater3"));
@@ -179,7 +179,7 @@ class RecipeServiceAteTest {
         // ateRecipe: 단위 불일치 테스트 (1kg 소유, 250g 요구)
         // ========================================================================
         @Test
-        @DisplayName("ateRecipe: Unit mismatch - Consuming 250g from 1kg should leave 0.75kg")
+        @DisplayName("UT-RECIPE-07 - 단위 불일치")
         void ateRecipe_UnitMismatch_KgToG() {
                 // 1. 사용자 추가
                 User user = userRepository.save(User.create("unituser1", "unit1@example.com", "password", "unitr1"));
@@ -219,7 +219,7 @@ class RecipeServiceAteTest {
         // ateRecipe: 컵(Cup) 단위 테스트 (2컵 요구, 500ml 소유)
         // ========================================================================
         @Test
-        @DisplayName("ateRecipe: Cup unit - Consuming 2 cups (200ml) from 500ml should leave 300ml")
+        @DisplayName("UT-RECIPE-08 - 컵 단위")
         void ateRecipe_CupUnit() {
                 // 1. 사용자 추가
                 User user = userRepository.save(User.create("unituser2", "unit2@example.com", "password", "unitr2"));

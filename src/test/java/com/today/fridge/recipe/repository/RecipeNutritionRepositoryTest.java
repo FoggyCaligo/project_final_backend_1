@@ -32,7 +32,7 @@ class RecipeNutritionRepositoryTest {
 	private RecipeNutritionRepository recipeNutritionRepository;
 
 	@Test
-	@DisplayName("레시피 ID로 해당 레시피의 영양정보를 정상적으로 조회하는지 확인")
+	@DisplayName("UT-RECIPE-02 - 레시피 ID로 영양정보 조회")
 	void testFindByRecipe_RecipeId() {
 		// Given
 		Recipe recipe = Recipe.builder()
