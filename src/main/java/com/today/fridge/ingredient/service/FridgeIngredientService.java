@@ -38,6 +38,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -592,7 +593,7 @@ public class FridgeIngredientService {
      * 식재료 이미지 인식 — FastAPI 비전 파이프라인 프록시 (공개 API 계약 잠금 경로).
      * 성공 시 vision_recognition_request에 analysis_result(JSONB) 저장 시도.
      */
-    @Transactional(readOnly = false)
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public VisionRecognizeDataDto recognizeIngredientImage(Long userId, MultipartFile file, int topK) {
         userRepository.findById(userId).orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         if (file == null || file.isEmpty()) {
