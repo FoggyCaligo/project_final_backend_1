@@ -1,0 +1,25 @@
+# venv
+venv/
+.venv/
+
+# python
+__pycache__/
+*.pyc
+
+# env
+.env
+
+# mac
+.DS_Store
+
+# YOLO / Ultralytics training outputs
+runs/
+data_sources/**
+!data_sources/README.md
+ml_datasets/**
+!ml_datasets/.gitkeep
+*.zip
+scripsts/**
+*.png
+*.jpg
+*.jpeg
