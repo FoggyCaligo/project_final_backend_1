@@ -25,25 +25,25 @@ public class DayNutrition {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "total_calories", precision = 6, scale = 2, nullable = false)
+    @Column(name = "total_calories", precision = 8, scale = 2, nullable = false)
     private BigDecimal totalCalories;
 
-    @Column(name = "total_carbs", precision = 6, scale = 2, nullable = false)
+    @Column(name = "total_carbs", precision = 8, scale = 2, nullable = false)
     private BigDecimal totalCarbs;
 
-    @Column(name = "total_protein", precision = 6, scale = 2, nullable = false)
+    @Column(name = "total_protein", precision = 8, scale = 2, nullable = false)
     private BigDecimal totalProtein;
 
-    @Column(name = "total_fat", precision = 6, scale = 2, nullable = false)
+    @Column(name = "total_fat", precision = 8, scale = 2, nullable = false)
     private BigDecimal totalFat;
 
-    @Column(name = "total_sugar", precision = 6, scale = 2, nullable = false)
+    @Column(name = "total_sugar", precision = 8, scale = 2, nullable = false)
     private BigDecimal totalSugar;
 
     @Column(name = "total_sodium", precision = 8, scale = 2, nullable = false)
     private BigDecimal totalSodium;
 
-    @Column(name = "total_cholesterol", precision = 6, scale = 2, nullable = false)
+    @Column(name = "total_cholesterol", precision = 8, scale = 2, nullable = false)
     private BigDecimal totalCholesterol;
 
     @Column(name = "date", nullable = false)
