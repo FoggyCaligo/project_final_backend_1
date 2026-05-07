@@ -133,6 +133,56 @@ class MealServiceTest {
         assertThat(recommendation.getCurrentProtein()).isEqualByComparingTo(new BigDecimal("30.0"));
     }
 
+    @Test
+    @DisplayName("직접 파라미터를 사용한 식단 기록 테스트")
+    void testRecordMealWithDirectParameters() {
+        // 1. 유저 데이터 준비
+        User user = User.create("directuser", "direct@todayfridge.com", "hashedpassword", "직접테스터");
+        User savedUser = userRepository.save(user);
+        Long userId = savedUser.getUserId();
+
+        // 2. 레시피 데이터 준비
+        Recipe recipe = Recipe.builder()
+                .sourceSite("MANUAL")
+                .sourceRecipeKey("DIRECT_KEY_" + System.currentTimeMillis())
+                .title("건강한 샐러드")
+                .thumbnailUrl("http://example.com/image.jpg")
+                .isActive(true)
+                .difficultyLevel("EASY")
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+        Recipe savedRecipe = recipeRepository.save(recipe);
+        Long recipeId = savedRecipe.getRecipeId();
+
+        // 3. 레시피 영양정보 준비
+        RecipeNutrition nutrition = RecipeNutrition.builder()
+                .recipe(savedRecipe)
+                .referenceWeight(new BigDecimal("200.0"))
+                .calories(new BigDecimal("300.0"))
+                .carbs(new BigDecimal("20.0"))
+                .protein(new BigDecimal("15.0"))
+                .fat(new BigDecimal("5.0"))
+                .sugar(new BigDecimal("2.0"))
+                .sodium(new BigDecimal("100.0"))
+                .cholesterol(new BigDecimal("0.0"))
+                .build();
+        recipeNutritionRepository.save(nutrition);
+        ReflectionTestUtils.setField(savedRecipe, "recipeNutrition", nutrition);
+
+        // 4. 식단 기록 서비스 호출 (직접 파라미터 버전)
+        BigDecimal servings = new BigDecimal("1.5");
+        LocalDateTime consumedAt = LocalDateTime.now();
+        mealService.recordMeal(userId, recipeId, servings, consumedAt);
+
+        // 5. DB 결과 검증
+        DayNutrition dayNutrition = dayNutritionRepository.findByUserUserIdAndDate(userId, consumedAt.toLocalDate().atStartOfDay())
+                .orElseThrow(() -> new AssertionError("DayNutrition이 생성되지 않았습니다."));
+
+        // 1인분이 300kcal 이고 1.5인분을 먹었으므로 450kcal가 되어야 함
+        assertThat(dayNutrition.getTotalCalories()).isEqualByComparingTo(new BigDecimal("450.0"));
+    }
+
     // ========================================================================
     // 통합 테스트: 존재하지 않는 레시피 기록 예외 시나리오
     // ========================================================================
