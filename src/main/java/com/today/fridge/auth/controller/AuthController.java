@@ -91,7 +91,7 @@ public class AuthController {
     // ──────────────────────────────────────────────
 
     @PostMapping("/login")
-    public ApiResponse<Void> login(@RequestBody LoginRequest request, HttpServletResponse response) {
+    public ApiResponse<Map<String, Object>> login(@RequestBody LoginRequest request, HttpServletResponse response) {
         User user = authService2.authenticate(request.getLoginId(), request.getPassword());
 
         // 이메일 미인증 사용자 로그인 차단
@@ -108,7 +108,14 @@ public class AuthController {
         setTokenCookies(response, accessToken, refreshToken);
         user.updateLastLoginAt();
 
-        return ApiResponse.success(null, "로그인되었습니다.");
+        String loginType = user.getLoginId().startsWith("kakao_") ? "kakao" : "general";
+        Map<String, Object> data = Map.of(
+                "userId", user.getUserId(),
+                "loginId", user.getLoginId(),
+                "nickname", user.getNickname(),
+                "loginType", loginType
+        );
+        return ApiResponse.success(data, "로그인되었습니다.");
     }
 
     @PostMapping("/logout")
