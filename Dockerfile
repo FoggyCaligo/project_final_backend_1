@@ -1,8 +1,9 @@
 # Stage 1: Build
-FROM gradle:8.5-jdk17-alpine AS build
+FROM eclipse-temurin:17-jdk-alpine AS build
 WORKDIR /app
 COPY . .
-RUN gradle bootJar --no-daemon -x test
+RUN chmod +x gradlew
+RUN ./gradlew bootJar --no-daemon -x test
 
 # Stage 2: Run
 FROM eclipse-temurin:17-jre-alpine
