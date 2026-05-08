@@ -15,12 +15,16 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Value("${app.upload.root-path:uploads}")
     private String uploadRoot;
 
+    @Value("${app.kakao.frontend-base-url:http://localhost:3000}")
+    private String frontendBaseUrl;
+
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
                 .allowedOrigins(
                         "http://localhost:3000",
-                        "https://my-frontend-backup.vercel.app"
+                        "https://my-frontend-backup.vercel.app",
+                        frontendBaseUrl
                 )
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                 .allowedHeaders("*")

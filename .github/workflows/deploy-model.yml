@@ -3,9 +3,6 @@ name: Deploy FastAPI to Cloud Run
 on:
   push:
     branches: [main, my-work]
-    paths:
-      - 'model/**'
-      - '.github/workflows/deploy-model.yml'
 
 env:
   REGION: asia-northeast3
