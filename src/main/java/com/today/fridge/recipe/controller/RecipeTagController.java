@@ -7,7 +7,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.today.fridge.recipe.service.RecipeTagBulkService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/recipe-tags")
@@ -17,6 +19,7 @@ public class RecipeTagController {
 
     @PostMapping("/generate")
     public String generateTags() {
+        log.info("[RecipeTagController] generateTags (public)");
 
         int count = recipeTagBulkService.generateMissingTags();
 

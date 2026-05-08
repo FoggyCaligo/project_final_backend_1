@@ -13,7 +13,7 @@ import org.springframework.data.repository.query.Param;
 import com.today.fridge.recipe.entity.RecipeIngredient;
 
 public interface RecipeIngredientRepository extends JpaRepository<RecipeIngredient, Long> {
-    List<RecipeIngredient> findByRecipe_RecipeId(Long recipeId);
+    List<RecipeIngredient> findByRecipe_RecipeIdOrderBySortOrderAsc(Long recipeId);
 
 	@Query("""
 		    select coalesce(im.normalizedName, ri.normalizedNameSnapshot, ri.rawText)
