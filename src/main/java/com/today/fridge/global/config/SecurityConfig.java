@@ -60,7 +60,8 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:3000",
                 "http://localhost:5173",
-                "https://*.ngrok-free.dev"
+                "https://*.ngrok-free.dev",
+                "https://today-fridge-frontend-deploy.vercel.app"
         ));
 
         configuration.setAllowedMethods(List.of(

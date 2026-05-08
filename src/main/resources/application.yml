@@ -26,6 +26,9 @@ spring:
     redis:
       host: ${SPRING_REDIS_HOST:localhost}
       port: ${SPRING_REDIS_PORT:6379}
+      password: ${SPRING_REDIS_PASSWORD}
+      ssl:
+        enabled: ${SPRING_REDIS_SSL_ENABLED:false}
   jpa:
     open-in-view: false
     properties:
@@ -67,12 +70,11 @@ app:
   upload:
     root-path: uploads
   fastapi:
-    base-url: http://localhost:8000
-    service-key: change-me
-    caller-service: spring-backend
-    # RestTemplate → FastAPI (비전 추론은 첫 요청·GPU 로딩 시 수십 초 걸릴 수 있음)
+    base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
     connect-timeout-ms: ${FASTAPI_CONNECT_TIMEOUT_MS:15000}
     read-timeout-ms: ${FASTAPI_READ_TIMEOUT_MS:180000}
+    caller-service: ${FASTAPI_CALLER_SERVICE:spring-app}
+    service-key: ${FASTAPI_SERVICE_KEY:}
   vision:
     # 인식 완료 후 vision_recognition_request + file_asset 저장 (JSON analysis_result)
     persist-recognition: true
