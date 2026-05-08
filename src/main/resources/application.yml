@@ -42,10 +42,10 @@ spring:
     properties:
       mail:
         smtp:
-          auth: false                     # Disabled authentication for Mailpit
+          auth: ${MAIL_SMTP_AUTH:false}   # false for Mailpit, true for real SMTP
           starttls:
-            enable: false                 # Disabled TLS for local testing
-            required: false               # Removed TLS requirement
+            enable: ${MAIL_SMTP_STARTTLS_ENABLE:false}
+            required: ${MAIL_SMTP_STARTTLS_REQUIRED:false}
           connectiontimeout: 5000
           timeout: 3000
           writetimeout: 5000
