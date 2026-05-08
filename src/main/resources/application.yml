@@ -22,8 +22,8 @@ spring:
       leak-detection-threshold: 20000
   data:
     redis:
-      host: ${SPRING_REDIS_HOST}
-      port: ${SPRING_REDIS_PORT}
+      host: ${SPRING_REDIS_HOST:localhost}
+      port: ${SPRING_REDIS_PORT:6379}
   jpa:
     open-in-view: false
     properties:
