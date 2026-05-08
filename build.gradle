@@ -36,12 +36,12 @@ dependencies {
     testImplementation 'org.springframework.security:spring-security-test'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
     testRuntimeOnly 'com.h2database:h2'
-    compileOnly 'org.projectlombok:lombok'
-	annotationProcessor 'org.projectlombok:lombok'
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
-	
-	testCompileOnly 'org.projectlombok:lombok'
-	testAnnotationProcessor 'org.projectlombok:lombok'
+    compileOnly 'org.projectlombok:lombok:1.18.34'
+    annotationProcessor 'org.projectlombok:lombok:1.18.34'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    testCompileOnly 'org.projectlombok:lombok:1.18.34'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
 }
 
 tasks.named('test') { useJUnitPlatform() }
