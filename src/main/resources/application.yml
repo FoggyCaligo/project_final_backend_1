@@ -3,6 +3,8 @@ spring:
     import: optional:file:.env[.properties]
   application:
     name: project_final_backend1
+    admin:
+      enabled: false
   profiles:
     active: local
   servlet:

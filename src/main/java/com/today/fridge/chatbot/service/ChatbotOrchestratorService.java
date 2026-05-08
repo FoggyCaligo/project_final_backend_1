@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.today.fridge.chatbot.dto.request.ChatInterpretRequest;
 import com.today.fridge.chatbot.dto.response.ChatInterpretResponse;
@@ -23,7 +22,6 @@ public class ChatbotOrchestratorService {
     private final RecommendationService recommendationService;
     private final UserConditionRepository userConditionRepository;
 
-    @Transactional(readOnly = true)
     public List<RecipeRecommendationResponse> recommendFromChat(
             ChatInterpretRequest request
     ) {
@@ -33,7 +31,7 @@ public class ChatbotOrchestratorService {
 
         Long userId = request.getUserId();
         boolean isMember = userId != null;
-
+        System.out.println("[CHAT_USER] userId=" + userId + ", isMember=" + isMember);
         List<String> includeIngredients =
                 parsed.getIncludeIngredients() == null ? List.of() : parsed.getIncludeIngredients();
 
