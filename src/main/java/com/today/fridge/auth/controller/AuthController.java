@@ -110,6 +110,7 @@ public class AuthController {
 
         setTokenCookies(response, accessToken, refreshToken);
         user.updateLastLoginAt();
+        userRepository.save(user);
 
         String loginType = user.getLoginId().startsWith("kakao_") ? "kakao" : "general";
         Map<String, Object> data = Map.of(
