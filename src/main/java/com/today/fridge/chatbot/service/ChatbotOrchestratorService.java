@@ -23,33 +23,27 @@ public class ChatbotOrchestratorService {
     private final UserConditionRepository userConditionRepository;
 
     public List<RecipeRecommendationResponse> recommendFromChat(
+            Long userId,
             ChatInterpretRequest request
     ) {
-
         ChatInterpretResponse parsed =
                 intentParserService.interpret(request);
 
-        Long userId = request.getUserId();
         boolean isMember = userId != null;
-        System.out.println("[CHAT_USER] userId=" + userId + ", isMember=" + isMember);
+
         List<String> includeIngredients =
                 parsed.getIncludeIngredients() == null ? List.of() : parsed.getIncludeIngredients();
 
         List<String> conditionCodes =
                 parsed.getConditionTags() == null ? List.of() : parsed.getConditionTags();
-        
-        List<String> keywords = new java.util.ArrayList<>();
 
+        List<String> keywords = new java.util.ArrayList<>();
         keywords.add(request.getText());
 
         if (parsed.getKeywords() != null) {
             keywords.addAll(parsed.getKeywords());
         }
-        
-        if (isMember && includeIngredients.isEmpty()) {
-            includeIngredients = List.of();
-        }
-        
+
         List<String> profileConditionCodes = isMember
                 ? userConditionRepository
                         .findByUser_UserIdAndIsActiveTrue(userId)
@@ -62,9 +56,7 @@ public class ChatbotOrchestratorService {
                 .concat(conditionCodes.stream(), profileConditionCodes.stream())
                 .distinct()
                 .toList();
-        System.out.println("[CHAT_PARSED] conditions=" + conditionCodes);
-        System.out.println("[CHAT_PARSED] includeIngredients=" + includeIngredients);
-        System.out.println("[CHAT_PARSED] keywords=" + keywords);
+
         RecommendationQuery query =
                 RecommendationQuery.builder()
                         .userId(userId)
@@ -78,6 +70,11 @@ public class ChatbotOrchestratorService {
                         .useUserFridge(isMember)
                         .build();
 
-        return recommendationService.recommend(query, Pageable.unpaged()).content().stream().limit(3).toList();
+        return recommendationService
+                .recommend(query, Pageable.unpaged())
+                .content()
+                .stream()
+                .limit(3)
+                .toList();
     }
 }
