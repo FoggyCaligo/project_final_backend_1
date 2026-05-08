@@ -43,6 +43,7 @@ public class MealServiceDaily {
     // 특정 날짜의 식단 기록 조회
     // ============================================================================================
     public List<MealLogResponse> getMeals(Long userId, LocalDate date) {
+        log.info("[MealServiceDaily] getMeals (public) - userId: {}, date: {}", userId, date);
         // 지정된 날짜의 식단 목록 반환
         log.info("사용자 식단 데이터 조회 - 사용자 ID: {}, 날짜: {}", userId, date);
         return mealRepository.findByUserIdAndConsumedAtBetween(userId, date.atStartOfDay(),
@@ -53,6 +54,7 @@ public class MealServiceDaily {
     // 일일 영양 섭취 요약 조회
     // ============================================================================================
     public MealNutritionSummaryDTO getDailyIntake(Long userId, LocalDate date) {
+        log.info("[MealServiceDaily] getDailyIntake (public) - userId: {}, date: {}", userId, date);
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
 
@@ -64,6 +66,7 @@ public class MealServiceDaily {
     // 일일 영양 권장량 및 사용자 맞춤 피드백 조회
     // ============================================================================================
     public DailyRecommendationResponse getDailyRecommendation(Long userId, LocalDate date) {
+        log.info("[MealServiceDaily] getDailyRecommendation (public) - userId: {}, date: {}", userId, date);
         // 사용자 정보 조회
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
@@ -142,6 +145,7 @@ public class MealServiceDaily {
     // 오늘 남은 권장 영양 섭취량 조회
     // ============================================================================================
     public RemainingNutritionResponse getRemainingDailyNutrition(Long userId, LocalDate date) {
+        log.info("[MealServiceDaily] getRemainingDailyNutrition (public) - userId: {}, date: {}", userId, date);
         // 사용자 정보 조회
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));

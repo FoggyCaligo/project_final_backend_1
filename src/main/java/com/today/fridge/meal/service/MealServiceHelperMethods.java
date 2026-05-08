@@ -34,6 +34,7 @@ public class MealServiceHelperMethods {
     // 일일 영양 섭취량 누적 업데이트
     // ============================================================================================
     public void updateDayNutrition(User user, Recipe recipe, BigDecimal servings, LocalDateTime consumedAt) {
+        log.info("[MealServiceHelperMethods] updateDayNutrition (public) - userId: {}, recipeId: {}, servings: {}", user.getUserId(), recipe.getRecipeId(), servings);
         // null 또는 0인분인 경우 업데이트를 수행하지 않음
         if (servings == null || servings.compareTo(BigDecimal.ZERO) <= 0) {
             return;
@@ -101,6 +102,7 @@ public class MealServiceHelperMethods {
     // 사용자 신체 정보를 기반으로 영양 목표 산출 (기본값 처리 포함)
     // ============================================================================================
     public NutritionTarget calculateTargetsWithDefaults(User user) {
+        log.info("[MealServiceHelperMethods] calculateTargetsWithDefaults (public) - userId: {}", user.getUserId());
         double heightCm = user.getHeightCm() != null && user.getHeightCm() > 0 ? user.getHeightCm() : 175.0;
         double weightKg = user.getWeightKg() != null && user.getWeightKg() > 0 ? user.getWeightKg() : 70.0;
         int age = user.getAge() != null && user.getAge() > 0 ? user.getAge() : 30;
@@ -113,6 +115,7 @@ public class MealServiceHelperMethods {
     // 사용자 맞춤형 일일 영양 목표치 상세 계산 (TDEE 기반)
     // ============================================================================================
     public NutritionTarget calculateDetailedTargets(double heightCm, double weightKg, int age, String gender) {
+        log.info("[MealServiceHelperMethods] calculateDetailedTargets (public) - height: {}, weight: {}, age: {}, gender: {}", heightCm, weightKg, age, gender);
         // BMI 계산 (0으로 나누기 방지)
         double heightM = heightCm / 100.0;
         double bmi = (heightM > 0) ? weightKg / (heightM * heightM) : 0;
@@ -162,6 +165,7 @@ public class MealServiceHelperMethods {
     // ============================================================================================
     public RemainingNutritionResponse buildRemainingResponse(NutritionTarget target, MealNutritionSummaryDTO intake,
             int days) {
+        log.info("[MealServiceHelperMethods] buildRemainingResponse (public) - days: {}", days);
         BigDecimal daysMultiplier = new BigDecimal(days);
 
         // 기간(days)에 따른 총 영양 목표 계산
@@ -216,6 +220,7 @@ public class MealServiceHelperMethods {
     // 사용자 신체 지표 업데이트 보조
     // ============================================================================================
     public void updateUserPhysicalMetrics(User user, PhysicalMetricsRequest request) {
+        log.info("[MealServiceHelperMethods] updateUserPhysicalMetrics (public) - userId: {}", user.getUserId());
         user.setHeightCm(request.getHeightCm());
         user.setWeightKg(request.getWeightKg());
         user.setAge(request.getAge());

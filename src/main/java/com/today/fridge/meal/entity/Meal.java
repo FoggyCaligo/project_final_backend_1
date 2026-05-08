@@ -24,6 +24,9 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Entity
 @Table(name = "meal", indexes = {
         @Index(name = "idx_meal_user_date", columnList = "user_id, consumed_at")
@@ -71,6 +74,7 @@ public class Meal {
 
     @PrePersist
     protected void onCreate() {
+        log.info("[Meal] onCreate (protected)");
         if (this.consumedAt == null) {
             this.consumedAt = LocalDateTime.now();
         }

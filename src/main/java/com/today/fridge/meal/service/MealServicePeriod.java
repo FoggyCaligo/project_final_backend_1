@@ -45,6 +45,7 @@ public class MealServicePeriod {
     // 결측치 대체(Imputation) 로직 포함
     // ============================================================================================
     public ReportSummaryResponse getReportSummary(Long userId, LocalDate startDate, LocalDate endDate) {
+        log.info("[MealServicePeriod] getReportSummary (public) - userId: {}, startDate: {}, endDate: {}", userId, startDate, endDate);
         LocalDateTime startDateTime = startDate.atStartOfDay();
         LocalDateTime endDateTime = endDate.plusDays(1).atStartOfDay();
 
@@ -200,6 +201,7 @@ public class MealServicePeriod {
     // 이번 주 남은 권장 영양 섭취량 조회
     // ============================================================================================
     public RemainingNutritionResponse getRemainingWeeklyNutrition(Long userId, LocalDate date) {
+        log.info("[MealServicePeriod] getRemainingWeeklyNutrition (public) - userId: {}, date: {}", userId, date);
         // 사용자 정보 조회
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
@@ -227,6 +229,7 @@ public class MealServicePeriod {
     // 이번 달 남은 권장 영양 섭취량 조회
     // ============================================================================================
     public RemainingNutritionResponse getRemainingMonthlyNutrition(Long userId, LocalDate date) {
+        log.info("[MealServicePeriod] getRemainingMonthlyNutrition (public) - userId: {}, date: {}", userId, date);
         // 사용자 정보 조회
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));

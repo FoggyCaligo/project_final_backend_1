@@ -44,11 +44,13 @@ public class MealService {
         // ============================================================================================
         @Transactional
         public void recordMeal(Long userId, MealLogRequest request) {
+                log.info("[MealService] recordMeal (public) - userId: {}, recipeId: {}", userId, request.getRecipeId());
                 recordMeal(userId, request.getRecipeId(), request.getServings(), request.getConsumedAt());
         }
 
         @Transactional
         public void recordMeal(Long userId, Long recipeId, BigDecimal servings, LocalDateTime consumedAt) {
+                log.info("[MealService] recordMeal (public) - userId: {}, recipeId: {}, servings: {}", userId, recipeId, servings);
                 // 사용자 정보 조회
                 User user = userRepository.findById(userId)
                                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
@@ -81,6 +83,7 @@ public class MealService {
         // ============================================================================================
         @Transactional
         public void updatePhysicalMetrics(Long userId, PhysicalMetricsRequest request) {
+                log.info("[MealService] updatePhysicalMetrics (public) - userId: {}", userId);
                 // 사용자 정보 조회
                 User user = userRepository.findById(userId)
                                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
@@ -99,6 +102,7 @@ public class MealService {
         // ============================================================================================
         @Transactional
         public void deleteMeal(Long userId, Long mealId) {
+                log.info("[MealService] deleteMeal (public) - userId: {}, mealId: {}", userId, mealId);
                 // 식단 기록 조회
                 Meal meal = mealRepository.findById(mealId)
                                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.MEAL_NOT_FOUND));
