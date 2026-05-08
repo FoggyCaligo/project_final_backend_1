@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
   application:
     name: project_final_backend1
   profiles:
@@ -8,9 +10,9 @@ spring:
       max-file-size: 5MB
       max-request-size: 25MB
   datasource:
-    url: jdbc:postgresql://ep-wispy-art-amny04jt-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require&prepareThreshold=0
-    username: postgres
-    password: FoggyCaligo123!
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
       connection-init-sql: CREATE EXTENSION IF NOT EXISTS vector
@@ -18,6 +20,10 @@ spring:
       minimum-idle: 5
       connection-timeout: 10000
       leak-detection-threshold: 20000
+  data:
+    redis:
+      host: ${SPRING_REDIS_HOST}
+      port: ${SPRING_REDIS_PORT}
   jpa:
     open-in-view: false
     properties:
@@ -29,17 +35,17 @@ spring:
   flyway:
     enabled: false
   mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:your-email@gmail.com}
-    password: ${MAIL_PASSWORD:your-app-password}
+    host: ${MAIL_HOST:localhost}          # Changed default to localhost for Mailpit
+    port: ${MAIL_PORT:1025}               # Changed default SMTP port to 1025
+    username: ${MAIL_USERNAME:}           # Cleared default username (not needed locally)
+    password: ${MAIL_PASSWORD:}           # Cleared default password
     properties:
       mail:
         smtp:
-          auth: true
+          auth: false                     # Disabled authentication for Mailpit
           starttls:
-            enable: true
-            required: true
+            enable: false                 # Disabled TLS for local testing
+            required: false               # Removed TLS requirement
           connectiontimeout: 5000
           timeout: 3000
           writetimeout: 5000
@@ -88,6 +94,5 @@ app:
 
 logging:
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{requestId}] %-5level
-      %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{requestId}] %-5level %logger{36} - %msg%n"
     #file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{requestId}] %-5level %logger{36} - %msg%n"

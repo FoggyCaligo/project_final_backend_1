@@ -91,7 +91,7 @@ class RecipeServiceIngredientTest {
         // 레시피 1개 조회 - 회원 전용
         // ========================================================================
         @Test
-        @DisplayName("Test getRecipe with User Fridge contents - Integration Test")
+        @DisplayName("UT-RECIPE-09 - 레시피 재료 매칭 및 수량 계산")
         void testGetRecipeWithFridge() {
                 // 1. 사용자 추가
                 User user = User.create("testuser1", "test1@example.com", "password", "tester1");
@@ -203,7 +203,7 @@ class RecipeServiceIngredientTest {
         // 특수 단위(컵, 모, 약간) 검증 테스트
         // ============================================================================================
         @Test
-        @DisplayName("Test getRecipe with Special Units (컵, 모, 약간)")
+        @DisplayName("UT-RECIPE-10 - 특수 단위 처리")
         void testGetRecipeWithSpecialUnits() {
                 User user = User.create("testuser2", "test2@example.com", "password", "tester2");
                 User savedUser = userRepository.save(user);
@@ -281,7 +281,7 @@ class RecipeServiceIngredientTest {
         // 혼합 분수(1 1/2) 파싱 테스트
         // ============================================================================================
         @Test
-        @DisplayName("Test extractNumericAmount with Mixed Numbers (1 1/2)")
+        @DisplayName("UT-RECIPE-11 - 혼합 분수 처리")
         void testExtractNumericAmountWithMixedNumbers() {
                 User user = User.create("testuser4", "test4@example.com", "password", "tester4");
                 User savedUser = userRepository.save(user);
@@ -320,7 +320,7 @@ class RecipeServiceIngredientTest {
         // 단위 불일치 통합 테스트 (레시피 kg vs 유저 g)
         // ============================================================================================
         @Test
-        @DisplayName("Test getRecipe with unit mismatch (Recipe kg vs User g)")
+        @DisplayName("UT-RECIPE-12 - 단위 불일치")
         void testGetRecipe_UnitMismatch_RecipeKgUserG() {
                 User user = userRepository.save(User.create("testuser5", "test5@example.com", "password", "tester5"));
                 Long userId = user.getUserId();
@@ -352,7 +352,7 @@ class RecipeServiceIngredientTest {
         // 단위 변환 테스트 (kg->g, L->mL)
         // ============================================================================================
         @Test
-        @DisplayName("Test extractNumericAmount with Unit Conversion (kg->g, L->mL)")
+        @DisplayName("UT-RECIPE-13 - 단위 변환")
         void testExtractNumericAmountWithUnitConversion() {
                 User user = User.create("testuser3", "test3@example.com", "password", "tester3");
                 User savedUser = userRepository.save(user);

@@ -24,7 +24,7 @@ class RecipeIngredientRepositoryTest {
         private RecipeIngredientRepository recipeIngredientRepository;
 
         @Test
-        @DisplayName("레시피 ID로 해당 레시피의 모든 재료를 정상적으로 조회하는지 확인")
+        @DisplayName("UT-RECIPE-01 - 레시피 ID로 재료 조회")
         void testFindByRecipe_RecipeId() {
                 Recipe recipe = Recipe.builder()
                                 .sourceSite("test.com")
