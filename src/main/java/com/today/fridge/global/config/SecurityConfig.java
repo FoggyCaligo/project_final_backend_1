@@ -64,7 +64,8 @@ public class SecurityConfig {
                 "http://localhost:5173",
                 "http://127.0.0.1:5173",
                 "http://100.78.2.126:3000",
-                "https://*.ngrok-free.dev"
+                "https://*.ngrok-free.dev",
+                "https://todayfridge.com"
         ));
 
         configuration.setAllowedMethods(List.of(
