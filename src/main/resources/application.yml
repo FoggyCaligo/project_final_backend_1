@@ -66,6 +66,7 @@ app:
     root-path: uploads
   fastapi:
     base-url: http://localhost:8000
+    APP_FASTAPI_BASE_URL: http://fastapi:8000
     service-key: change-me
     caller-service: spring-backend
     # RestTemplate → FastAPI (비전 추론은 첫 요청·GPU 로딩 시 수십 초 걸릴 수 있음)
