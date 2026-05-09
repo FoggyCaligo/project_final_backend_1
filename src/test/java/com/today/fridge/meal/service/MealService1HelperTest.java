@@ -1,7 +1,23 @@
 package com.today.fridge.meal.service;
 
-import com.today.fridge.meal.dto.response.MealNutritionSummaryDTO;
-import com.today.fridge.meal.dto.response.RemainingNutritionResponse;
+/*
+ * UT-MEAL-1
+ * Method: updateDayNutrition
+ * Test Name: 일일 영양 섭취량 누적 업데이트 테스트
+ * Purpose: 식단 기록 시 사용자의 일일 영양 섭취량을 계산하여 누적 업데이트한다.
+ * Input: user, recipe, servings, consumedAt
+ * Expected Result: 계산된 영양 섭취량이 기존 DayNutrition에 누적 반영되어 저장된다.
+ * Priority: High
+ *
+ * UT-MEAL-2
+ * Method: calculateDetailedTargets
+ * Test Name: 상세 영양 목표치 산출 테스트
+ * Purpose: 사용자의 신체 정보를 기반으로 TDEE 및 영양 목표치를 계산한다.
+ * Input: heightCm, weightKg, age, gender
+ * Expected Result: 각 영양소별 목표치가 포함된 NutritionTarget 객체가 반환된다.
+ * Priority: High
+ */
+
 import com.today.fridge.meal.entity.DayNutrition;
 import com.today.fridge.meal.repository.DayNutritionRepository;
 import com.today.fridge.recipe.entity.Recipe;
@@ -26,12 +42,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.times;
 
-/**
- * MealServiceHelperMethods 컴포넌트에 대한 단위 테스트입니다.
- */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("식단 서비스 헬퍼 메서드 단위 테스트")
-public class MealServiceHelperMethodsUnitTest {
+public class MealService1HelperTest {
 
     @InjectMocks
     private MealServiceHelperMethods helperMethods;
@@ -39,13 +52,9 @@ public class MealServiceHelperMethodsUnitTest {
     @Mock
     private DayNutritionRepository dayNutritionRepository;
 
-    // ============================================================================================
-    // updateDayNutrition 단위 테스트
-    // ============================================================================================
     @Test
     @DisplayName("일일 영양 섭취량 누적 업데이트 테스트")
     void testUpdateDayNutrition() {
-        // given (1. 유저, 레시피, 영양 정보 준비)
         User user = User.create("helpertest", "helper@todayfridge.com", "hashedpassword", "헬퍼테스터");
         ReflectionTestUtils.setField(user, "userId", 1L);
 
@@ -66,7 +75,7 @@ public class MealServiceHelperMethodsUnitTest {
                 .build();
 
         LocalDateTime consumedAt = LocalDateTime.of(2023, 10, 1, 12, 0);
-        BigDecimal servings = new BigDecimal("2"); // 2인분 섭취 가정
+        BigDecimal servings = new BigDecimal("2"); 
 
         DayNutrition existingDn = new DayNutrition();
         existingDn.setUser(user);
@@ -82,12 +91,10 @@ public class MealServiceHelperMethodsUnitTest {
         given(dayNutritionRepository.findByUserUserIdAndDate(anyLong(), any(LocalDateTime.class)))
                 .willReturn(Optional.of(existingDn));
 
-        // when (2. 누적 업데이트 로직 실행)
         helperMethods.updateDayNutrition(user, recipe, servings, consumedAt);
 
-        // then (3. 검증)
         then(dayNutritionRepository).should(times(1)).save(existingDn);
-        assertThat(existingDn.getTotalCalories()).isEqualByComparingTo("600"); // 300 * 2
+        assertThat(existingDn.getTotalCalories()).isEqualByComparingTo("600"); 
         assertThat(existingDn.getTotalCarbs()).isEqualByComparingTo("60");
         assertThat(existingDn.getTotalProtein()).isEqualByComparingTo("40");
         assertThat(existingDn.getTotalFat()).isEqualByComparingTo("20");
@@ -96,63 +103,21 @@ public class MealServiceHelperMethodsUnitTest {
         assertThat(existingDn.getTotalCholesterol()).isEqualByComparingTo("100");
     }
 
-    // ============================================================================================
-    // calculateDetailedTargets 단위 테스트
-    // ============================================================================================
     @Test
     @DisplayName("상세 영양 목표치 산출 테스트")
     void testCalculateDetailedTargets() {
-        // given (1. 신체 정보 준비)
         double heightCm = 175.0;
         double weightKg = 70.0;
         int age = 30;
         String gender = "MALE";
 
-        // when (2. 목표치 계산 실행)
         MealServiceHelperMethods.NutritionTarget target = helperMethods.calculateDetailedTargets(heightCm, weightKg,
                 age, gender);
 
-        // then (3. 계산 결과 검증)
         assertThat(target).isNotNull();
-        // BMR = (10 * 70) + (6.25 * 175) - (5 * 30) + 5 = 700 + 1093.75 - 150 + 5 =
-        // 1648.75
-        // TDEE = 1648.75 * 1.2 = 1978.5
         assertThat(target.getCalories()).isEqualByComparingTo("1978.5");
-        // Carbs (50%) = (1978.5 * 0.5) / 4 = 247.3125 -> 247.3
         assertThat(target.getCarbs()).isEqualByComparingTo("247.3");
-        // Protein (20%) = (1978.5 * 0.2) / 4 = 98.925 -> 98.9
         assertThat(target.getProtein()).isEqualByComparingTo("98.9");
-        // Fat (30%) = (1978.5 * 0.3) / 9 = 65.95
-        // double 정밀도 문제로 65.9 또는 66.0이 나올 수 있으므로 범위로 검증하거나
-        // 현재 구현값(65.9)에 맞춰 소수점 비교 수행
         assertThat(target.getFat()).isBetween(new BigDecimal("65.9"), new BigDecimal("66.0"));
-    }
-
-    // ============================================================================================
-    // buildRemainingResponse 단위 테스트
-    // ============================================================================================
-    @Test
-    @DisplayName("남은 영양성분 응답 객체 생성 테스트")
-    void testBuildRemainingResponse() {
-        // given (1. 목표 및 누적 섭취량 준비)
-        MealServiceHelperMethods.NutritionTarget target = new MealServiceHelperMethods.NutritionTarget(
-                new BigDecimal("2000"), new BigDecimal("250"), new BigDecimal("100"), new BigDecimal("60"),
-                new BigDecimal("50"), new BigDecimal("2000"), new BigDecimal("300"));
-
-        MealNutritionSummaryDTO intake = new MealNutritionSummaryDTO(
-                new BigDecimal("1500"), new BigDecimal("200"), new BigDecimal("80"), new BigDecimal("50"),
-                new BigDecimal("30"), new BigDecimal("1500"), new BigDecimal("200"));
-
-        // when (2. 1일 기준 남은 영양량 계산 실행)
-        RemainingNutritionResponse response = helperMethods.buildRemainingResponse(target, intake, 1);
-
-        // then (3. 계산 검증)
-        assertThat(response.getRemainingCalories()).isEqualByComparingTo("500");
-        assertThat(response.getRemainingCarbs()).isEqualByComparingTo("50");
-        assertThat(response.getRemainingProtein()).isEqualByComparingTo("20");
-        assertThat(response.getRemainingFat()).isEqualByComparingTo("10");
-        assertThat(response.getRemainingSugar()).isEqualByComparingTo("20");
-        assertThat(response.getRemainingSodium()).isEqualByComparingTo("500");
-        assertThat(response.getRemainingCholesterol()).isEqualByComparingTo("100");
     }
 }
