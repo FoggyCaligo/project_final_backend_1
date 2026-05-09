@@ -19,6 +19,7 @@ import com.today.fridge.global.exception.ErrorCode;
 import com.today.fridge.global.response.ApiResponse;
 import com.today.fridge.meal.dto.request.MealLogRequest;
 import com.today.fridge.meal.dto.request.PhysicalMetricsRequest;
+import com.today.fridge.meal.dto.response.AIRecommendationResponse;
 import com.today.fridge.meal.dto.response.DailyRecommendationResponse;
 import com.today.fridge.meal.dto.response.MealLogResponse;
 import com.today.fridge.meal.dto.response.ReportSummaryResponse;
@@ -49,6 +50,17 @@ public class MealController {
         if (date == null) date = LocalDate.now();
         
         return ResponseEntity.ok(ApiResponse.success(mealServiceDaily.getMeals(uid, date), "식단 기록 조회 성공"));
+    }
+
+
+    @PostMapping("/recommendation")
+    public ResponseEntity<ApiResponse<AIRecommendationResponse>> getAIRecommendation(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+        log.info("[MealController] getAIRecommendation - userId: {}", userId);
+        long uid = requireUserId(userId);
+
+        AIRecommendationResponse response = mealServiceDaily.getAIRecommendation(uid);
+        return ResponseEntity.ok(ApiResponse.success(response, "AI 식단 추천 분석이 완료되었습니다."));
     }
 
     @PostMapping("/record")

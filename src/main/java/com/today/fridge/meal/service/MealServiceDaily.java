@@ -8,12 +8,16 @@ package com.today.fridge.meal.service;
  * getRemainingDailyNutrition: 오늘 남은 권장 영양 섭취량을 계산하여 반환합니다.
  */
 
+import com.today.fridge.global.external.fastapi.FastApiService;
+import com.today.fridge.global.external.fastapi.MealRecommendationFastAPIService;
+import com.today.fridge.global.external.fastapi.MealRecommendationRequest;
 import com.today.fridge.global.exception.ErrorCode;
 import com.today.fridge.global.exception.ExceptionTemplate;
+import com.today.fridge.meal.dto.response.AIRecommendationResponse;
 import com.today.fridge.meal.dto.response.DailyRecommendationResponse;
 import com.today.fridge.meal.dto.response.MealLogResponse;
 import com.today.fridge.meal.dto.response.MealNutritionSummaryDTO;
-import com.today.fridge.meal.dto.response.RemainingNutritionResponse;
+import com.today.fridge.global.external.fastapi.MealRecommendationResponse;
 import com.today.fridge.meal.repository.DayNutritionRepository;
 import com.today.fridge.meal.repository.MealRepository;
 import com.today.fridge.user.entity.User;
@@ -37,29 +41,69 @@ public class MealServiceDaily {
     private final MealRepository mealRepository;
     private final UserRepository userRepository;
     private final DayNutritionRepository dayNutritionRepository;
+    private final MealRecommendationFastAPIService mealRecommendationFastAPIService;
     private final MealServiceHelperMethods helperMethods;
 
     // ============================================================================================
     // 특정 날짜의 식단 기록 조회
     // ============================================================================================
+
+    // ============================================================================================
+    // AI 기반 식단 추천 분석
+    // ============================================================================================
+    public AIRecommendationResponse getAIRecommendation(Long userId) {
+        log.info("[MealServiceDaily] getAIRecommendation - userId: {} (HIJACKED FOR TESTING)", userId);
+
+        /*
+        // 식단 기록이 하나도 없는지 확인 (전체 기간 기준)
+        long totalMeals = mealRepository.countByUserUserIdAndConsumedAtBetween(userId,
+                LocalDateTime.of(2000, 1, 1, 0, 0), LocalDateTime.of(2100, 1, 1, 0, 0));
+
+        if (totalMeals == 0) {
+            log.info("[MealServiceDaily] 식단 기록 부족으로 AI 추천 스킵 - userId: {}", userId);
+            return AIRecommendationResponse.builder()
+                    .report("아직 기록된 식단이 없습니다. 식단을 기록하시면 AI가 분석하여 맞춤형 추천을 제공해 드립니다!")
+                    .recommendations(java.util.Collections.emptyMap())
+                    .build();
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
+
+        // 사용자 신체 정보 추출 (null 인 경우 기본값 적용: 175cm, 70kg, MALE)
+        Double height = user.getHeightCm() != null && user.getHeightCm() > 0 ? user.getHeightCm() : 175.0;
+        Double weight = user.getWeightKg() != null && user.getWeightKg() > 0 ? user.getWeightKg() : 70.0;
+        String gender = user.getGender() != null ? user.getGender() : "MALE";
+        Integer age = user.getAge() != null && user.getAge() > 0 ? user.getAge() : 30;
+
+        MealRecommendationRequest req = new MealRecommendationRequest(
+                String.valueOf(userId),
+                height,
+                weight,
+                age,
+                gender);
+
+        MealRecommendationResponse response = mealRecommendationFastAPIService.getMealRecommendation(req);
+
+        return AIRecommendationResponse.builder()
+                .report(response.report())
+                .recommendations(response.recommendations())
+                .build();
+        */
+
+        // 프론트엔드 테스트를 위한 더미 응답 (Hijacked)
+        return AIRecommendationResponse.builder()
+                .report("called")
+                .recommendations(java.util.Collections.emptyMap())
+                .build();
+    }
+
     public List<MealLogResponse> getMeals(Long userId, LocalDate date) {
         log.info("[MealServiceDaily] getMeals (public) - userId: {}, date: {}", userId, date);
         // 지정된 날짜의 식단 목록 반환
         log.info("사용자 식단 데이터 조회 - 사용자 ID: {}, 날짜: {}", userId, date);
         return mealRepository.findByUserIdAndConsumedAtBetween(userId, date.atStartOfDay(),
                 date.plusDays(1).atStartOfDay());
-    }
-
-    // ============================================================================================
-    // 일일 영양 섭취 요약 조회
-    // ============================================================================================
-    public MealNutritionSummaryDTO getDailyIntake(Long userId, LocalDate date) {
-        log.info("[MealServiceDaily] getDailyIntake (public) - userId: {}, date: {}", userId, date);
-        LocalDateTime startOfDay = date.atStartOfDay();
-        LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
-
-        // 해당 날짜의 총 영양 섭취량 계산 및 반환
-        return dayNutritionRepository.getNutritionSummaryByDateRange(userId, startOfDay, endOfDay);
     }
 
     // ============================================================================================
@@ -77,7 +121,8 @@ public class MealServiceDaily {
         // 지정된 날짜의 실시간 누적 영양 정보 조회 (DayNutritionRepository 사용으로 일관성 유지)
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
-        MealNutritionSummaryDTO intake = dayNutritionRepository.getNutritionSummaryByDateRange(userId, startOfDay, endOfDay);
+        MealNutritionSummaryDTO intake = dayNutritionRepository.getNutritionSummaryByDateRange(userId, startOfDay,
+                endOfDay);
 
         // 현재 영양 섭취량 초기화 (Null-Safe 처리)
         BigDecimal currentCalories = intake.getTotalCalories() != null ? intake.getTotalCalories() : BigDecimal.ZERO;
@@ -139,26 +184,5 @@ public class MealServiceDaily {
                 .build();
         log.info("일일 권장량 및 피드백 생성 완료 - 사용자 ID: {}, 조언 개수: {}", userId, advice.size());
         return response;
-    }
-
-    // ============================================================================================
-    // 오늘 남은 권장 영양 섭취량 조회
-    // ============================================================================================
-    public RemainingNutritionResponse getRemainingDailyNutrition(Long userId, LocalDate date) {
-        log.info("[MealServiceDaily] getRemainingDailyNutrition (public) - userId: {}, date: {}", userId, date);
-        // 사용자 정보 조회
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
-
-        // 일일 권장 목표 계산 로직 호출 (중앙화된 기본값 처리 포함)
-        MealServiceHelperMethods.NutritionTarget target = helperMethods.calculateTargetsWithDefaults(user);
-
-        // 지정된 날짜의 누적 영양 정보 조회
-        LocalDateTime startOfDay = date.atStartOfDay();
-        LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
-        MealNutritionSummaryDTO intake = dayNutritionRepository.getNutritionSummaryByDateRange(userId, startOfDay, endOfDay);
-
-        // 남은 영양 섭취량 계산 및 응답 생성
-        return helperMethods.buildRemainingResponse(target, intake, 1);
     }
 }

@@ -7,16 +7,10 @@ package com.today.fridge.meal.service;
  * getRemainingMonthlyNutrition: 이번 달 남은 권장 영양 섭취량을 계산합니다.
  */
 
-import com.today.fridge.global.exception.ErrorCode;
-import com.today.fridge.global.exception.ExceptionTemplate;
-import com.today.fridge.meal.dto.response.MealNutritionSummaryDTO;
-import com.today.fridge.meal.dto.response.RemainingNutritionResponse;
 import com.today.fridge.meal.dto.response.ReportSummaryResponse;
 import com.today.fridge.meal.entity.DayNutrition;
 import com.today.fridge.meal.repository.DayNutritionRepository;
 import com.today.fridge.meal.repository.MealRepository;
-import com.today.fridge.user.entity.User;
-import com.today.fridge.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,9 +30,7 @@ import java.util.Optional;
 public class MealServicePeriod {
 
     private final MealRepository mealRepository;
-    private final UserRepository userRepository;
     private final DayNutritionRepository dayNutritionRepository;
-    private final MealServiceHelperMethods helperMethods;
 
     // ============================================================================================
     // 특정 기간(주간/월간 등) 영양 보고서 요약 조회
@@ -195,60 +187,5 @@ public class MealServicePeriod {
                 .build();
         log.info("보고서 생성 완료 - 사용자 ID: {}, 기간: {} ~ {}. 결측치 보정 일수: {}", userId, startDate, endDate, missingDaysImputed);
         return response;
-    }
-
-    // ============================================================================================
-    // 이번 주 남은 권장 영양 섭취량 조회
-    // ============================================================================================
-    public RemainingNutritionResponse getRemainingWeeklyNutrition(Long userId, LocalDate date) {
-        log.info("[MealServicePeriod] getRemainingWeeklyNutrition (public) - userId: {}, date: {}", userId, date);
-        // 사용자 정보 조회
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
-
-        // 일일 권장 목표 계산 로직 호출 (중앙화된 기본값 처리 포함)
-        MealServiceHelperMethods.NutritionTarget target = helperMethods.calculateTargetsWithDefaults(user);
-
-        // 이번 주 시작일 및 종료일 계산
-        int dayOfWeek = date.getDayOfWeek().getValue();
-        LocalDate startOfWeek = date.minusDays(dayOfWeek - 1);
-        LocalDate endOfWeek = startOfWeek.plusDays(6);
-
-        LocalDateTime startDateTime = startOfWeek.atStartOfDay();
-        LocalDateTime endDateTime = endOfWeek.plusDays(1).atStartOfDay();
-
-        // 주간 영양 섭취량 조회
-        MealNutritionSummaryDTO intake = dayNutritionRepository.getNutritionSummaryByDateRange(userId, startDateTime,
-                endDateTime);
-
-        // 남은 주간 영양 섭취량 계산 (7일 기준)
-        return helperMethods.buildRemainingResponse(target, intake, 7);
-    }
-
-    // ============================================================================================
-    // 이번 달 남은 권장 영양 섭취량 조회
-    // ============================================================================================
-    public RemainingNutritionResponse getRemainingMonthlyNutrition(Long userId, LocalDate date) {
-        log.info("[MealServicePeriod] getRemainingMonthlyNutrition (public) - userId: {}, date: {}", userId, date);
-        // 사용자 정보 조회
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
-
-        // 일일 권장 목표 계산 로직 호출 (중앙화된 기본값 처리 포함)
-        MealServiceHelperMethods.NutritionTarget target = helperMethods.calculateTargetsWithDefaults(user);
-
-        // 이번 달 시작일 및 종료일 계산
-        LocalDate startOfMonth = date.withDayOfMonth(1);
-        LocalDate endOfMonth = date.withDayOfMonth(date.lengthOfMonth());
-
-        LocalDateTime startDateTime = startOfMonth.atStartOfDay();
-        LocalDateTime endDateTime = endOfMonth.plusDays(1).atStartOfDay();
-
-        // 월간 영양 섭취량 조회
-        MealNutritionSummaryDTO intake = dayNutritionRepository.getNutritionSummaryByDateRange(userId, startDateTime,
-                endDateTime);
-
-        // 남은 월간 영양 섭취량 계산 (해당 월의 총 일수 기준)
-        return helperMethods.buildRemainingResponse(target, intake, date.lengthOfMonth());
     }
 }

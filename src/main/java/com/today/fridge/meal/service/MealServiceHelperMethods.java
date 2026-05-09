@@ -9,7 +9,6 @@ package com.today.fridge.meal.service;
 
 import com.today.fridge.meal.dto.request.PhysicalMetricsRequest;
 import com.today.fridge.meal.dto.response.MealNutritionSummaryDTO;
-import com.today.fridge.meal.dto.response.RemainingNutritionResponse;
 import com.today.fridge.meal.entity.DayNutrition;
 import com.today.fridge.meal.repository.DayNutritionRepository;
 import com.today.fridge.recipe.entity.Recipe;
@@ -158,62 +157,6 @@ public class MealServiceHelperMethods {
                 BigDecimal.valueOf(sugarGrams).setScale(1, RoundingMode.HALF_UP),
                 BigDecimal.valueOf(sodiumMg).setScale(1, RoundingMode.HALF_UP),
                 BigDecimal.valueOf(cholesterolMg).setScale(1, RoundingMode.HALF_UP));
-    }
-
-    // ============================================================================================
-    // 일/주/월 단위의 남은 영양 목표 계산 응답 객체 생성
-    // ============================================================================================
-    public RemainingNutritionResponse buildRemainingResponse(NutritionTarget target, MealNutritionSummaryDTO intake,
-            int days) {
-        log.info("[MealServiceHelperMethods] buildRemainingResponse (public) - days: {}", days);
-        BigDecimal daysMultiplier = new BigDecimal(days);
-
-        // 기간(days)에 따른 총 영양 목표 계산
-        BigDecimal targetCals = target.getCalories().multiply(daysMultiplier);
-        BigDecimal targetCarbs = target.getCarbs().multiply(daysMultiplier);
-        BigDecimal targetProtein = target.getProtein().multiply(daysMultiplier);
-        BigDecimal targetFat = target.getFat().multiply(daysMultiplier);
-        BigDecimal targetSugar = target.getSugar().multiply(daysMultiplier);
-        BigDecimal targetSodium = target.getSodium().multiply(daysMultiplier);
-        BigDecimal targetCholesterol = target.getCholesterol().multiply(daysMultiplier);
-
-        // 남은 영양량 계산 (목표량 - 섭취량)
-        BigDecimal remainingCalories = targetCals
-                .subtract(intake.getTotalCalories() != null ? intake.getTotalCalories() : BigDecimal.ZERO);
-        BigDecimal remainingCarbs = targetCarbs
-                .subtract(intake.getTotalCarbs() != null ? intake.getTotalCarbs() : BigDecimal.ZERO);
-        BigDecimal remainingProtein = targetProtein
-                .subtract(intake.getTotalProtein() != null ? intake.getTotalProtein() : BigDecimal.ZERO);
-        BigDecimal remainingFat = targetFat
-                .subtract(intake.getTotalFat() != null ? intake.getTotalFat() : BigDecimal.ZERO);
-        BigDecimal remainingSugar = targetSugar
-                .subtract(intake.getTotalSugar() != null ? intake.getTotalSugar() : BigDecimal.ZERO);
-        BigDecimal remainingSodium = targetSodium
-                .subtract(intake.getTotalSodium() != null ? intake.getTotalSodium() : BigDecimal.ZERO);
-        BigDecimal remainingCholesterol = targetCholesterol
-                .subtract(intake.getTotalCholesterol() != null ? intake.getTotalCholesterol() : BigDecimal.ZERO);
-
-        // 기간이 1일 이상일 경우 일일 평균 남은 량으로 변환
-        if (days > 1) {
-            remainingCalories = remainingCalories.divide(daysMultiplier, 1, RoundingMode.HALF_UP);
-            remainingCarbs = remainingCarbs.divide(daysMultiplier, 1, RoundingMode.HALF_UP);
-            remainingProtein = remainingProtein.divide(daysMultiplier, 1, RoundingMode.HALF_UP);
-            remainingFat = remainingFat.divide(daysMultiplier, 1, RoundingMode.HALF_UP);
-            remainingSugar = remainingSugar.divide(daysMultiplier, 1, RoundingMode.HALF_UP);
-            remainingSodium = remainingSodium.divide(daysMultiplier, 1, RoundingMode.HALF_UP);
-            remainingCholesterol = remainingCholesterol.divide(daysMultiplier, 1, RoundingMode.HALF_UP);
-        }
-
-        // 응답 객체 빌드 및 반환
-        return RemainingNutritionResponse.builder()
-                .remainingCalories(remainingCalories)
-                .remainingCarbs(remainingCarbs)
-                .remainingProtein(remainingProtein)
-                .remainingFat(remainingFat)
-                .remainingSugar(remainingSugar)
-                .remainingSodium(remainingSodium)
-                .remainingCholesterol(remainingCholesterol)
-                .build();
     }
 
     // ============================================================================================
