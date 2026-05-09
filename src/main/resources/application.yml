@@ -83,10 +83,10 @@ app:
     base-url: ${APP_BASE_URL:http://localhost:8080}
     verification-required: ${MAIL_VERIFICATION_REQUIRED:true}
   kakao:
-    rest-api-key: ${KAKAO_REST_API_KEY:75029a3464f13bd358978e6ed88f9efd}
+    rest-api-key: ${KAKAO_REST_API_KEY}
     client-secret: ${KAKAO_CLIENT_SECRET:}
-    redirect-uri: ${KAKAO_REDIRECT_URI:http://localhost:8080/api/v1/auth/kakao/callback}
-    frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
+    redirect-uri: ${KAKAO_REDIRECT_URI}
+    frontend-base-url: ${FRONTEND_BASE_URL}
 
 logging:
   pattern:
