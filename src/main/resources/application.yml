@@ -33,7 +33,7 @@ spring:
         default_schema: today_fridge
     hibernate:
       # 최종 SQL 기준 운영/개발 스키마 드리프트 방지
-      ddl-auto: validate
+      ddl-auto: update
   flyway:
     enabled: false
   mail:
