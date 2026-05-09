@@ -66,6 +66,12 @@ bootRun {
     }
 }
 
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs << '-parameters'
 }
