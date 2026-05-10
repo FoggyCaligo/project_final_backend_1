@@ -147,16 +147,12 @@ public class RecommendationService {
                 .build();
     }
     private List<ConditionWarningDto> buildWarnings(
-            List<UserCondition> userConditions,
+            List<String> activeConditionCodes,
             List<RecipeConditionMap> recipeConditions
     ) {
-        List<Long> userConditionIds = userConditions.stream()
-                .map(uc -> uc.getConditionCode().getConditionId())
-                .toList();
-
         return recipeConditions.stream()
-                .filter(rc -> userConditionIds.contains(
-                        rc.getConditionCode().getConditionId()
+                .filter(rc -> activeConditionCodes.contains(
+                        rc.getConditionCode().getConditionCode()
                 ))
                 .filter(rc -> "CAUTION".equals(rc.getFitType()))
                 .map(rc -> ConditionWarningDto.builder()
@@ -231,6 +227,7 @@ public class RecommendationService {
         )
         .distinct()
         .toList();
+        log.info("[ACTIVE_CONDITIONS] {}", activeConditionCodes);
         // 사용자 알러지 코드 추출 (condition_code reuse 중이면)
         List<String> userAllergenCodes =
                 userConditions.stream()
@@ -309,11 +306,29 @@ public class RecommendationService {
 
                 	List<RecipeConditionMap> recipeConditions =
                 	        recipeConditionMap.getOrDefault(recipe.recipeId(), List.of());
-                    double conditionScore =
-                            recommendationScoreService.calculateConditionScoreByCodes(
-                                    activeConditionCodes,
-                                    recipeConditions
-                            );
+
+                	if (useHybridRanking
+                	        && query.getConditionCodes() != null
+                	        && !query.getConditionCodes().isEmpty()) {
+
+                	    boolean hasCautionForRequestedCondition = recipeConditions.stream()
+                	            .anyMatch(rc ->
+                	                    query.getConditionCodes().contains(
+                	                            rc.getConditionCode().getConditionCode()
+                	                    )
+                	                    && "CAUTION".equals(rc.getFitType())
+                	            );
+
+                	    if (hasCautionForRequestedCondition) {
+                	        return null;
+                	    }
+                	}
+
+                	double conditionScore =
+                	        recommendationScoreService.calculateConditionScoreByCodes(
+                	                activeConditionCodes,
+                	                recipeConditions
+                	        );
                     double requestedBoost = 0.0;
                     
                     List<String> boostTargetIngredients =
@@ -343,20 +358,12 @@ public class RecommendationService {
 
                         requestedBoost = ingredientCoverage * 25.0;
                         
-                        log.info("[ING_MATCH] recipeId={}, title={}, required={}, owned={}, matchedRequiredCount={}, ingredientCoverage={}, requestedBoost={}",
-                                recipe.recipeId(),
-                                recipe.title(),
-                                requiredIngredients,
-                                boostTargetIngredients,
-                                matchedRequiredCount,
-                                ingredientCoverage,
-                                requestedBoost
-                        );
+                 
                     }
                     List<String> conditionTags = activeConditionCodes;
                     
                     List<ConditionWarningDto> warnings = buildWarnings(
-                            userConditions,
+                            activeConditionCodes,
                             recipeConditions
                     );
                     double semanticScore =
@@ -392,6 +399,7 @@ public class RecommendationService {
                             false
                     );
                 })
+                .filter(java.util.Objects::nonNull)
                 .sorted((a, b) -> {
                     if (useHybridRanking) {
                         return Double.compare(b.getHybridScore(), a.getHybridScore());

@@ -296,9 +296,9 @@ public class RecipeService {
     	        case "time_asc":
     	            sortSpec = Sort.by(Sort.Direction.ASC, "cookTimeText");
     	            break;
-//    	        case "difficulty_asc":
-//    	            sortSpec = Sort.by(Sort.Direction.ASC, "difficulty");
-//    	            break;
+    	        case "difficulty_asc":
+    	            sortSpec = Sort.by(Sort.Direction.ASC, "difficulty");
+    	            break;
     	        case "name":
     	            sortSpec = Sort.by(Sort.Direction.ASC, "title");
     	            break;
