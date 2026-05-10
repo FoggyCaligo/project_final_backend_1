@@ -53,13 +53,25 @@ public class MealController {
     }
 
 
+    @GetMapping("/recommendation")
+    public ResponseEntity<ApiResponse<AIRecommendationResponse>> getCachedAIRecommendation(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+        log.info("[MealController] getCachedAIRecommendation - userId: {}", userId);
+        long uid = requireUserId(userId);
+
+        // GET 요청은 강제 새로고침을 하지 않고 캐시된 결과를 우선 반환합니다.
+        AIRecommendationResponse response = mealServiceDaily.getAIRecommendation(uid, false);
+        return ResponseEntity.ok(ApiResponse.success(response, "AI 식단 추천 데이터 조회 성공"));
+    }
+
     @PostMapping("/recommendation")
     public ResponseEntity<ApiResponse<AIRecommendationResponse>> getAIRecommendation(
             @RequestHeader(value = "X-User-Id", required = false) Long userId) {
-        log.info("[MealController] getAIRecommendation - userId: {}", userId);
+        log.info("[MealController] getAIRecommendation (force refresh) - userId: {}", userId);
         long uid = requireUserId(userId);
 
-        AIRecommendationResponse response = mealServiceDaily.getAIRecommendation(uid);
+        // POST 요청은 캐시를 무시하고 강제로 새로운 추천을 생성합니다.
+        AIRecommendationResponse response = mealServiceDaily.getAIRecommendation(uid, true);
         return ResponseEntity.ok(ApiResponse.success(response, "AI 식단 추천 분석이 완료되었습니다."));
     }
 

@@ -8,7 +8,6 @@ package com.today.fridge.meal.service;
  */
 
 import com.today.fridge.meal.dto.request.PhysicalMetricsRequest;
-import com.today.fridge.meal.dto.response.MealNutritionSummaryDTO;
 import com.today.fridge.meal.entity.DayNutrition;
 import com.today.fridge.meal.repository.DayNutritionRepository;
 import com.today.fridge.recipe.entity.Recipe;
@@ -33,7 +32,8 @@ public class MealServiceHelperMethods {
     // 일일 영양 섭취량 누적 업데이트
     // ============================================================================================
     public void updateDayNutrition(User user, Recipe recipe, BigDecimal servings, LocalDateTime consumedAt) {
-        log.info("[MealServiceHelperMethods] updateDayNutrition (public) - userId: {}, recipeId: {}, servings: {}", user.getUserId(), recipe.getRecipeId(), servings);
+        log.info("[MealServiceHelperMethods] updateDayNutrition (public) - userId: {}, recipeId: {}, servings: {}",
+                user.getUserId(), recipe.getRecipeId(), servings);
         // null 또는 0인분인 경우 업데이트를 수행하지 않음
         if (servings == null || servings.compareTo(BigDecimal.ZERO) <= 0) {
             return;
@@ -114,7 +114,9 @@ public class MealServiceHelperMethods {
     // 사용자 맞춤형 일일 영양 목표치 상세 계산 (TDEE 기반)
     // ============================================================================================
     public NutritionTarget calculateDetailedTargets(double heightCm, double weightKg, int age, String gender) {
-        log.info("[MealServiceHelperMethods] calculateDetailedTargets (public) - height: {}, weight: {}, age: {}, gender: {}", heightCm, weightKg, age, gender);
+        log.info(
+                "[MealServiceHelperMethods] calculateDetailedTargets (public) - height: {}, weight: {}, age: {}, gender: {}",
+                heightCm, weightKg, age, gender);
         // BMI 계산 (0으로 나누기 방지)
         double heightM = heightCm / 100.0;
         double bmi = (heightM > 0) ? weightKg / (heightM * heightM) : 0;

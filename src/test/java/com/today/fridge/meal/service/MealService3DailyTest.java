@@ -89,14 +89,15 @@ public class MealService3DailyTest {
         user.setAge(30);
         user.setGender("MALE");
 
-        MealRecommendationResponse mockResponse = new MealRecommendationResponse("Good report", null);
+        MealRecommendationResponse mockResponse = new MealRecommendationResponse("Good report", java.util.Collections.emptyMap());
 
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
         given(mealRepository.countByUserUserIdAndConsumedAtBetween(eq(userId), any(), any())).willReturn(1L);
         given(mealRecommendationFastAPIService.getMealRecommendation(any(MealRecommendationRequest.class))).willReturn(mockResponse);
 
         // when
-        AIRecommendationResponse result = mealServiceDaily.getAIRecommendation(userId);
+        // forceRefresh=false로 호출하여 캐시 로직을 타게 함 (첫 호출이므로 FastAPI 서비스 호출됨)
+        AIRecommendationResponse result = mealServiceDaily.getAIRecommendation(userId, false);
 
         // then
         assertThat(result.getReport()).isEqualTo("Good report");
