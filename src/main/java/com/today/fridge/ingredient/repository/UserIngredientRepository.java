@@ -14,7 +14,7 @@ import java.util.Optional;
 
 public interface UserIngredientRepository extends JpaRepository<UserIngredient, Long>, UserIngredientRepositoryCustom {
 
-    @EntityGraph(attributePaths = {"ingredientMaster", "fileAsset"})
+    @EntityGraph(attributePaths = { "ingredientMaster", "fileAsset" })
     @Query("""
             select ui from UserIngredient ui
             where ui.userIngredientId = :id and ui.user.userId = :userId
@@ -32,20 +32,21 @@ public interface UserIngredientRepository extends JpaRepository<UserIngredient, 
     @Query("""
             select count(u) from UserIngredient u
             where u.user.userId = :userId
-              and u.expiresAt is not null
-              and u.expiresAt >= :today
-              and u.expiresAt <= :soonEnd
+
+            and u.expiresAt is not null
+            and u.expiresAt >= :today
+            and u.expiresAt <= :soonEnd
             """)
     long countByUser_UserIdAndExpiresAtSoonWindow(
             @Param("userId") Long userId, @Param("today") LocalDate today, @Param("soonEnd") LocalDate soonEnd);
 
-    @EntityGraph(attributePaths = {"ingredientMaster"})
+    @EntityGraph(attributePaths = { "ingredientMaster" })
     @Query("""
             select u from UserIngredient u
             where u.user.userId = :userId
-              and u.expiresAt is not null
-              and u.expiresAt >= :today
-              and u.expiresAt <= :soonEnd
+            and u.expiresAt is not null
+            and u.expiresAt >= :today
+            and u.expiresAt <= :soonEnd
             """)
     Page<UserIngredient> findSoonPageForSummary(
             @Param("userId") Long userId,
