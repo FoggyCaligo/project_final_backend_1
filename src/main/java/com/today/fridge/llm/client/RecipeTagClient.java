@@ -5,6 +5,8 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import com.today.fridge.llm.config.LlmClientProperties;
+
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -12,12 +14,13 @@ import lombok.RequiredArgsConstructor;
 public class RecipeTagClient {
 
     private final RestClient restClient;
+    private final LlmClientProperties properties;
 
     public RecipeTagClassifyResponse classify(
             RecipeTagClassifyRequest request
     ) {
         return restClient.post()
-                .uri("http://192.168.0.6:8000/api/v1/internal/recipe-tags/classify")
+                .uri(properties.baseUrl()+"/api/v1/internal/recipe-tags/classify")
                 .body(request)
                 .retrieve()
                 .body(RecipeTagClassifyResponse.class);

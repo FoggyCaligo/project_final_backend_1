@@ -7,6 +7,7 @@ import org.springframework.web.client.RestClient;
 
 import com.today.fridge.embedding.dto.EmbeddingRequest;
 import com.today.fridge.embedding.dto.EmbeddingResponse;
+import com.today.fridge.llm.config.LlmClientProperties;
 
 import lombok.RequiredArgsConstructor;
 
@@ -15,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 public class EmbeddingClient {
 
     private final RestClient restClient;
+    private final LlmClientProperties properties;
 
     public List<Double> generateEmbedding(
             String text
@@ -22,7 +24,7 @@ public class EmbeddingClient {
 
         EmbeddingResponse response =
                 restClient.post()
-                        .uri("http://192.168.0.6:8000/api/v1/embedding")
+                        .uri(properties.baseUrl()+"/api/v1/embedding")
                         .body(
                                 new EmbeddingRequest(text)
                         )

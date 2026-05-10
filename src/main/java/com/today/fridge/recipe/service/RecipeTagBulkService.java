@@ -29,7 +29,7 @@ public class RecipeTagBulkService {
         List<Recipe> recipes = recipeRepository.findByIsActiveTrue();
 
         int savedCount = 0;
-        int batchSize = 50;
+        int batchSize = 20;
 
         for (int i = 0; i < recipes.size(); i += batchSize) {
 
@@ -134,7 +134,7 @@ public class RecipeTagBulkService {
             }
 
             try {
-                Thread.sleep(1500);
+                Thread.sleep(3000);
             } catch (InterruptedException ignored) {
                 Thread.currentThread().interrupt();
             }

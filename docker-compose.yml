@@ -1,0 +1,9 @@
+services:
+  mailpit:
+    image: axllent/mailpit
+    container_name: today_fridge_mailpit
+    ports:
+      - "8025:8025" # Web UI port
+      - "1025:1025" # SMTP port
+    environment:
+      MP_MAX_MESSAGES: 500 
