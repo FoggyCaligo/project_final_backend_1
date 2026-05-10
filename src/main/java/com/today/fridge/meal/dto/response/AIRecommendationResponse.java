@@ -1,5 +1,6 @@
 package com.today.fridge.meal.dto.response;
 
+import com.today.fridge.global.external.fastapi.RecipeBrief;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -10,5 +11,5 @@ import java.util.Map;
 @Builder
 public class AIRecommendationResponse {
     private String report;
-    private Map<String, List<Integer>> recommendations;
+    private Map<String, List<RecipeBrief>> recommendations;
 }

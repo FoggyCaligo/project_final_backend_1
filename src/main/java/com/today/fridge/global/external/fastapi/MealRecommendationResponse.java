@@ -5,6 +5,6 @@ import java.util.Map;
 
 public record MealRecommendationResponse(
     String report,
-    Map<String, List<Integer>> recommendations
+    Map<String, List<RecipeBrief>> recommendations
 ) {
 }
