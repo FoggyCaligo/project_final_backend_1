@@ -26,7 +26,6 @@ import com.today.fridge.recommendation.entity.RecipeConditionMap;
 import com.today.fridge.recommendation.entity.UserCondition;
 import com.today.fridge.recommendation.repository.RecipeConditionMapRepository;
 import com.today.fridge.recommendation.repository.UserConditionRepository;
-import com.today.fridge.substitution.service.SubstituteIngredientService;
 import com.today.fridge.llm.dto.request.RecommendationExplanationContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +39,6 @@ public class RecommendationService {
     private final UserConditionRepository userConditionRepository;
     private final RecipeConditionMapRepository recipeConditionMapRepository;
     private final RecommendationScoreService recommendationScoreService;
-    private final SubstituteIngredientService substituteIngredientService;
     private final RecommendationReasonService recommendationReasonService;
     private final RecipeRepository recipeRepository;
     private final RecipeIngredientRepository recipeIngredientRepository;
@@ -135,13 +133,8 @@ public class RecommendationService {
                 .missingIngredients(missingIngredients)
                 .conditionTags(conditionTags)
                 .warnings(warnings)
-                .substituteSuggestions(
-                        substituteIngredientService.suggest(
-                                missingIngredients,
-                                ownedIngredients,
-                                recipe.title()
-                        )
-                )
+                .ownedIngredients(ownedIngredients)
+                .substituteSuggestions(List.of())
                 .reason(reason)
                 .llmExplanation(llmExplanation)
                 .build();
