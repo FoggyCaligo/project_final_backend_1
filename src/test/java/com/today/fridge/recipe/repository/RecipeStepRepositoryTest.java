@@ -54,7 +54,7 @@ class RecipeStepRepositoryTest {
                 recipeStepRepository.saveAll(List.of(step1, step2));
 
                 // When
-                List<RecipeStep> foundSteps = recipeStepRepository.findByRecipe_RecipeId(savedRecipe.getRecipeId());
+                List<RecipeStep> foundSteps = recipeStepRepository.findByRecipe_RecipeIdOrderByStepNoAsc(savedRecipe.getRecipeId());
 
                 // Then
                 assertThat(foundSteps).hasSize(2);
