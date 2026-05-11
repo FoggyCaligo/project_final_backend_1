@@ -48,7 +48,7 @@ class RecipeIngredientRepositoryTest {
                 recipeIngredientRepository.save(ingredient);
 
                 List<RecipeIngredient> foundIngredients = recipeIngredientRepository
-                                .findByRecipe_RecipeId(savedRecipe.getRecipeId());
+                                .findByRecipe_RecipeIdOrderBySortOrderAsc(savedRecipe.getRecipeId());
 
                 assertThat(foundIngredients).hasSize(1);
                 assertThat(foundIngredients.get(0).getRawText()).isEqualTo("Onion");

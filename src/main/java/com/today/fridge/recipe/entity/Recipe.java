@@ -62,6 +62,10 @@ public class Recipe {
     @Column(name = "difficulty_level", length = 20)
     private String difficultyLevel;
 
-    @OneToOne(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = false)
+    @OneToOne(
+            mappedBy = "recipe",
+            cascade = CascadeType.ALL,
+            orphanRemoval = false
+    )
     private RecipeNutrition recipeNutrition;
 }

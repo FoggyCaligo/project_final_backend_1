@@ -24,10 +24,10 @@ public class NaverShoppingClient {
 
     private final RestClient restClient;
 
-    @Value("${naver.shopping.client-id:}")
+    @Value("${app.naver.shopping.client-id:}")
     private String clientId;
 
-    @Value("${naver.shopping.client-secret:}")
+    @Value("${app.naver.shopping.client-secret:}")
     private String clientSecret;
 
     public NaverShoppingClient(RestClient restClient) {
@@ -72,6 +72,7 @@ public class NaverShoppingClient {
             double rate = (1.0 - (double) price / originalPrice) * 100;
             discountRate = BigDecimal.valueOf(Math.round(rate * 10) / 10.0);
         }
+        ShippingType shippingType = resolveShippingType(item.deliveryFee());
         return ShoppingItemDto.builder()
                 .mallName(item.mallName() != null ? item.mallName() : "네이버쇼핑")
                 .mallProductId(item.productId())
@@ -82,7 +83,7 @@ public class NaverShoppingClient {
                 .discountRate(discountRate)
                 .purchaseUrl(item.link())
                 .imageUrl(item.image())
-                .shippingType(ShippingType.STANDARD)
+                .shippingType(shippingType)
                 .stockStatus(StockStatus.IN_STOCK)
                 .build();
     }
@@ -94,6 +95,20 @@ public class NaverShoppingClient {
             return Integer.parseInt(value.trim());
         } catch (NumberFormatException e) {
             return 0;
+        }
+    }
+
+    /**
+     * 네이버 쇼핑 deliveryFee 값으로 ShippingType 결정
+     * "0" → FREE (무료배송), null/빈값 → STANDARD, 그 외 → STANDARD
+     */
+    private ShippingType resolveShippingType(String deliveryFee) {
+        if (deliveryFee == null || deliveryFee.isBlank()) return ShippingType.STANDARD;
+        try {
+            return Integer.parseInt(deliveryFee.trim()) == 0
+                    ? ShippingType.FREE : ShippingType.STANDARD;
+        } catch (NumberFormatException e) {
+            return ShippingType.STANDARD;
         }
     }
 }

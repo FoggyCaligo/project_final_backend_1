@@ -23,6 +23,7 @@ public record NaverShoppingResponse(
             String brand,
             String maker,
             String category1,
-            String category2
+            String category2,
+            String deliveryFee   // 배송비 (0이면 무료배송)
     ) {}
 }
