@@ -73,4 +73,20 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
 		        @Param("style") String style,
 		        Pageable pageable
 		);
+	
+	@Query("""
+		    SELECT r
+		    FROM Recipe r
+		    WHERE r.isActive = true
+		    ORDER BY
+		        CASE TRIM(COALESCE(r.difficultyLevel, ''))
+		            WHEN '아무나' THEN 0
+		            WHEN '초급' THEN 1
+		            WHEN '중급' THEN 2
+		            WHEN '고급' THEN 3
+		            WHEN '신의경지' THEN 4
+		            ELSE 99
+		        END ASC
+		""")
+		Page<Recipe> findActiveOrderByDifficultyAsc(Pageable pageable);
 }
