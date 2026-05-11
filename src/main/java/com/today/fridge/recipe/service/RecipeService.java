@@ -50,6 +50,7 @@ import com.today.fridge.recipe.repository.RecipeStepRepository;
 import jakarta.transaction.Transactional;
 
 import com.today.fridge.ingredient.repository.UserIngredientRepository;
+import com.today.fridge.meal.service.MealService;
 
 // Lombok
 import lombok.RequiredArgsConstructor;
@@ -69,6 +70,7 @@ public class RecipeService {
     private final RecipeStepRepository recipeStepRepository;
     private final RecipeIngredientRepository recipeIngredientRepository;
     private final UserIngredientRepository userIngredientRepository;
+    private final MealService mealService;
 
     // ============================================================================================
     // 레시피 1개 조회
@@ -242,6 +244,10 @@ public class RecipeService {
                 }
             }
         });
+
+        // 7. 식단 기록 추가
+        // 레시피 조리 완료 시, 자동으로 식단에 기록되도록 함 (기본 1인분)
+        mealService.recordMeal(userId, recipeId, BigDecimal.ONE, java.time.LocalDateTime.now());
     }
 
     // ============================================================================================
