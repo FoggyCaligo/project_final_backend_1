@@ -12,5 +12,5 @@ import com.today.fridge.recipe.entity.RecipeStep;
 
 public interface RecipeStepRepository extends JpaRepository<RecipeStep, Long> {
 
-    List<RecipeStep> findByRecipe_RecipeId(Long recipeId);
+    List<RecipeStep> findByRecipe_RecipeIdOrderByStepNoAsc(Long recipeId);
 }

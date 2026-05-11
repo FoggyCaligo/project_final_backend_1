@@ -60,13 +60,13 @@ public class FridgeIngredientController {
     @GetMapping("/ingredients")
     public ResponseEntity<ApiResponse<FridgeIngredientListData>> list(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String sort,
-            @RequestParam(required = false) String freshnessStatus,
-            @RequestParam(required = false) String storageType,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Long categoryId) {
+            @RequestParam(name = "page",defaultValue = "0") int page,
+            @RequestParam(name = "size",defaultValue = "20") int size,
+            @RequestParam(name = "sort",required = false) String sort,
+            @RequestParam(name = "freshnessStatus",required = false) String freshnessStatus,
+            @RequestParam(name = "storageType",required = false) String storageType,
+            @RequestParam(name = "keyword",required = false) String keyword,
+            @RequestParam(name = "categoryId",required = false) Long categoryId) {
         long uid = requireUserId(userId);
         FridgeIngredientListData data =
                 fridgeIngredientService.list(
@@ -86,7 +86,7 @@ public class FridgeIngredientController {
     public ResponseEntity<ApiResponse<VisionRecognizeDataDto>> recognizeImage(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @RequestPart("file") MultipartFile file,
-            @RequestParam(defaultValue = "3") int topK) {
+            @RequestParam(name="topK",defaultValue = "3") int topK) {
         long uid = requireUserId(userId);
         VisionRecognizeDataDto data = fridgeIngredientService.recognizeIngredientImage(uid, file, topK);
         return ResponseEntity.ok(ApiResponse.success(data, "이미지 인식 완료"));

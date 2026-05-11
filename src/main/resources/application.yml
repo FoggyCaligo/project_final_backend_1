@@ -3,6 +3,8 @@ spring:
     import: optional:file:.env[.properties]
   application:
     name: project_final_backend1
+    admin:
+      enabled: false
   profiles:
     active: local
   servlet:
@@ -31,7 +33,7 @@ spring:
         default_schema: today_fridge
     hibernate:
       # 최종 SQL 기준 운영/개발 스키마 드리프트 방지
-      ddl-auto: validate
+      ddl-auto: update
   flyway:
     enabled: false
   mail:
@@ -42,10 +44,10 @@ spring:
     properties:
       mail:
         smtp:
-          auth: false                     # Disabled authentication for Mailpit
+          auth: ${MAIL_SMTP_AUTH:false}   # false for Mailpit, true for real SMTP
           starttls:
-            enable: false                 # Disabled TLS for local testing
-            required: false               # Removed TLS requirement
+            enable: ${MAIL_SMTP_STARTTLS_ENABLE:false}
+            required: ${MAIL_SMTP_STARTTLS_REQUIRED:false}
           connectiontimeout: 5000
           timeout: 3000
           writetimeout: 5000
@@ -66,6 +68,7 @@ app:
     root-path: uploads
   fastapi:
     base-url: http://localhost:8000
+    APP_FASTAPI_BASE_URL: http://fastapi:8000
     service-key: change-me
     caller-service: spring-backend
     # RestTemplate → FastAPI (비전 추론은 첫 요청·GPU 로딩 시 수십 초 걸릴 수 있음)
@@ -88,3 +91,4 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{requestId}] %-5level %logger{36} - %msg%n"
     #file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{requestId}] %-5level %logger{36} - %msg%n"
+

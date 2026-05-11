@@ -77,6 +77,7 @@ public class RecipeService {
     // 비회원 전용
     // ============================================================================================
     public RecipeResponse getRecipe(Long recipeId) {
+        log.info("[RecipeService] getRecipe (public) - recipeId: {}", recipeId);
 
         // 레시피 정보 조회
         Recipe recipe = recipeRepository.findById(recipeId)
@@ -109,6 +110,7 @@ public class RecipeService {
     // 회원 전용
     // ============================================================================================
     public RecipeResponse getRecipe(Long recipeId, Long userId) {
+        log.info("[RecipeService] getRecipe (public) - recipeId: {}, userId: {}", recipeId, userId);
         // 비회원 처리
         if (userId == null)
             return getRecipe(recipeId);
@@ -181,6 +183,7 @@ public class RecipeService {
     // ============================================================================================
     @Transactional
     public void ateRecipe(Long recipeId, Long userId) {
+        log.info("[RecipeService] ateRecipe (public) - recipeId: {}, userId: {}", recipeId, userId);
         if (userId == null) {
             log.warn("ateRecipe 호출 시 userId가 null입니다. 작업을 중단합니다. recipeId: {}", recipeId);
             return;
@@ -251,6 +254,7 @@ public class RecipeService {
     // 유저 재료 수량을 Base Unit(g, ml)으로 정규화하는 헬퍼 함수
     // ============================================================================================
     private BigDecimal getNormalizedUserQuantity(UserIngredient ui) {
+        log.info("[RecipeService] getNormalizedUserQuantity (private) - userIngredientId: {}", ui.getUserIngredientId());
         BigDecimal quantity = ui.getQuantity() != null ? ui.getQuantity() : BigDecimal.ZERO;
         String unit = ui.getUnit();
 
@@ -274,6 +278,7 @@ public class RecipeService {
     // Base Unit(g, ml) 수량을 유저의 원래 단위로 역변환하는 헬퍼 함수
     // ============================================================================================
     private BigDecimal denormalizeQuantity(BigDecimal baseQuantity, String originalUnit) {
+        log.info("[RecipeService] denormalizeQuantity (private) - baseQuantity: {}, originalUnit: {}", baseQuantity, originalUnit);
         if (originalUnit == null) return baseQuantity;
 
         if (originalUnit.equalsIgnoreCase("kg") || originalUnit.equalsIgnoreCase("L")) {
@@ -295,6 +300,7 @@ public class RecipeService {
             String sort,
             Pageable pageable
     ) {
+        log.info("[RecipeService] getRecipes (public) - cookingType: {}, sort: {}, pageable: {}", cookingType, sort, pageable);
     	Sort sortSpec = Sort.unsorted();
 
     	if (sort != null) {
@@ -350,8 +356,8 @@ public class RecipeService {
     // ============================================================================================
 
     private List<RecipeStepDTO> getRecipeAllSteps(Long recipeId) {
-        // 레시피 단계 조회
-        List<RecipeStep> recipeSteps = recipeStepRepository.findByRecipe_RecipeId(recipeId);
+        log.info("[RecipeService] getRecipeAllSteps (private) - recipeId: {}", recipeId);
+        List<RecipeStep> recipeSteps = recipeStepRepository.findByRecipe_RecipeIdOrderByStepNoAsc(recipeId);
         if (recipeSteps.isEmpty()) {
             log.error("레시피 단계 정보가 없습니다. recipeId: {}", recipeId);
             log.error("RecipeService.getRecipeAllSteps에서 에러가 발생하였습니다.");
@@ -364,8 +370,8 @@ public class RecipeService {
     }
 
     private List<RecipeIngredientDTO> getRecipeAllIngredients(Long recipeId) {
-        // 레시피 재료 조회
-        List<RecipeIngredient> recipeIngredients = recipeIngredientRepository.findByRecipe_RecipeId(recipeId);
+        log.info("[RecipeService] getRecipeAllIngredients (private) - recipeId: {}", recipeId);
+        List<RecipeIngredient> recipeIngredients = recipeIngredientRepository.findByRecipe_RecipeIdOrderBySortOrderAsc(recipeId);
         if (recipeIngredients.isEmpty()) {
             log.error("레시피 재료 정보가 없습니다. recipeId: {}", recipeId);
             log.error("RecipeService.getRecipeAllIngredients에서 에러가 발생하였습니다.");
@@ -381,10 +387,12 @@ public class RecipeService {
     // 레시피 재료의 수량 텍스트(예: "300g", "1/2개", "1.5L")에서 숫자만 추출하는 헬퍼 함수
     // ============================================================================================
     private BigDecimal extractNumericAmount(String amountText) {
+        log.info("[RecipeService] extractNumericAmount (private) - amountText: {}", amountText);
         return extractNumericAmount(amountText, null);
     }
 
     private BigDecimal extractNumericAmount(String amountText, String unitField) {
+        log.info("[RecipeService] extractNumericAmount (private) - amountText: {}, unitField: {}", amountText, unitField);
         if (amountText == null || amountText.isBlank()) {
             return BigDecimal.ZERO;
         }
@@ -466,6 +474,7 @@ public class RecipeService {
     // 재료 매칭 여부 확인
     // ============================================================================================
     private boolean isMatchingIngredient(String ingredientName, UserIngredient ui) {
+        log.info("[RecipeService] isMatchingIngredient (private) - ingredientName: {}, userIngredientId: {}", ingredientName, ui.getUserIngredientId());
         if (ingredientName == null) return false;
 
         return ingredientName.equals(ui.getRawName()) ||
