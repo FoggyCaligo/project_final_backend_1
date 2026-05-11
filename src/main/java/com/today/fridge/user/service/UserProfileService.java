@@ -18,8 +18,8 @@ public class UserProfileService {
 
     // 신체 정보 업데이트
     @Transactional
-    public ProfileResponse updatePhysicalMetrics(String loginId, UserPhysicalMetricsRequest request) {
-        User user = userRepository.findByLoginId(loginId)
+    public ProfileResponse updatePhysicalMetrics(Long userId, UserPhysicalMetricsRequest request) {
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
 
         if (request.getHeightCm() != null) user.setHeightCm(request.getHeightCm());
@@ -32,8 +32,8 @@ public class UserProfileService {
 
     // 신체 정보 삭제 (null 처리)
     @Transactional
-    public ProfileResponse clearPhysicalMetrics(String loginId) {
-        User user = userRepository.findByLoginId(loginId)
+    public ProfileResponse clearPhysicalMetrics(Long userId) {
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
 
         user.setHeightCm(null);
