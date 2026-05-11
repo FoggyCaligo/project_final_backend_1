@@ -55,7 +55,7 @@ public class AuthController {
     private static final long REFRESH_TOKEN_MS = 604_800_000L;
 
     private final JwtProvider jwtProvider;
-    private final AuthService authService2;
+    private final AuthService authService;
     private final UserService userService;
     private final RedisEmailVerifyService redisEmailVerifyService;
     private final EmailService emailService;
@@ -73,14 +73,14 @@ public class AuthController {
     private String frontendBaseUrl;
 
     public AuthController(JwtProvider jwtProvider,
-                           AuthService authService2,
-                           UserService userService,
-                           RedisEmailVerifyService redisEmailVerifyService,
-                           EmailService emailService,
-                           KakaoOAuthService kakaoOAuthService,
-                           UserRepository userRepository) {
+            AuthService authService,
+            UserService userService,
+            RedisEmailVerifyService redisEmailVerifyService,
+            EmailService emailService,
+            KakaoOAuthService kakaoOAuthService,
+            UserRepository userRepository) {
         this.jwtProvider = jwtProvider;
-        this.authService2 = authService2;
+        this.authService = authService;
         this.userService = userService;
         this.redisEmailVerifyService = redisEmailVerifyService;
         this.emailService = emailService;
@@ -94,8 +94,8 @@ public class AuthController {
 
     @Operation(summary = "로그인", description = "아이디/비밀번호로 로그인하고 JWT 토큰 쿠키를 발급합니다.")
     @PostMapping("/login")
-    public ApiResponse<Map<String, Object>> login(@RequestBody LoginRequest request, HttpServletResponse response) {
-        User user = authService2.authenticate(request.getLoginId(), request.getPassword());
+    public ApiResponse<Void> login(@RequestBody LoginRequest request, HttpServletResponse response) {
+        User user = authService.authenticate(request.getLoginId(), request.getPassword());
 
         // 이메일 미인증 사용자 로그인 차단
         if (!Boolean.TRUE.equals(user.getEmailVerified())) {
@@ -106,19 +106,12 @@ public class AuthController {
         String refreshToken = jwtProvider.createRefreshToken(user.getLoginId());
 
         // Redis에 Refresh Token 세션 생성
-        authService2.createSession(user, refreshToken, REFRESH_TOKEN_MS);
+        authService.createSession(user, refreshToken, REFRESH_TOKEN_MS);
 
         setTokenCookies(response, accessToken, refreshToken);
         user.updateLastLoginAt();
 
-        String loginType = user.getLoginId().startsWith("kakao_") ? "kakao" : "general";
-        Map<String, Object> data = Map.of(
-                "userId", user.getUserId(),
-                "loginId", user.getLoginId(),
-                "nickname", user.getNickname(),
-                "loginType", loginType
-        );
-        return ApiResponse.success(data, "로그인되었습니다.");
+        return ApiResponse.success(null, "로그인되었습니다.");
     }
 
     @Operation(summary = "로그아웃", description = "Access Token을 블랙리스트에 등록하고 쿠키를 삭제합니다.")
@@ -129,7 +122,7 @@ public class AuthController {
 
         // Access Token 블랙리스트 + Refresh Token 삭제
         long remainingMs = accessToken != null ? jwtProvider.getRemainingMs(accessToken) : 0;
-        authService2.invalidateSession(refreshToken, accessToken, remainingMs);
+        authService.invalidateSession(refreshToken, accessToken, remainingMs);
 
         // 쿠키 삭제
         clearTokenCookies(response);
@@ -143,15 +136,15 @@ public class AuthController {
         String refreshToken = jwtProvider.resolveTokenFromCookie(request, "refreshToken");
 
         // 기존 세션 검증 + 로테이션 (기존 토큰 삭제 → loginId 반환)
-        String loginId = authService2.refreshSession(refreshToken);
+        String loginId = authService.refreshSession(refreshToken);
 
         // 새 토큰 쌍 발급
         String newAccessToken = jwtProvider.createAccessToken(loginId);
         String newRefreshToken = jwtProvider.createRefreshToken(loginId);
 
         // 새 Redis 세션 생성
-        User user = authService2.authenticate(loginId);
-        authService2.createSession(user, newRefreshToken, REFRESH_TOKEN_MS);
+        User user = authService.authenticate(loginId);
+        authService.createSession(user, newRefreshToken, REFRESH_TOKEN_MS);
 
         setTokenCookies(response, newAccessToken, newRefreshToken);
 
@@ -182,7 +175,8 @@ public class AuthController {
 
     @Operation(summary = "아이디 중복 확인", description = "로그인 아이디 사용 가능 여부를 확인합니다.")
     @GetMapping("/check-login-id")
-    public ApiResponse<Map<String, Boolean>> checkLoginId(@Parameter(description = "loginId") @RequestParam String loginId) {
+    public ApiResponse<Map<String, Boolean>> checkLoginId(
+            @Parameter(description = "loginId") @RequestParam String loginId) {
         boolean available = userService.isLoginIdAvailable(loginId);
         return ApiResponse.success(
                 Map.of("available", available),
@@ -194,7 +188,7 @@ public class AuthController {
     public ApiResponse<Map<String, Object>> me(
             @Parameter(description = "userId") @RequestHeader(value = "X-User-Id", required = false) Long userId) {
         if (userId == null) {
-            return ApiResponse.error("UNAUTHORIZED", "인증이 필요합니다.");
+            throw new ExceptionTemplate(ErrorCode.UNAUTHORIZED);
         }
         var profile = userService.getProfileByUserId(userId);
         return ApiResponse.success(
@@ -208,7 +202,8 @@ public class AuthController {
 
     @Operation(summary = "이메일 인증", description = "이메일로 발송된 인증 토큰을 검증하고 계정을 활성화합니다.")
     @GetMapping("/verify-email")
-    public org.springframework.http.ResponseEntity<Void> verifyEmail(@Parameter(description = "token") @RequestParam String token) {
+    public org.springframework.http.ResponseEntity<Void> verifyEmail(
+            @Parameter(description = "token") @RequestParam String token) {
         // Redis에서 토큰 검증
         String loginId = redisEmailVerifyService.verifyToken(token);
 
@@ -265,8 +260,8 @@ public class AuthController {
     @Operation(summary = "카카오 로그인 콜백", description = "카카오 인가 코드를 받아 JWT 토큰을 발급하고 프론트엔드로 리다이렉트합니다.")
     @GetMapping("/kakao/callback")
     public void kakaoCallback(@Parameter(description = "code") @RequestParam String code,
-                              @RequestParam(required = false) String error,
-                              HttpServletResponse response) throws IOException {
+            @RequestParam(required = false) String error,
+            HttpServletResponse response) throws IOException {
         if (error != null) {
             log.warn("[KakaoOAuth2] 사용자가 카카오 로그인을 취소했습니다.");
             response.sendRedirect(frontendBaseUrl + "/login?error=true");
@@ -278,8 +273,7 @@ public class AuthController {
             String kakaoAccessToken = kakaoOAuthService.getKakaoAccessToken(code);
 
             // 2. 카카오 프로필 조회
-            KakaoOAuthService.KakaoUserProfile profile =
-                    kakaoOAuthService.getKakaoUserProfile(kakaoAccessToken);
+            KakaoOAuthService.KakaoUserProfile profile = kakaoOAuthService.getKakaoUserProfile(kakaoAccessToken);
 
             // 3. DB에서 사용자 조회 or 생성
             User user = kakaoOAuthService.findOrCreateUser(profile);
@@ -287,7 +281,7 @@ public class AuthController {
             // 4. Redis 기반 JWT 발급
             String accessToken = jwtProvider.createAccessToken(user.getLoginId());
             String refreshToken = jwtProvider.createRefreshToken(user.getLoginId());
-            authService2.createSession(user, refreshToken, REFRESH_TOKEN_MS);
+            // authService.createSession(user, refreshToken, REFRESH_TOKEN_MS);
 
             // 5. 쿠키 설정
             setTokenCookies(response, accessToken, refreshToken);
@@ -295,7 +289,8 @@ public class AuthController {
             // 6. 프론트엔드 리다이렉트
             String encodedLoginId = URLEncoder.encode(user.getLoginId(), StandardCharsets.UTF_8);
             String encodedNickname = URLEncoder.encode(user.getNickname(), StandardCharsets.UTF_8);
-            response.sendRedirect(frontendBaseUrl + "/dashboard?kakaoLogin=success&loginId=" + encodedLoginId + "&nickname=" + encodedNickname);
+            response.sendRedirect(frontendBaseUrl + "/dashboard?kakaoLogin=success&loginId=" + encodedLoginId
+                    + "&nickname=" + encodedNickname);
 
         } catch (Exception e) {
             log.error("[KakaoOAuth2] 로그인 처리 중 오류: {} - {}", e.getClass().getSimpleName(), e.getMessage(), e);
@@ -308,7 +303,8 @@ public class AuthController {
     // ──────────────────────────────────────────────
 
     private void setTokenCookies(HttpServletResponse response, String accessToken, String refreshToken) {
-        ResponseCookie accessCookie = jwtProvider.createTokenCookie("accessToken", accessToken, jwtProvider.getAccessTokenValidity());
+        ResponseCookie accessCookie = jwtProvider.createTokenCookie("accessToken", accessToken,
+                jwtProvider.getAccessTokenValidity());
         ResponseCookie refreshCookie = jwtProvider.createTokenCookie("refreshToken", refreshToken, REFRESH_TOKEN_MS);
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
