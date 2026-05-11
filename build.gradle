@@ -26,6 +26,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation 'org.flywaydb:flyway-core'
     implementation 'org.postgresql:postgresql'
+    implementation 'org.flywaydb:flyway-database-postgresql'
     implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
     implementation 'org.apache.httpcomponents.client5:httpclient5'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'

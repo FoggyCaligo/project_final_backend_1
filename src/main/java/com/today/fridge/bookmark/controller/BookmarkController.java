@@ -48,6 +48,19 @@ public class BookmarkController {
         return ResponseEntity.ok(response);
     }
 
+    // Frontend compatibility: allow GET /api/v1/bookmarks/{recipeId}
+    @GetMapping("/{recipeId}")
+    public ResponseEntity<Map<String, Boolean>> checkStatusByRecipeId(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @PathVariable("recipeId") Long recipeId) {
+
+        boolean isBookmarked = bookmarkService.checkBookmarkStatus(userId, recipeId);
+
+        Map<String, Boolean> response = new HashMap<>();
+        response.put("isBookmarked", isBookmarked);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/{recipeId}/status")
     public ResponseEntity<Map<String, Boolean>> checkStatus(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,

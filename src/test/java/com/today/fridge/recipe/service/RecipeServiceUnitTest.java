@@ -56,6 +56,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 class RecipeServiceUnitTest {
@@ -134,8 +135,8 @@ class RecipeServiceUnitTest {
                         given(recipeRepository.findById(1L)).willReturn(Optional.of(testRecipe));
                         given(recipeNutritionRepository.findByRecipe_RecipeId(1L))
                                         .willReturn(Optional.of(testNutrition));
-                        given(recipeStepRepository.findByRecipe_RecipeId(1L)).willReturn(List.of(testStep));
-                        given(recipeIngredientRepository.findByRecipe_RecipeId(1L)).willReturn(List.of(testIngredient));
+                        given(recipeStepRepository.findByRecipe_RecipeIdOrderByStepNoAsc(1L)).willReturn(List.of(testStep));
+                        given(recipeIngredientRepository.findByRecipe_RecipeIdOrderBySortOrderAsc(1L)).willReturn(List.of(testIngredient));
 
                         // when - 서비스 메서드 호출
                         RecipeResponse response = recipeService.getRecipe(1L);
@@ -183,7 +184,7 @@ class RecipeServiceUnitTest {
                         given(recipeRepository.findById(1L)).willReturn(Optional.of(testRecipe));
                         given(recipeNutritionRepository.findByRecipe_RecipeId(1L))
                                         .willReturn(Optional.of(testNutrition));
-                        given(recipeStepRepository.findByRecipe_RecipeId(1L)).willReturn(Collections.emptyList());
+                        given(recipeStepRepository.findByRecipe_RecipeIdOrderByStepNoAsc(1L)).willReturn(Collections.emptyList());
 
                         // when & then
                         assertThatThrownBy(() -> recipeService.getRecipe(1L))
@@ -199,8 +200,8 @@ class RecipeServiceUnitTest {
                         given(recipeRepository.findById(1L)).willReturn(Optional.of(testRecipe));
                         given(recipeNutritionRepository.findByRecipe_RecipeId(1L))
                                         .willReturn(Optional.of(testNutrition));
-                        given(recipeStepRepository.findByRecipe_RecipeId(1L)).willReturn(List.of(testStep));
-                        given(recipeIngredientRepository.findByRecipe_RecipeId(1L)).willReturn(Collections.emptyList());
+                        given(recipeStepRepository.findByRecipe_RecipeIdOrderByStepNoAsc(1L)).willReturn(List.of(testStep));
+                        given(recipeIngredientRepository.findByRecipe_RecipeIdOrderBySortOrderAsc(1L)).willReturn(Collections.emptyList());
 
                         // when & then
                         assertThatThrownBy(() -> recipeService.getRecipe(1L))
@@ -224,8 +225,8 @@ class RecipeServiceUnitTest {
                         given(recipeRepository.findById(1L)).willReturn(Optional.of(testRecipe));
                         given(recipeNutritionRepository.findByRecipe_RecipeId(1L))
                                         .willReturn(Optional.of(testNutrition));
-                        given(recipeStepRepository.findByRecipe_RecipeId(1L)).willReturn(List.of(testStep));
-                        given(recipeIngredientRepository.findByRecipe_RecipeId(1L)).willReturn(List.of(testIngredient));
+                        given(recipeStepRepository.findByRecipe_RecipeIdOrderByStepNoAsc(1L)).willReturn(List.of(testStep));
+                        given(recipeIngredientRepository.findByRecipe_RecipeIdOrderBySortOrderAsc(1L)).willReturn(List.of(testIngredient));
 
                         // when - userId를 null로 전달
                         RecipeResponse response = recipeService.getRecipe(1L, null);
@@ -244,8 +245,8 @@ class RecipeServiceUnitTest {
                         given(recipeRepository.findById(1L)).willReturn(Optional.of(testRecipe));
                         given(recipeNutritionRepository.findByRecipe_RecipeId(1L))
                                         .willReturn(Optional.of(testNutrition));
-                        given(recipeStepRepository.findByRecipe_RecipeId(1L)).willReturn(List.of(testStep));
-                        given(recipeIngredientRepository.findByRecipe_RecipeId(1L)).willReturn(List.of(testIngredient));
+                        given(recipeStepRepository.findByRecipe_RecipeIdOrderByStepNoAsc(1L)).willReturn(List.of(testStep));
+                        given(recipeIngredientRepository.findByRecipe_RecipeIdOrderBySortOrderAsc(1L)).willReturn(List.of(testIngredient));
 
                         // 유저가 충분한 재료를 가지고 있는 경우
                         UserIngredient owned = new UserIngredient();
@@ -269,8 +270,8 @@ class RecipeServiceUnitTest {
                         given(recipeRepository.findById(1L)).willReturn(Optional.of(testRecipe));
                         given(recipeNutritionRepository.findByRecipe_RecipeId(1L))
                                         .willReturn(Optional.of(testNutrition));
-                        given(recipeStepRepository.findByRecipe_RecipeId(1L)).willReturn(List.of(testStep));
-                        given(recipeIngredientRepository.findByRecipe_RecipeId(1L)).willReturn(List.of(testIngredient));
+                        given(recipeStepRepository.findByRecipe_RecipeIdOrderByStepNoAsc(1L)).willReturn(List.of(testStep));
+                        given(recipeIngredientRepository.findByRecipe_RecipeIdOrderBySortOrderAsc(1L)).willReturn(List.of(testIngredient));
 
                         UserIngredient owned = new UserIngredient();
                         owned.setNormalizedNameSnapshot("김치");
@@ -293,8 +294,8 @@ class RecipeServiceUnitTest {
                         given(recipeRepository.findById(1L)).willReturn(Optional.of(testRecipe));
                         given(recipeNutritionRepository.findByRecipe_RecipeId(1L))
                                         .willReturn(Optional.of(testNutrition));
-                        given(recipeStepRepository.findByRecipe_RecipeId(1L)).willReturn(List.of(testStep));
-                        given(recipeIngredientRepository.findByRecipe_RecipeId(1L)).willReturn(List.of(testIngredient));
+                        given(recipeStepRepository.findByRecipe_RecipeIdOrderByStepNoAsc(1L)).willReturn(List.of(testStep));
+                        given(recipeIngredientRepository.findByRecipe_RecipeIdOrderBySortOrderAsc(1L)).willReturn(List.of(testIngredient));
 
                         // 유저가 재료를 보유하지 않은 경우
                         given(userIngredientRepository.findByUserIdAndIngredientNameIn(eq(10L), anyList()))
@@ -315,8 +316,8 @@ class RecipeServiceUnitTest {
                         given(recipeRepository.findById(1L)).willReturn(Optional.of(testRecipe));
                         given(recipeNutritionRepository.findByRecipe_RecipeId(1L))
                                         .willReturn(Optional.of(testNutrition));
-                        given(recipeStepRepository.findByRecipe_RecipeId(1L)).willReturn(List.of(testStep));
-                        given(recipeIngredientRepository.findByRecipe_RecipeId(1L)).willReturn(List.of(testIngredient));
+                        given(recipeStepRepository.findByRecipe_RecipeIdOrderByStepNoAsc(1L)).willReturn(List.of(testStep));
+                        given(recipeIngredientRepository.findByRecipe_RecipeIdOrderBySortOrderAsc(1L)).willReturn(List.of(testIngredient));
 
                         UserIngredient ui1 = new UserIngredient();
                         ui1.setNormalizedNameSnapshot("김치");
@@ -345,8 +346,8 @@ class RecipeServiceUnitTest {
                         given(recipeRepository.findById(1L)).willReturn(Optional.of(testRecipe));
                         given(recipeNutritionRepository.findByRecipe_RecipeId(1L))
                                         .willReturn(Optional.of(testNutrition));
-                        given(recipeStepRepository.findByRecipe_RecipeId(1L)).willReturn(List.of(testStep));
-                        given(recipeIngredientRepository.findByRecipe_RecipeId(1L)).willReturn(List.of(testIngredient));
+                        given(recipeStepRepository.findByRecipe_RecipeIdOrderByStepNoAsc(1L)).willReturn(List.of(testStep));
+                        given(recipeIngredientRepository.findByRecipe_RecipeIdOrderBySortOrderAsc(1L)).willReturn(List.of(testIngredient));
 
                         // 유저 재료의 이름은 다르지만 마스터의 정규화된 이름이 레시피 재료와 일치
                         IngredientMaster master = IngredientMaster.builder()
@@ -380,7 +381,7 @@ class RecipeServiceUnitTest {
                 @DisplayName("UT-RECIPE-20 - 재료가 충분할 때 수량 차감")
                 void ateRecipe_DeductQuantity() {
                         // given - 레시피: 김치 200g, 유저: 김치 300g
-                        given(recipeIngredientRepository.findByRecipe_RecipeId(1L)).willReturn(List.of(testIngredient));
+                        given(recipeIngredientRepository.findByRecipe_RecipeIdOrderBySortOrderAsc(1L)).willReturn(List.of(testIngredient));
 
                         UserIngredient owned = new UserIngredient();
                         owned.setNormalizedNameSnapshot("김치");
@@ -402,7 +403,7 @@ class RecipeServiceUnitTest {
                 @DisplayName("UT-RECIPE-20 - 재료 수량 일치 시 삭제")
                 void ateRecipe_DeleteWhenZero() {
                         // given - 레시피: 김치 200g, 유저: 김치 200g → 차감 후 0 → 삭제
-                        given(recipeIngredientRepository.findByRecipe_RecipeId(1L)).willReturn(List.of(testIngredient));
+                        given(recipeIngredientRepository.findByRecipe_RecipeIdOrderBySortOrderAsc(1L)).willReturn(List.of(testIngredient));
 
                         UserIngredient owned = new UserIngredient();
                         owned.setNormalizedNameSnapshot("김치");
@@ -423,7 +424,7 @@ class RecipeServiceUnitTest {
                 @DisplayName("UT-RECIPE-20 - 재료가 아예 없는 경우 정상 동작")
                 void ateRecipe_NoIngredients_Success() {
                         // given - 레시피에 필요한 재료가 있지만 유저가 보유하지 않음
-                        given(recipeIngredientRepository.findByRecipe_RecipeId(1L)).willReturn(List.of(testIngredient));
+                        given(recipeIngredientRepository.findByRecipe_RecipeIdOrderBySortOrderAsc(1L)).willReturn(List.of(testIngredient));
                         given(userIngredientRepository.findByUserIdAndIngredientNameIn(eq(10L), anyList()))
                                         .willReturn(Collections.emptyList());
 
@@ -437,7 +438,7 @@ class RecipeServiceUnitTest {
                         // given - 레시피: 김치 150g
                         // 유저: 김치 100g(오늘 만료) + 김치 200g(7일 후 만료)
                         // 예상: 100g 전량 소진(삭제) + 50g 추가 차감 → 150g 남음
-                        given(recipeIngredientRepository.findByRecipe_RecipeId(1L)).willReturn(List.of(
+                        given(recipeIngredientRepository.findByRecipe_RecipeIdOrderBySortOrderAsc(1L)).willReturn(List.of(
                                         RecipeIngredient.builder()
                                                         .recipe(testRecipe)
                                                         .normalizedNameSnapshot("김치")
