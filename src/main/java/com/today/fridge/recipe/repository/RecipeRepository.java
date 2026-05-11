@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,9 +14,13 @@ import com.today.fridge.recommendation.dto.response.RecipeRecommendationRow;
 
 public interface RecipeRepository extends JpaRepository<Recipe, Long> {
 
+	@EntityGraph(attributePaths = {"recipeNutrition"})
 	List<Recipe> findByIsActiveTrue();
 	
 	Page<Recipe> findByIsActiveTrue(Pageable pageable);
+	
+	@EntityGraph(attributePaths = {"recipeNutrition"})
+	List<Recipe> findByRecipeIdIn(List<Long> recipeIds);
 	@Query("""
 		    SELECT new com.today.fridge.recommendation.dto.response.RecipeRecommendationRow(
 		        r.recipeId,

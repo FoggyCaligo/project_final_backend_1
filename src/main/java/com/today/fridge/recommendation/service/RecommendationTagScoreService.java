@@ -11,8 +11,8 @@ import com.today.fridge.recipe.entity.RecipeTagType;
 @Service
 public class RecommendationTagScoreService {
 
-    private static final double COOKING_TYPE_MATCH_SCORE = 20.0;
-    private static final double STYLE_MATCH_SCORE = 15.0;
+    private static final double COOKING_TYPE_MATCH_SCORE = 45.0;
+    private static final double STYLE_MATCH_SCORE = 20.0;
 
     private static final Map<String, String> COOKING_TYPE_KEYWORD_MAP = Map.ofEntries(
             Map.entry("국", "SOUP"),

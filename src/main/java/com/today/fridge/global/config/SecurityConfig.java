@@ -118,6 +118,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/recommendation/**").permitAll()
                         .requestMatchers("/api/v1/dashboard/**").permitAll()
                         .requestMatchers("/api/v1/bookmarks/**").permitAll()
+                        .requestMatchers("/api/v1/meal", "/api/v1/meal/**").authenticated()
                         .requestMatchers("/api/v1/files/**").permitAll()
                         .requestMatchers("/api/fastapi-test").permitAll()
                         // v3 쇼핑 검색 (키워드 검색은 인증 없이 허용)
