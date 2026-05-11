@@ -9,13 +9,25 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.today.fridge.recipe.entity.Recipe;
+import com.today.fridge.recommendation.dto.response.RecipeRecommendationRow;
 
 public interface RecipeRepository extends JpaRepository<Recipe, Long> {
 
 	List<Recipe> findByIsActiveTrue();
 	
 	Page<Recipe> findByIsActiveTrue(Pageable pageable);
-	
+	@Query("""
+		    SELECT new com.today.fridge.recommendation.dto.response.RecipeRecommendationRow(
+		        r.recipeId,
+		        r.title,
+		        r.thumbnailUrl,
+		        r.summary,
+		        r.cookTimeText
+		    )
+		    FROM Recipe r
+		    WHERE r.isActive = true
+		""")
+		List<RecipeRecommendationRow> findRecommendationRows();
 	@Query("""
 		    SELECT DISTINCT r
 		    FROM Recipe r

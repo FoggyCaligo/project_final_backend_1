@@ -85,6 +85,32 @@ class RecipeControllerTest {
                                         .andExpect(jsonPath("$.data.content[0].title").value("김치찌개"))
                                         .andExpect(jsonPath("$.data.pageInfo.totalElements").value(1));
                 }
+                @Test
+                @WithMockUser
+                @DisplayName("cookingType과 sort 파라미터를 전달하여 조회한다")
+                void getRecipes_WithFilterAndSort() throws Exception {
+
+                    PageResult<RecipeListResponse> pageResult =
+                            new PageResult<>(List.of(), new PageResponse(0,0,0,12));
+
+                    given(recipeService.getRecipes(any(), any(), any()))
+                            .willReturn(pageResult);
+
+                    mockMvc.perform(
+                                    get("/api/v1/recipes")
+                                            .param("cookingType", "SOUP")
+                                            .param("sort", "time_asc")
+                            )
+                            .andExpect(status().isOk());
+
+                    then(recipeService)
+                            .should()
+                            .getRecipes(
+                                    eq("SOUP"),
+                                    eq("time_asc"),
+                                    any()
+                            );
+                }
         }
 
         // ========================================================================

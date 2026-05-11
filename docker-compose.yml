@@ -1,25 +1,9 @@
 services:
-  postgres:
-    image: postgres:16
-    container_name: today_fridge_postgres
+  mailpit:
+    image: axllent/mailpit
+    container_name: today_fridge_mailpit
     ports:
-      - "5432:5432"
+      - "8025:8025" # Web UI port
+      - "1025:1025" # SMTP port
     environment:
-      POSTGRES_DB: today_fridge
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 1234
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./db/init:/docker-entrypoint-initdb.d
-  redis:
-    image: redis:7-alpine
-    container_name: today_fridge_redis
-    ports:
-      - "6379:6379"
-    command: ["redis-server", "--appendonly", "yes"]
-    volumes:
-      - redis_data:/data
-
-volumes:
-  postgres_data:
-  redis_data:
+      MP_MAX_MESSAGES: 500 

@@ -3,6 +3,8 @@ spring:
     import: optional:file:.env[.properties]
   application:
     name: project_final_backend1
+    admin:
+      enabled: false
   profiles:
     active: local
   servlet:
@@ -20,6 +22,10 @@ spring:
       minimum-idle: 5
       connection-timeout: 10000
       leak-detection-threshold: 20000
+  data:
+    redis:
+      host: ${SPRING_REDIS_HOST:localhost}
+      port: ${SPRING_REDIS_PORT:6379}
   jpa:
     open-in-view: false
     properties:
@@ -27,21 +33,21 @@ spring:
         default_schema: today_fridge
     hibernate:
       # 최종 SQL 기준 운영/개발 스키마 드리프트 방지
-      ddl-auto: validate
+      ddl-auto: update
   flyway:
     enabled: false
   mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:your-email@gmail.com}
-    password: ${MAIL_PASSWORD:your-app-password}
+    host: ${MAIL_HOST:localhost}          # Changed default to localhost for Mailpit
+    port: ${MAIL_PORT:1025}               # Changed default SMTP port to 1025
+    username: ${MAIL_USERNAME:}           # Cleared default username (not needed locally)
+    password: ${MAIL_PASSWORD:}           # Cleared default password
     properties:
       mail:
         smtp:
-          auth: true
+          auth: ${MAIL_SMTP_AUTH:false}   # false for Mailpit, true for real SMTP
           starttls:
-            enable: true
-            required: true
+            enable: ${MAIL_SMTP_STARTTLS_ENABLE:false}
+            required: ${MAIL_SMTP_STARTTLS_REQUIRED:false}
           connectiontimeout: 5000
           timeout: 3000
           writetimeout: 5000
@@ -62,6 +68,7 @@ app:
     root-path: uploads
   fastapi:
     base-url: http://localhost:8000
+    APP_FASTAPI_BASE_URL: http://fastapi:8000
     service-key: change-me
     caller-service: spring-backend
     # RestTemplate → FastAPI (비전 추론은 첫 요청·GPU 로딩 시 수십 초 걸릴 수 있음)
@@ -82,6 +89,6 @@ app:
 
 logging:
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{requestId}] %-5level
-      %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{requestId}] %-5level %logger{36} - %msg%n"
     #file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{requestId}] %-5level %logger{36} - %msg%n"
+
