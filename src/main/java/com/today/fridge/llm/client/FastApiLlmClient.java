@@ -5,7 +5,9 @@ import org.springframework.web.client.RestClient;
 
 import com.today.fridge.llm.config.LlmClientProperties;
 import com.today.fridge.llm.dto.request.RecommendationExplanationContext;
+import com.today.fridge.llm.dto.request.SubstitutionLlmRequest;
 import com.today.fridge.llm.dto.response.RecommendationExplainResponse;
+import com.today.fridge.llm.dto.response.SubstitutionLlmResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,5 +29,18 @@ public class FastApiLlmClient {
                 .body(context)
                 .retrieve()
                 .body(RecommendationExplainResponse.class);
+    }
+    
+    public SubstitutionLlmResponse suggestSubstitutions(
+            SubstitutionLlmRequest request
+    ) {
+        return restClientBuilder
+                .baseUrl(properties.baseUrl())
+                .build()
+                .post()
+                .uri("/api/v1/internal/llm/substitutions/suggest")
+                .body(request)
+                .retrieve()
+                .body(SubstitutionLlmResponse.class);
     }
 }

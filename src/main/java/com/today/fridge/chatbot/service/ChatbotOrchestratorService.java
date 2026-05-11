@@ -32,16 +32,32 @@ public class ChatbotOrchestratorService {
         boolean isMember = userId != null;
 
         List<String> includeIngredients =
-                parsed.getIncludeIngredients() == null ? List.of() : parsed.getIncludeIngredients();
+                parsed.getIncludeIngredients() == null
+                        ? List.of()
+                        : parsed.getIncludeIngredients();
 
         List<String> conditionCodes =
-                parsed.getConditionTags() == null ? List.of() : parsed.getConditionTags();
+                parsed.getConditionTags() == null
+                        ? List.of()
+                        : parsed.getConditionTags();
+
+        List<String> excludeIngredients =
+                parsed.getExcludeIngredients() == null
+                        ? List.of()
+                        : parsed.getExcludeIngredients();
 
         List<String> keywords = new java.util.ArrayList<>();
-        keywords.add(request.getText());
+
+        if (request.getText() != null && !request.getText().isBlank()) {
+            keywords.add(request.getText());
+        }
 
         if (parsed.getKeywords() != null) {
-            keywords.addAll(parsed.getKeywords());
+            keywords.addAll(
+                    parsed.getKeywords().stream()
+                            .filter(k -> k != null && !k.isBlank())
+                            .toList()
+            );
         }
 
         List<String> profileConditionCodes = isMember
@@ -54,6 +70,7 @@ public class ChatbotOrchestratorService {
 
         conditionCodes = java.util.stream.Stream
                 .concat(conditionCodes.stream(), profileConditionCodes.stream())
+                .filter(c -> c != null && !c.isBlank())
                 .distinct()
                 .toList();
 
@@ -62,7 +79,7 @@ public class ChatbotOrchestratorService {
                         .userId(userId)
                         .conditionCodes(conditionCodes)
                         .includeIngredients(includeIngredients)
-                        .excludeIngredients(parsed.getExcludeIngredients())
+                        .excludeIngredients(excludeIngredients)
                         .keywords(keywords)
                         .sortHint(parsed.getSortHint())
                         .source("CHATBOT")

@@ -9,6 +9,7 @@ public record RecipeListResponse(
         String title,
         String thumbnailUrl,
         String summary,
+        String difficulty,
         String servingsText,
         String cookTimeText
 ) {
@@ -18,6 +19,7 @@ public record RecipeListResponse(
                 .title(recipe.getTitle())
                 .thumbnailUrl(recipe.getThumbnailUrl())
                 .summary(recipe.getSummary())
+                .difficulty(recipe.getDifficultyLevel())
                 .servingsText(recipe.getServingsText())
                 .cookTimeText(recipe.getCookTimeText())
                 .build();

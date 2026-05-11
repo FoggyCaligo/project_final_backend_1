@@ -1,6 +1,6 @@
 package com.today.fridge.recommendation.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
+//import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import java.util.List;
@@ -12,7 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
+//import org.springframework.test.util.ReflectionTestUtils;
 
 import com.today.fridge.embedding.client.EmbeddingClient;
 import com.today.fridge.embedding.entity.RecipeEmbedding;

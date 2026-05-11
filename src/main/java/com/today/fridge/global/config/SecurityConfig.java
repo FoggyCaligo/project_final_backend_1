@@ -22,6 +22,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+
 @Configuration
 public class SecurityConfig {
     // MDC는 로그에 찍을 정보를 담아두는 보관함이다 서버에서 요청이 들어올때마다 아이디를 스레드에 넣는다. 이후 로깅을 남길때마다 아이디를 확인한다. 이렇게 하면 로그에 일일이 번호표를 적지 않아도 바로 알 수 있다 , MDC는 스레드 로컬 방식을 사용한다. 각 요청(스레드)마다 자신만의 보관함을 가지기 때문에 수천명의 사용자가 동시에 접근해도 로그가 서로 뒤섞이지 않는다 
@@ -59,9 +60,14 @@ public class SecurityConfig {
 
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:3000",
+                "http://127.0.0.1:3000",
                 "http://localhost:5173",
                 "https://*.ngrok-free.dev",
-                "https://today-fridge-frontend-deploy.vercel.app"
+                "https://today-fridge-frontend-deploy.vercel.app",
+                "http://127.0.0.1:5173",
+                "http://100.78.2.126:3000",
+                "https://*.ngrok-free.dev",
+                "https://todayfridge.com"
         ));
 
         configuration.setAllowedMethods(List.of(
@@ -69,7 +75,9 @@ public class SecurityConfig {
         ));
 
         configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("Authorization", "Set-Cookie"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
@@ -86,6 +94,7 @@ public class SecurityConfig {
                 .httpBasic(basic -> basic.disable())
                 .authorizeHttpRequests(auth -> auth
                         // 인증 없이 접근 가능한 공개 API
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/v1/auth/login").permitAll()
                         .requestMatchers("/api/v1/auth/signup").permitAll()
                         .requestMatchers("/api/v1/auth/check-login-id").permitAll()
@@ -110,7 +119,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/chatbot/**").permitAll()
                         .requestMatchers("/api/v1/recommendation/**").permitAll()
                         .requestMatchers("/api/v1/dashboard/**").permitAll()
-                        .requestMatchers("/api/v1/bookmarks/**").permitAll()
+                        .requestMatchers("/api/v1/bookmarks/**").authenticated()
+                        .requestMatchers("/api/v1/meal", "/api/v1/meal/**").authenticated()
                         .requestMatchers("/api/v1/files/**").permitAll()
                         .requestMatchers("/api/fastapi-test").permitAll()
                         // v3 쇼핑 검색 (키워드 검색은 인증 없이 허용)

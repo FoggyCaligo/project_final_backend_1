@@ -26,8 +26,8 @@ import com.today.fridge.recommendation.entity.ConditionCode;
 import com.today.fridge.recommendation.entity.UserCondition;
 import com.today.fridge.recommendation.repository.UserConditionRepository;
 import com.today.fridge.recommendation.service.RecommendationService;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+//import static org.mockito.ArgumentMatchers.any;
+//import static org.mockito.ArgumentMatchers.eq;
 
 @ExtendWith(MockitoExtension.class)
 class ChatbotOrchestratorServiceTest {
