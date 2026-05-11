@@ -7,6 +7,7 @@ build/
 fileHashes.lock
 bin/
 .DS_Store
+uploads/
 
 # 개인 환경 설정
 .env

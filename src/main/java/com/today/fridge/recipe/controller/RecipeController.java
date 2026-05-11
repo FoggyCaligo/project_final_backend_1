@@ -45,7 +45,9 @@ import com.today.fridge.recipe.service.RecipeService;
 
 // Lombok
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/recipes")
 @RequiredArgsConstructor
@@ -58,6 +60,7 @@ public class RecipeController {
 			@RequestParam(name = "cookingType", required = false, defaultValue = "ALL") String cookingType,
 			@RequestParam(name = "sort", required = false, defaultValue = "default") String sort,
 			@PageableDefault(size = 12) Pageable pageable) {
+		log.info("[RecipeController] getRecipes - cookingType: {}, sort: {}, pageable: {}", cookingType, sort, pageable);
 		return ResponseEntity.ok(
 				ApiResponse.success(
 						recipeService.getRecipes(cookingType, sort, pageable),
@@ -68,6 +71,7 @@ public class RecipeController {
 	public ResponseEntity<ApiResponse<RecipeResponse>> getRecipe(
 			@PathVariable("recipeId") Long recipeId,
 			@RequestHeader(value = "X-User-Id", required = false) Long userId) {
+		log.info("[RecipeController] getRecipe - recipeId: {}, userId: {}", recipeId, userId);
 		return ResponseEntity.ok(
 				ApiResponse.success(
 						recipeService.getRecipe(recipeId, userId),
@@ -78,6 +82,7 @@ public class RecipeController {
 	public ResponseEntity<ApiResponse<Void>> ateRecipe(
 			@PathVariable("recipeId") Long recipeId,
 			@RequestHeader(value = "X-User-Id", required = false) Long userId) {
+		log.info("[RecipeController] ateRecipe - recipeId: {}, userId: {}", recipeId, userId);
 		recipeService.ateRecipe(recipeId, userId);
 		return ResponseEntity.ok(
 				ApiResponse.success(

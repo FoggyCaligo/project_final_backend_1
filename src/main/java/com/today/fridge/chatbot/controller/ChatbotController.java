@@ -3,6 +3,7 @@ package com.today.fridge.chatbot.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -10,6 +11,8 @@ import com.today.fridge.chatbot.dto.request.ChatInterpretRequest;
 import com.today.fridge.chatbot.dto.response.ChatInterpretResponse;
 import com.today.fridge.chatbot.service.ChatbotOrchestratorService;
 import com.today.fridge.chatbot.service.IntentParserService;
+import com.today.fridge.global.exception.ErrorCode;
+import com.today.fridge.global.exception.ExceptionTemplate;
 import com.today.fridge.global.response.ApiResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -36,14 +39,15 @@ public class ChatbotController {
 	
 	@PostMapping("/recommend")
 	public ResponseEntity<ApiResponse<?>> recommend(
+	        @RequestHeader(value = "X-User-Id", required = false) Long userId,
 	        @RequestBody ChatInterpretRequest request
 	) {
-
 	    return ResponseEntity.ok(
 	            ApiResponse.success(
-	                    chatbotOrchestratorService.recommendFromChat(request),
+	                    chatbotOrchestratorService.recommendFromChat(userId, request),
 	                    "챗봇 기반 추천 성공"
 	            )
 	    );
 	}
+	
 }
