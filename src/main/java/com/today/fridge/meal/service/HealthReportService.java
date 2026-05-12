@@ -87,9 +87,9 @@ public class HealthReportService {
         return healthReportRepository.findFirstByUserUserIdOrderByCreatedAtDesc(userId)
                 .map(hr -> new FastApiHealthReportResponse(
                         hr.getSummary(),
-                        hr.getAdvice(),
-                        hr.getMeals(),
-                        hr.getVideos()
+                        new ArrayList<>(hr.getAdvice()),
+                        new ArrayList<>(hr.getMeals()),
+                        new ArrayList<>(hr.getVideos())
                 ))
                 .orElse(null);
     }
