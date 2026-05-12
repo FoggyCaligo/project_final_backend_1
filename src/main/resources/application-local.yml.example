@@ -1,0 +1,17 @@
+# NeonDB 기준 로컬 실행 예시입니다.
+# 복사: copy → application-local.yml (같은 디렉터리)
+# application-local.yml 은 .gitignore 되어 커밋되지 않습니다.
+#
+# 또는 환경 변수만 설정해도 됩니다:
+#   DB_URL, DB_USERNAME, DB_PASSWORD
+
+# --- Kakao 로그인 KOE006 (등록하지 않은 Redirect URI) ---
+# 카카오 개발자 콘솔 → 내 애플리케이션 → 제품 설정 → 카카오 로그인 → Redirect URI 에 아래를 그대로 추가
+#   http://localhost:8080/api/v1/auth/kakao/callback
+# app.kakao.redirect-uri 를 바꾼 경우(KAKAO_REDIRECT_URI) 콘솔에도 동일 문자열을 등록해야 합니다.
+
+spring:
+  datasource:
+    url: jdbc:postgresql://ep-wispy-art-amny04jt-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+    username: neondb_owner
+    password: 여기에_실제_비밀번호

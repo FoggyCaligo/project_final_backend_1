@@ -9,6 +9,10 @@ import com.today.fridge.ingredient.dto.DeleteIngredientData;
 import com.today.fridge.ingredient.dto.FridgeIngredientListData;
 import com.today.fridge.ingredient.dto.FridgeSummaryResponse;
 import com.today.fridge.ingredient.dto.IngredientResponse;
+import com.today.fridge.ingredient.dto.RemoteImageStagingRequest;
+import com.today.fridge.ingredient.dto.RemoteImageStagingResponse;
+import com.today.fridge.ingredient.dto.RemoteImageStagingResultRequest;
+import com.today.fridge.ingredient.dto.RemoteImageUploadResultRequest;
 import com.today.fridge.ingredient.dto.vision.VisionRecognizeDataDto;
 import com.today.fridge.vision.dto.VisionRecognitionStatusDto;
 import com.today.fridge.ingredient.service.FridgeIngredientService;
@@ -119,6 +123,41 @@ public class FridgeIngredientController {
         long uid = requireUserId(userId);
         IngredientResponse updated = fridgeIngredientService.patch(uid, ingredientId, body);
         return ResponseEntity.ok(ApiResponse.success(updated, "식재료 수정 성공"));
+    }
+
+    /** 아파치 업로드 성공/실패 반영 — 실패 시 {@code file_asset} 삭제 및 식재료 이미지 연결 해제 */
+    @PatchMapping("/ingredients/{ingredientId}/apache-image-sync")
+    public ResponseEntity<ApiResponse<IngredientResponse>> syncApacheImage(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @PathVariable("ingredientId") Long ingredientId,
+            @RequestBody RemoteImageUploadResultRequest body) {
+        long uid = requireUserId(userId);
+        IngredientResponse data = fridgeIngredientService.applyApacheImageSync(uid, ingredientId, body);
+        return ResponseEntity.ok(ApiResponse.success(data, "아파치 이미지 동기화 반영"));
+    }
+
+    /** 식재료 이미지 교체: 새 {@code file_asset} 행만 생성(스테이징). 기존 {@code user_ingredient.file_id} 는 유지. */
+    @PostMapping("/ingredients/{ingredientId}/apache-image-replace-staging")
+    public ResponseEntity<ApiResponse<RemoteImageStagingResponse>> stageApacheImageReplace(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @PathVariable("ingredientId") Long ingredientId,
+            @RequestBody RemoteImageStagingRequest body) {
+        long uid = requireUserId(userId);
+        RemoteImageStagingResponse data =
+                fridgeIngredientService.stageApacheImageReplaceStaging(uid, ingredientId, body);
+        return ResponseEntity.ok(ApiResponse.success(data, "이미지 교체 스테이징 생성"));
+    }
+
+    /** 스테이징 파일 아파치 업로드 후 성공 시 교체·실패 시 스테이징 행만 삭제 */
+    @PatchMapping("/ingredients/{ingredientId}/apache-image-replace-result")
+    public ResponseEntity<ApiResponse<IngredientResponse>> applyApacheImageReplaceResult(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @PathVariable("ingredientId") Long ingredientId,
+            @RequestBody RemoteImageStagingResultRequest body) {
+        long uid = requireUserId(userId);
+        IngredientResponse data =
+                fridgeIngredientService.applyApacheImageReplaceStagingResult(uid, ingredientId, body);
+        return ResponseEntity.ok(ApiResponse.success(data, "이미지 교체 반영"));
     }
 
     @DeleteMapping("/ingredients/{ingredientId}")

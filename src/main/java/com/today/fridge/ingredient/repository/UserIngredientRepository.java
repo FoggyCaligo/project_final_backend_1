@@ -32,6 +32,7 @@ public interface UserIngredientRepository extends JpaRepository<UserIngredient, 
     @Query("""
             select count(u) from UserIngredient u
             where u.user.userId = :userId
+
             and u.expiresAt is not null
             and u.expiresAt >= :today
             and u.expiresAt <= :soonEnd

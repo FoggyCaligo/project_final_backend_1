@@ -24,7 +24,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
                     "http://127.0.0.1:3000",
                     "http://localhost:5173",
                     "http://127.0.0.1:5173",
-                    "http://100.78.2.126:3000")
+                    "http://100.78.2.126:3000",
+                    "https://todayfridge.com",
+                    "https://www.todayfridge.com")
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true);
