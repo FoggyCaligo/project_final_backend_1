@@ -61,6 +61,8 @@ public interface UserIngredientRepository extends JpaRepository<UserIngredient, 
             """)
     List<String> findOwnedIngredientNamesByUserId(@Param("userId") Long userId);
 
+    List<UserIngredient> findByUserUserId(Long userId);
+
     // 레시피에 사용된 식재료들을 유저가 가지고 있는지 조회 (N+1 방지)
     // 레시피의 정제된 식재료 이름과 유저가 가지고 있는 식재료의 정제된 식재료 이름을 비교함
     // ingredientNames는 레시피에서 사용된 식재료 이름들의 리스트임

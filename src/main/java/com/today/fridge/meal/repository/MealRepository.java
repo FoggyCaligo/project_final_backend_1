@@ -126,4 +126,6 @@ public interface MealRepository extends JpaRepository<Meal, Long> {
             @Param("userId") Long userId,
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate);
+
+    List<Meal> findByUserUserIdAndConsumedAtBetween(Long userId, LocalDateTime startDateTime, LocalDateTime endDateTime);
 }
