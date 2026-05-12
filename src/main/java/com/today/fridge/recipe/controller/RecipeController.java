@@ -59,34 +59,40 @@ public class RecipeController {
 			@RequestParam(name = "cookingType", required = false, defaultValue = "ALL") String cookingType,
 			@RequestParam(name = "sort", required = false, defaultValue = "default") String sort,
 			@PageableDefault(size = 12) Pageable pageable) {
-		log.info("[RecipeController] getRecipes - cookingType: {}, sort: {}, pageable: {}", cookingType, sort, pageable);
-		return ResponseEntity.ok(
+		log.info("[RecipeController] getRecipes START - cookingType: {}, sort: {}, pageable: {}", cookingType, sort, pageable);
+		ResponseEntity<ApiResponse<PageResult<RecipeListResponse>>> response = ResponseEntity.ok(
 				ApiResponse.success(
 						recipeService.getRecipes(cookingType, sort, pageable),
 						"전체 레시피 조회 성공"));
+		log.info("[RecipeController] getRecipes END");
+		return response;
 	}
 
 	@GetMapping("/{recipeId}")
 	public ResponseEntity<ApiResponse<RecipeResponse>> getRecipe(
 			@PathVariable("recipeId") Long recipeId,
 			@RequestHeader(value = "X-User-Id", required = false) Long userId) {
-		log.info("[RecipeController] getRecipe - recipeId: {}, userId: {}", recipeId, userId);
-		return ResponseEntity.ok(
+		log.info("[RecipeController] getRecipe START - recipeId: {}, userId: {}", recipeId, userId);
+		ResponseEntity<ApiResponse<RecipeResponse>> response = ResponseEntity.ok(
 				ApiResponse.success(
 						recipeService.getRecipe(recipeId, userId),
 						"상세 레시피 조회 성공"));
+		log.info("[RecipeController] getRecipe END");
+		return response;
 	}
 
 	@PostMapping("/{recipeId}/cooked")
 	public ResponseEntity<ApiResponse<Void>> ateRecipe(
 			@PathVariable("recipeId") Long recipeId,
 			@RequestHeader(value = "X-User-Id", required = false) Long userId) {
-		log.info("[RecipeController] ateRecipe - recipeId: {}, userId: {}", recipeId, userId);
+		log.info("[RecipeController] ateRecipe START - recipeId: {}, userId: {}", recipeId, userId);
 		recipeService.ateRecipe(recipeId, userId);
-		return ResponseEntity.ok(
+		ResponseEntity<ApiResponse<Void>> response = ResponseEntity.ok(
 				ApiResponse.success(
 						null,
 						"레시피 재료 소진"));
+		log.info("[RecipeController] ateRecipe END");
+		return response;
 	}
 
 }

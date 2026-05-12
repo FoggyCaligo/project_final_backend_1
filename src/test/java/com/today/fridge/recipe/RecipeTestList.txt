@@ -1,0 +1,75 @@
+# Recipe Module Test List
+Organized by Blast Radius (Lowest Impact -> Highest Impact)
+
+## [Unit Testing]
+Failure in these tests typically has a smaller "blast radius" as they target isolated leaf nodes or internal helpers.
+
+### 1. Data Access Layer (Lowest Blast Radius)
+Failure here usually indicates an isolated issue with a specific database query.
+- **UT-01**: findByRecipe_RecipeIdOrderBySortOrderAsc - [RecipeIngredientRepositoryTest] 레시피 ID로 재료 조회
+- **UT-02**: findByRecipe_RecipeId - [RecipeNutritionRepositoryTest] 레시피 ID로 영양정보 조회
+- **UT-03**: findByRecipe_RecipeIdOrderByStepNoAsc - [RecipeStepRepositoryTest] 레시피 ID로 조리단계 조회
+
+### 2. Internal Helpers & Adapters (Low-Medium Blast Radius)
+Failure here affects internal logic across multiple services but does not necessarily break external API contracts directly.
+- **UT-04**: convertGramsToQuantity - [RecipeUnitAdapterTest] 그램 -> 개수 직접 매칭 변환
+- **UT-05**: convertQuantityToGrams - [RecipeUnitAdapterTest] 개수 -> 그램 직접 매칭 변환
+- **UT-06**: convertGramsToQuantity - [RecipeUnitAdapterTest] 키워드 기반 유추 변환
+- **UT-07**: convertGramsToQuantity - [RecipeUnitAdapterTest] 데이터 미존재 시 원본 수량 유지
+
+### 3. API Entry Points & Request Handling (Medium-High Blast Radius)
+Failure here breaks public API contracts and affects guest/external users.
+- **UT-08**: getRecipes_Success - [RecipeControllerTest] 페이징된 레시피 목록 반환
+- **UT-09**: getRecipes_WithFilterAndSort - [RecipeControllerTest] 필터 및 정렬 적용 조회
+- **UT-10**: getRecipe_Guest_Success - [RecipeControllerTest] 비회원 상세 레시피 조회
+- **UT-11**: getRecipe_Member_Success - [RecipeControllerTest] 회원 상세 레시피 조회
+- **UT-12**: getRecipe_NotFound_ThrowsException - [RecipeControllerTest] 존재하지 않는 레시피 예외 처리
+- **UT-13**: ateRecipe_Success - [RecipeControllerTest] 레시피 조리 완료 API 응답 확인
+
+### 4. Core Business Logic (High Blast Radius)
+Failure here breaks the critical "Cook and Deduct" business process.
+
+#### [Service Ate Tests]
+- **UT-14**: ateRecipe_SufficientMultipleRecords - [RecipeServiceAteTest] 유통기한 임박순 차감 로직
+- **UT-15**: ateRecipe_InsufficientIngredients - [RecipeServiceAteTest] 재료 부족 시 모두 소진 및 자동 삭제
+- **UT-16**: ateRecipe_MissingIngredients - [RecipeServiceAteTest] 재료 미보유 시 예외 없는 정상 종료
+- **UT-17**: ateRecipe_UnitMismatch_KgToG - [RecipeServiceAteTest] 수량 차감 시 단위 정규화 처리
+- **UT-18**: ateRecipe_CupUnit - [RecipeServiceAteTest] '컵' 단위 차감 처리
+
+#### [Service Ingredient Tests]
+- **UT-19**: testGetRecipeWithFridge - [RecipeServiceIngredientTest] 재료 매칭 및 상태(OK/MISSING) 판정
+- **UT-20**: testGetRecipeWithSpecialUnits - [RecipeServiceIngredientTest] 특수 단위(모/컵) 처리
+- **UT-21**: testExtractNumericAmountWithMixedNumbers - [RecipeServiceIngredientTest] 혼합 분수 파싱
+- **UT-22**: testGetRecipe_UnitMismatch_RecipeKgUserG - [RecipeServiceIngredientTest] 단위 불일치(kg/g) 정규화 비교
+- **UT-23**: testExtractNumericAmountWithUnitConversion - [RecipeServiceIngredientTest] 표준 단위 변환(L/mL)
+
+#### [Service Mockito Unit Tests]
+- **UT-24**: getRecipe_Success - [RecipeServiceUnitTest] 정상적으로 레시피를 조회 (비회원)
+- **UT-25**: getRecipe_NotFound_ThrowsException - [RecipeServiceUnitTest] RECIPE_NOT_FOUND 예외
+- **UT-26**: getRecipe_NutritionNotFound_ThrowsException - [RecipeServiceUnitTest] RECIPE_NUTRITION_NOT_FOUND 예외
+- **UT-27**: getRecipe_StepNotFound_ThrowsException - [RecipeServiceUnitTest] RECIPE_STEP_NOT_FOUND 예외
+- **UT-28**: getRecipe_IngredientNotFound_ThrowsException - [RecipeServiceUnitTest] RECIPE_INGREDIENT_NOT_FOUND 예외
+- **UT-29**: getRecipe_NullUserId_CallsGuestMethod - [RecipeServiceUnitTest] 회원 조회 시 UserId null 위임
+- **UT-30**: getRecipe_SufficiencyOk - [RecipeServiceUnitTest] sufficiency OK 판정
+- **UT-31**: getRecipe_SufficiencyNotEnough - [RecipeServiceUnitTest] sufficiency NOT_ENOUGH 판정
+- **UT-32**: getRecipe_SufficiencyMissing - [RecipeServiceUnitTest] sufficiency MISSING 판정
+- **UT-33**: getRecipe_SumQuantities - [RecipeServiceUnitTest] 동일 재료 수량 합산 검증
+- **UT-34**: getRecipe_MasterNameMatch - [RecipeServiceUnitTest] normalizedName 매칭 검증
+- **UT-35**: ateRecipe_DeductQuantity - [RecipeServiceUnitTest] 재료 충분 시 수량 차감 (Mockito)
+- **UT-36**: ateRecipe_DeleteWhenZero - [RecipeServiceUnitTest] 재료 수량 일치 시 삭제 (Mockito)
+- **UT-37**: ateRecipe_NoIngredients_Success - [RecipeServiceUnitTest] 재료 미보유 시 정상 동작 (Mockito)
+- **UT-38**: ateRecipe_SortByExpiry - [RecipeServiceUnitTest] 유통기한 임박순 차감 검증 (Mockito)
+
+---
+
+## [Integration Testing]
+Failure in these tests has the highest blast radius as they verify end-to-end user journeys including DB transactions.
+
+### 5. End-to-End Workflows (Highest Blast Radius)
+- **IT-RECIPE-1**: getRecipe - [RecipeIntegrationTestCooked] 실제 DB 기반 재료 매칭 및 소유 확인
+- **IT-RECIPE-2**: getRecipe - [RecipeIntegrationTestCooked] 실제 DB 기반 수량 계산 및 충분 여부 검증
+- **IT-RECIPE-3**: ateRecipe - [RecipeIntegrationTestCooked] 조리 완료 시 실제 DB 재료 수량 차감 확인
+- **IT-RECIPE-4**: ateRecipe - [RecipeIntegrationTestCooked] 재료 소진 시 실제 DB 레코드 삭제 확인
+
+---
+Note: 'getRecipes' logic tests (internal implementation) and 'tag' related tests are excluded from this list per instructions.

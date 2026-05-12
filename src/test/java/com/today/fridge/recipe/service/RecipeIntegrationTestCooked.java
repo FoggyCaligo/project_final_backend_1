@@ -1,5 +1,39 @@
 package com.today.fridge.recipe.service;
 
+/*
+ * IT-RECIPE-1
+ * Method: getRecipe
+ * Test Name: 레시피 재료 매칭 및 소유 여부 확인
+ * Purpose: 실제 DB 환경에서 유저의 냉장고 재료와 레시피 재료가 정확히 매칭되는지 통합 검증한다.
+ * Input: recipeId, userId
+ * Expected Result: 모든 요구 재료에 대해 소유 여부가 true로 판정된다.
+ * Priority: High
+ *
+ * IT-RECIPE-2
+ * Method: getRecipe
+ * Test Name: 재료 수량 계산 및 충분(OK) 상태 확인
+ * Purpose: 실제 수량 데이터를 바탕으로 정규화된 충분 여부 판정이 정확한지 통합 검증한다.
+ * Input: recipeId, userId
+ * Expected Result: 보유량 대비 필요량 계산 결과가 "OK"로 나타난다.
+ * Priority: High
+ *
+ * IT-RECIPE-3
+ * Method: ateRecipe
+ * Test Name: 조리 완료 시 냉장고 재료가 정확히 차감되는지 확인
+ * Purpose: 레시피 조리 완료 시 냉장고 엔티티의 수량이 실제로 차감되는지 통합 검증한다.
+ * Input: recipeId, userId
+ * Expected Result: 차감 후 남은 수량이 DB에 정확히 반영된다.
+ * Priority: High
+ *
+ * IT-RECIPE-4
+ * Method: ateRecipe
+ * Test Name: 재료를 모두 소진했을 때 데이터가 삭제되는지 확인
+ * Purpose: 재료를 모두 소진할 경우 DB에서 해당 레코드가 물리적으로 삭제되는지 통합 검증한다.
+ * Input: recipeId, userId
+ * Expected Result: DB 조회 시 해당 재료 레코드가 존재하지 않는다.
+ * Priority: High
+ */
+
 import com.today.fridge.ingredient.entity.UserIngredient;
 import com.today.fridge.ingredient.repository.UserIngredientRepository;
 import com.today.fridge.recipe.dto.intermediate.RecipeIngredientDTO;

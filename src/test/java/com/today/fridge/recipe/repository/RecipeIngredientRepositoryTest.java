@@ -1,5 +1,15 @@
 package com.today.fridge.recipe.repository;
 
+/*
+ * UT-01
+ * Method: findByRecipe_RecipeIdOrderBySortOrderAsc
+ * Test Name: 레시피 ID로 재료 조회
+ * Purpose: 특정 레시피 ID와 연관된 모든 재료 정보를 정렬 순서대로 정확히 조회한다.
+ * Input: recipeId
+ * Expected Result: 해당 레시피의 재료 리스트를 반환한다.
+ * Priority: Medium
+ */
+
 import com.today.fridge.recipe.entity.Recipe;
 import com.today.fridge.recipe.entity.RecipeIngredient;
 import org.junit.jupiter.api.DisplayName;

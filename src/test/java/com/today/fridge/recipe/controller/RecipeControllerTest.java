@@ -1,15 +1,53 @@
 package com.today.fridge.recipe.controller;
 
 /*
- * RecipeControllerTest는 RecipeController의 각 엔드포인트를 MockMvc를 사용하여 단위 테스트하는 클래스입니다.
+ * UT-08
+ * Method: getRecipes
+ * Test Name: 페이징된 레시피 목록 반환
+ * Purpose: 전체 레시피 목록 요청 시 페이징 정보와 함께 정상적으로 데이터를 반환하는지 확인한다.
+ * Input: Pageable
+ * Expected Result: HTTP 200 및 RecipeListResponse 목록 반환.
+ * Priority: High
  *
- * Spring Security가 활성화되어 있으므로 @WithMockUser로 인증을 우회합니다.
- * RecipeService를 @MockBean으로 주입하여 Controller 계층만 격리 테스트합니다.
+ * UT-09
+ * Method: getRecipes
+ * Test Name: 필터 및 정렬 적용 조회
+ * Purpose: cookingType 필터와 sort 파라미터를 적용하여 레시피 목록을 조회하는지 확인한다.
+ * Input: cookingType, sort
+ * Expected Result: 서비스 메서드에 해당 파라미터가 정확히 전달됨.
+ * Priority: Medium
  *
- * 주요 테스트 엔드포인트:
- * 1. GET /api/v1/recipes - 전체 레시피 목록 페이징 조회
- * 2. GET /api/v1/recipes/{recipeId} - 상세 레시피 조회 (비회원/회원)
- * 3. GET /api/v1/recipes/{recipeId}/cooked - 레시피 조리 완료 (재료 차감)
+ * UT-10
+ * Method: getRecipe
+ * Test Name: 비회원(userId 없음)으로 상세 레시피를 정상 조회한다
+ * Purpose: 인증 없이 레시피 상세 API를 호출했을 때 비회원 전용 상세 정보를 반환하는지 확인한다.
+ * Input: recipeId
+ * Expected Result: HTTP 200 및 RecipeResponse 데이터 반환.
+ * Priority: High
+ *
+ * UT-11
+ * Method: getRecipe
+ * Test Name: 회원(userId 포함)으로 상세 레시피를 조회한다
+ * Purpose: 인증 헤더(X-User-Id)를 포함하여 호출했을 때 회원 전용(냉장고 연동) 상세 정보를 반환하는지 확인한다.
+ * Input: recipeId, X-User-Id
+ * Expected Result: HTTP 200 및 RecipeResponse 데이터 반환.
+ * Priority: High
+ *
+ * UT-12
+ * Method: getRecipe
+ * Test Name: 존재하지 않는 recipeId 조회 시 예외가 발생한다
+ * Purpose: 잘못된 레시피 ID로 호출 시 적절한 404 에러를 반환하는지 확인한다.
+ * Input: recipeId (non-existent)
+ * Expected Result: HTTP 404 반환.
+ * Priority: Medium
+ *
+ * UT-13
+ * Method: ateRecipe
+ * Test Name: 레시피 조리 완료 시 성공 응답을 반환한다
+ * Purpose: 조리 완료 API 호출 시 성공 메시지와 함께 재료 차감 로직이 트리거되는지 확인한다.
+ * Input: recipeId, X-User-Id
+ * Expected Result: HTTP 200 및 "레시피 재료 소진" 메시지 반환.
+ * Priority: High
  */
 
 import com.today.fridge.global.exception.ErrorCode;
@@ -63,7 +101,7 @@ class RecipeControllerTest {
 
                 @Test
                 @WithMockUser
-                @DisplayName("RecipeControllerTest - getRecipes - 페이징된 레시피 목록을 정상적으로 반환한다")
+                @DisplayName("UT-08 - 페이징된 레시피 목록을 정상적으로 반환한다")
                 void getRecipes_Success() throws Exception {
                         // given - 서비스에서 레시피 목록을 반환하도록 설정
                         RecipeListResponse item = RecipeListResponse.builder()
@@ -87,7 +125,7 @@ class RecipeControllerTest {
                 }
                 @Test
                 @WithMockUser
-                @DisplayName("cookingType과 sort 파라미터를 전달하여 조회한다")
+                @DisplayName("UT-09 - cookingType과 sort 파라미터를 전달하여 조회한다")
                 void getRecipes_WithFilterAndSort() throws Exception {
 
                     PageResult<RecipeListResponse> pageResult =
@@ -122,7 +160,7 @@ class RecipeControllerTest {
 
                 @Test
                 @WithMockUser
-                @DisplayName("RecipeControllerTest - getRecipe - 비회원(userId 없음)으로 상세 레시피를 정상 조회한다")
+                @DisplayName("UT-10 - 비회원(userId 없음)으로 상세 레시피를 정상 조회한다")
                 void getRecipe_Guest_Success() throws Exception {
                         // given - RecipeResponse 생성
                         RecipeResponse response = createTestRecipeResponse();
@@ -138,7 +176,7 @@ class RecipeControllerTest {
 
                 @Test
                 @WithMockUser
-                @DisplayName("RecipeControllerTest - getRecipe - 회원(userId 포함)으로 상세 레시피를 조회한다")
+                @DisplayName("UT-11 - 회원(userId 포함)으로 상세 레시피를 조회한다")
                 void getRecipe_Member_Success() throws Exception {
                         // given
                         RecipeResponse response = createTestRecipeResponse();
@@ -153,7 +191,7 @@ class RecipeControllerTest {
 
                 @Test
                 @WithMockUser
-                @DisplayName("RecipeControllerTest - getRecipe - 존재하지 않는 recipeId 조회 시 예외가 발생한다")
+                @DisplayName("UT-12 - 존재하지 않는 recipeId 조회 시 예외가 발생한다")
                 void getRecipe_NotFound_ThrowsException() throws Exception {
                         // given
                         given(recipeService.getRecipe(eq(999L), isNull()))
@@ -174,7 +212,7 @@ class RecipeControllerTest {
 
                 @Test
                 @WithMockUser
-                @DisplayName("RecipeControllerTest - ateRecipe - 레시피 조리 완료 시 성공 응답을 반환한다")
+                @DisplayName("UT-13 - 레시피 조리 완료 시 성공 응답을 반환한다")
                 void ateRecipe_Success() throws Exception {
                         // given - ateRecipe는 void 메서드이므로 아무 설정 필요 없음
                         willDoNothing().given(recipeService).ateRecipe(eq(1L), eq(10L));

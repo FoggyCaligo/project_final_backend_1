@@ -1,11 +1,45 @@
 package com.today.fridge.recipe.service;
 
 /*
- * RecipeServiceIngredientTest는 RecipeService의 재료 매칭 및 수량 계산 로직을 테스트하기 위한 클래스입니다.
- * * 주요 테스트 시나리오:
- * 1. 유저의 냉장고 재료와 레시피 재료 간의 매칭 확인 (OK, NOT_ENOUGH, MISSING)
- * 2. 특수 단위(컵, 모, 약간)에 대한 수량 추출 및 변환 로직 검증
- * 3. 단위 변환(kg -> g, L -> mL)이 정확하게 이루어지는지 확인
+ * UT-19
+ * Method: getRecipe
+ * Test Name: 레시피 재료 매칭 및 수량 계산
+ * Purpose: 유저의 냉장고 재료와 레시피 재료 간의 매칭을 수행하고 상태(OK, NOT_ENOUGH, MISSING)를 정확히 판정한다.
+ * Input: recipeId, userId
+ * Expected Result: 각 재료의 소유 여부와 충분 여부가 정확히 설정된 RecipeResponse를 반환한다.
+ * Priority: High
+ *
+ * UT-20
+ * Method: getRecipe
+ * Test Name: 특수 단위 처리
+ * Purpose: '모', '컵', '약간' 등 특수 단위가 포함된 재료의 수량을 Base Unit으로 정확히 변환하여 비교한다.
+ * Input: recipeId, userId
+ * Expected Result: 특수 단위가 포함된 재료의 충분 여부가 정확히 판정된다.
+ * Priority: High
+ *
+ * UT-21
+ * Method: getRecipe
+ * Test Name: 혼합 분수 처리
+ * Purpose: '1 1/2'와 같은 혼합 분수 형태의 수량 텍스트를 숫자로 정확히 파싱한다.
+ * Input: recipeId, userId
+ * Expected Result: 1.5에 해당하는 수량으로 정확히 파싱된다.
+ * Priority: Medium
+ *
+ * UT-22
+ * Method: getRecipe
+ * Test Name: 단위 불일치
+ * Purpose: 레시피 재료 단위(kg)와 유저 냉장고 재료 단위(g)가 상이할 때 정규화를 통해 정확히 비교한다.
+ * Input: recipeId, userId
+ * Expected Result: 1kg 필요량 대비 800g 소유 시 NOT_ENOUGH가 판정된다.
+ * Priority: High
+ *
+ * UT-23
+ * Method: getRecipe
+ * Test Name: 단위 변환
+ * Purpose: kg->g, L->mL 등 표준 단위 간의 변환 로직이 정확하게 수행되는지 검증한다.
+ * Input: recipeId, userId
+ * Expected Result: 변환된 수량 기준으로 충분 여부가 정확히 판정된다.
+ * Priority: High
  */
 
 import com.today.fridge.ingredient.entity.IngredientMaster;
@@ -91,7 +125,7 @@ class RecipeServiceIngredientTest {
         // 레시피 1개 조회 - 회원 전용
         // ========================================================================
         @Test
-        @DisplayName("UT-RECIPE-09 - 레시피 재료 매칭 및 수량 계산")
+        @DisplayName("UT-19 - 레시피 재료 매칭 및 수량 계산")
         void testGetRecipeWithFridge() {
                 // 1. 사용자 추가
                 User user = User.create("testuser1", "test1@example.com", "password", "tester1");
@@ -203,7 +237,7 @@ class RecipeServiceIngredientTest {
         // 특수 단위(컵, 모, 약간) 검증 테스트
         // ============================================================================================
         @Test
-        @DisplayName("UT-RECIPE-10 - 특수 단위 처리")
+        @DisplayName("UT-20 - 특수 단위 처리")
         void testGetRecipeWithSpecialUnits() {
                 User user = User.create("testuser2", "test2@example.com", "password", "tester2");
                 User savedUser = userRepository.save(user);
@@ -281,7 +315,7 @@ class RecipeServiceIngredientTest {
         // 혼합 분수(1 1/2) 파싱 테스트
         // ============================================================================================
         @Test
-        @DisplayName("UT-RECIPE-11 - 혼합 분수 처리")
+        @DisplayName("UT-21 - 혼합 분수 처리")
         void testExtractNumericAmountWithMixedNumbers() {
                 User user = User.create("testuser4", "test4@example.com", "password", "tester4");
                 User savedUser = userRepository.save(user);
@@ -320,7 +354,7 @@ class RecipeServiceIngredientTest {
         // 단위 불일치 통합 테스트 (레시피 kg vs 유저 g)
         // ============================================================================================
         @Test
-        @DisplayName("UT-RECIPE-12 - 단위 불일치")
+        @DisplayName("UT-22 - 단위 불일치")
         void testGetRecipe_UnitMismatch_RecipeKgUserG() {
                 User user = userRepository.save(User.create("testuser5", "test5@example.com", "password", "tester5"));
                 Long userId = user.getUserId();
@@ -352,7 +386,7 @@ class RecipeServiceIngredientTest {
         // 단위 변환 테스트 (kg->g, L->mL)
         // ============================================================================================
         @Test
-        @DisplayName("UT-RECIPE-13 - 단위 변환")
+        @DisplayName("UT-23 - 단위 변환")
         void testExtractNumericAmountWithUnitConversion() {
                 User user = User.create("testuser3", "test3@example.com", "password", "tester3");
                 User savedUser = userRepository.save(user);

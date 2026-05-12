@@ -1,10 +1,13 @@
 package com.today.fridge.recipe.repository;
 
 /*
- * RecipeNutritionRepositoryTest는 RecipeNutritionRepository의 쿼리 메서드를 테스트하는 클래스입니다.
- *
- * 주요 테스트:
- * - findByRecipe_RecipeId: 레시피 ID로 해당 레시피의 영양정보를 정상적으로 조회하는지 확인
+ * UT-02
+ * Method: findByRecipe_RecipeId
+ * Test Name: 레시피 ID로 영양정보 조회
+ * Purpose: 특정 레시피 ID와 연관된 영양 정보를 정확히 조회한다.
+ * Input: recipeId
+ * Expected Result: 해당 레시피의 RecipeNutrition 엔티티를 반환하며 칼로리 등 수치가 일치한다.
+ * Priority: Medium
  */
 
 import com.today.fridge.recipe.entity.Recipe;

@@ -1,10 +1,13 @@
 package com.today.fridge.recipe.repository;
 
 /*
- * RecipeStepRepositoryTest는 RecipeStepRepository의 쿼리 메서드를 테스트하는 클래스입니다.
- *
- * 주요 테스트:
- * - findByRecipe_RecipeId: 레시피 ID로 해당 레시피의 모든 단계를 정상적으로 조회하는지 확인
+ * UT-03
+ * Method: findByRecipe_RecipeIdOrderByStepNoAsc
+ * Test Name: 레시피 ID로 조리단계 조회
+ * Purpose: 특정 레시피 ID와 연관된 모든 조리 단계를 번호순(Asc)으로 정확히 조회한다.
+ * Input: recipeId
+ * Expected Result: 해당 레시피의 단계 리스트를 반환하며, 텍스트 데이터가 일치한다.
+ * Priority: Medium
  */
 
 import com.today.fridge.recipe.entity.Recipe;

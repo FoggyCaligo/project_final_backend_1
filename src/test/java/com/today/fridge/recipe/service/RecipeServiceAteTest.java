@@ -1,13 +1,45 @@
 package com.today.fridge.recipe.service;
 
 /*
- * RecipeServiceAteTest는 RecipeService의 ateRecipe 메서드를 테스트하기 위한 클래스입니다.
- * 
- * ateRecipe 메서드는 사용자가 레시피를 먹었을 때(조리 완료), 냉장고에서 해당 재료를 차감하는 기능을 수행합니다.
- * 주요 테스트 시나리오:
- * 1. 여러 개의 동일 재료 레코드가 있을 경우 유통기한 임박순으로 차감되는지 확인
- * 2. 재료가 부족할 경우 보유한 수량을 모두 소진(0으로 설정 및 삭제)하는지 확인
- * 3. 재료가 아예 없는 경우에도 에러 없이 정상 동작하는지 확인
+ * UT-14
+ * Method: ateRecipe
+ * Test Name: 유통기한 임박순 차감
+ * Purpose: 여러 개의 동일 재료 레코드가 있을 경우 유통기한이 가장 임박한 것부터 순차적으로 차감한다.
+ * Input: recipeId, userId
+ * Expected Result: 유통기한이 가장 빠른 레코드가 먼저 소진되거나 차감된다.
+ * Priority: High
+ *
+ * UT-15
+ * Method: ateRecipe
+ * Test Name: 재료 부족시 모두 소진 및 삭제
+ * Purpose: 냉장고에 보유한 재료 수량이 레시피 요구량보다 적을 경우, 보유한 수량을 모두 소진하고 해당 레코드를 삭제한다.
+ * Input: recipeId, userId
+ * Expected Result: 해당 재료 레코드가 삭제된다.
+ * Priority: High
+ *
+ * UT-16
+ * Method: ateRecipe
+ * Test Name: 재료 없음
+ * Purpose: 레시피에 필요한 재료가 유저의 냉장고에 하나도 없을 경우에도 에러 없이 정상적으로 종료되어야 한다.
+ * Input: recipeId, userId
+ * Expected Result: 예외 발생 없이 수행 완료된다.
+ * Priority: Medium
+ *
+ * UT-17
+ * Method: ateRecipe
+ * Test Name: 단위 불일치
+ * Purpose: 유저 재료 단위(kg)와 레시피 재료 단위(g)가 다를 때 정규화를 통해 정확한 양을 차감한다.
+ * Input: recipeId, userId
+ * Expected Result: 1kg에서 250g 차감 시 0.75kg이 남는다.
+ * Priority: High
+ *
+ * UT-18
+ * Method: ateRecipe
+ * Test Name: 컵 단위
+ * Purpose: '컵' 단위의 레시피 재료를 Base Unit(ml)으로 변환하여 정확히 차감한다.
+ * Input: recipeId, userId
+ * Expected Result: 500ml에서 2컵(200ml) 차감 시 300ml가 남는다.
+ * Priority: Medium
  */
 
 import com.today.fridge.ingredient.entity.UserIngredient;
@@ -65,7 +97,7 @@ class RecipeServiceAteTest {
         // ateRecipe: 여러 개의 레코드가 있을 경우 - 유통기한 임박순 차감 테스트
         // ========================================================================
         @Test
-        @DisplayName("UT-RECIPE-04 - 유통기한 임박순 차감")
+        @DisplayName("UT-14 - 유통기한 임박순 차감")
         void ateRecipe_SufficientMultipleRecords() {
                 // 1. 사용자 추가
                 User user = userRepository.save(User.create("ateuser1", "ate1@example.com", "password", "ater1"));
@@ -115,7 +147,7 @@ class RecipeServiceAteTest {
         // ateRecipe: 재료가 부족할 경우 - 모두 소진 및 삭제 테스트
         // ========================================================================
         @Test
-        @DisplayName("UT-RECIPE-05 - 재료 부족시 모두 소진 및 삭제")
+        @DisplayName("UT-15 - 재료 부족시 모두 소진 및 삭제")
         void ateRecipe_InsufficientIngredients() {
                 // 1. 사용자 추가
                 User user = userRepository.save(User.create("ateuser2", "ate2@example.com", "password", "ater2"));
@@ -156,7 +188,7 @@ class RecipeServiceAteTest {
         // ateRecipe: 재료가 아예 없는 경우 - 에러 없이 통과 확인 테스트
         // ========================================================================
         @Test
-        @DisplayName("UT-RECIPE-06 - 재료 없음")
+        @DisplayName("UT-16 - 재료 없음")
         void ateRecipe_MissingIngredients() {
                 // 1. 사용자 추가
                 User user = userRepository.save(User.create("ateuser3", "ate3@example.com", "password", "ater3"));
@@ -179,7 +211,7 @@ class RecipeServiceAteTest {
         // ateRecipe: 단위 불일치 테스트 (1kg 소유, 250g 요구)
         // ========================================================================
         @Test
-        @DisplayName("UT-RECIPE-07 - 단위 불일치")
+        @DisplayName("UT-17 - 단위 불일치")
         void ateRecipe_UnitMismatch_KgToG() {
                 // 1. 사용자 추가
                 User user = userRepository.save(User.create("unituser1", "unit1@example.com", "password", "unitr1"));
@@ -219,7 +251,7 @@ class RecipeServiceAteTest {
         // ateRecipe: 컵(Cup) 단위 테스트 (2컵 요구, 500ml 소유)
         // ========================================================================
         @Test
-        @DisplayName("UT-RECIPE-08 - 컵 단위")
+        @DisplayName("UT-18 - 컵 단위")
         void ateRecipe_CupUnit() {
                 // 1. 사용자 추가
                 User user = userRepository.save(User.create("unituser2", "unit2@example.com", "password", "unitr2"));
