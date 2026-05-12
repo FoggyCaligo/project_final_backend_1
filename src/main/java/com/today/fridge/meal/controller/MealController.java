@@ -48,7 +48,7 @@ public class MealController {
     public ResponseEntity<ApiResponse<List<MealLogResponse>>> getMeals(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @RequestParam(value = "date", required = false) LocalDate date) {
-        log.info("[MealController] getMeals (public) - userId: {}, date: {}", userId, date);
+        log.info("[MealController] getMeals - userId: {}, date: {}", userId, date);
         long uid = requireUserId(userId);
         
         if (date == null) date = LocalDate.now();
@@ -76,14 +76,12 @@ public class MealController {
         return ResponseEntity.ok(ApiResponse.success(response, "최신 AI 건강 레포트 조회 성공"));
     }
 
-
     @GetMapping("/recommendation")
     public ResponseEntity<ApiResponse<AIRecommendationResponse>> getCachedAIRecommendation(
             @RequestHeader(value = "X-User-Id", required = false) Long userId) {
         log.info("[MealController] getCachedAIRecommendation - userId: {}", userId);
         long uid = requireUserId(userId);
 
-        // GET 요청은 강제 새로고침을 하지 않고 캐시된 결과를 우선 반환합니다.
         AIRecommendationResponse response = mealServiceDaily.getAIRecommendation(uid, false);
         return ResponseEntity.ok(ApiResponse.success(response, "AI 식단 추천 데이터 조회 성공"));
     }
@@ -91,10 +89,9 @@ public class MealController {
     @PostMapping("/recommendation")
     public ResponseEntity<ApiResponse<AIRecommendationResponse>> getAIRecommendation(
             @RequestHeader(value = "X-User-Id", required = false) Long userId) {
-        log.info("[MealController] getAIRecommendation (force refresh) - userId: {}", userId);
+        log.info("[MealController] getAIRecommendation - userId: {}", userId);
         long uid = requireUserId(userId);
 
-        // POST 요청은 캐시를 무시하고 강제로 새로운 추천을 생성합니다.
         AIRecommendationResponse response = mealServiceDaily.getAIRecommendation(uid, true);
         return ResponseEntity.ok(ApiResponse.success(response, "AI 식단 추천 분석이 완료되었습니다."));
     }
@@ -103,7 +100,7 @@ public class MealController {
     public ResponseEntity<ApiResponse<Void>> recordMeal(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @RequestBody MealLogRequest request) {
-        log.info("[MealController] recordMeal (public) - userId: {}, recipeId: {}", userId, request.getRecipeId());
+        log.info("[MealController] recordMeal - userId: {}, recipeId: {}", userId, request.getRecipeId());
         long uid = requireUserId(userId);
         
         mealService.recordMeal(uid, request);
@@ -114,7 +111,7 @@ public class MealController {
     public ResponseEntity<ApiResponse<Void>> recordPhysicalMetrics(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @RequestBody PhysicalMetricsRequest request) {
-        log.info("[MealController] recordPhysicalMetrics (public) - userId: {}", userId);
+        log.info("[MealController] recordPhysicalMetrics - userId: {}", userId);
         long uid = requireUserId(userId);
         
         mealService.updatePhysicalMetrics(uid, request);
@@ -125,7 +122,7 @@ public class MealController {
     public ResponseEntity<ApiResponse<DailyRecommendationResponse>> getDailyNutrition(
             @RequestHeader(value = "X-User-Id", required = false) Long userId, 
             @RequestParam(value = "date", required = false) LocalDate date) {
-        log.info("[MealController] getDailyNutrition (public) - userId: {}, date: {}", userId, date);
+        log.info("[MealController] getDailyNutrition - userId: {}, date: {}", userId, date);
         long uid = requireUserId(userId);
         
         if (date == null) date = LocalDate.now();
@@ -138,7 +135,7 @@ public class MealController {
     public ResponseEntity<ApiResponse<ReportSummaryResponse>> getWeeklyReport(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @RequestParam(value = "date", required = false) LocalDate date) {
-        log.info("[MealController] getWeeklyReport (public) - userId: {}, date: {}", userId, date);
+        log.info("[MealController] getWeeklyReport - userId: {}, date: {}", userId, date);
         long uid = requireUserId(userId);
         
         if (date == null) date = LocalDate.now();
@@ -152,7 +149,7 @@ public class MealController {
     public ResponseEntity<ApiResponse<ReportSummaryResponse>> getMonthlyReport(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @RequestParam(value = "date", required = false) LocalDate date) {
-        log.info("[MealController] getMonthlyReport (public) - userId: {}, date: {}", userId, date);
+        log.info("[MealController] getMonthlyReport - userId: {}, date: {}", userId, date);
         long uid = requireUserId(userId);
         
         if (date == null) date = LocalDate.now();
@@ -166,7 +163,7 @@ public class MealController {
     public ResponseEntity<ApiResponse<Void>> deleteMeal(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @PathVariable("mealId") Long mealId) {
-        log.info("[MealController] deleteMeal (public) - userId: {}, mealId: {}", userId, mealId);
+        log.info("[MealController] deleteMeal - userId: {}, mealId: {}", userId, mealId);
         long uid = requireUserId(userId);
         
         mealService.deleteMeal(uid, mealId);
