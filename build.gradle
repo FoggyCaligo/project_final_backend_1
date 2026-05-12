@@ -55,6 +55,34 @@ dependencies {
 
 tasks.named('test') { useJUnitPlatform() }
 
+sourceSets {
+    ownerTest {
+        java.srcDir file('src/ownerTest/java')
+        resources.srcDir file('src/ownerTest/resources')
+        compileClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+        runtimeClasspath += output + compileClasspath
+    }
+}
+
+configurations {
+    ownerTestImplementation.extendsFrom testImplementation
+    ownerTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+tasks.register('ownerTest', Test) {
+    description = 'Runs owner-scope tests only (ingredient/vision).'
+    group = 'verification'
+    testClassesDirs = sourceSets.ownerTest.output.classesDirs
+    classpath = sourceSets.ownerTest.runtimeClasspath
+    useJUnitPlatform()
+    // Ensure test profile & isolated test DB/schema are used.
+    systemProperty "spring.profiles.active", "test"
+}
+
+tasks.named('processOwnerTestResources') {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
 bootRun {
     def envFile = file('.env')
     if (envFile.exists()) {

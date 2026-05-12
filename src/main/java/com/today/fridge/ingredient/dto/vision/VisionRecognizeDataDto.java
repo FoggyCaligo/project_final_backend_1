@@ -25,4 +25,7 @@ public class VisionRecognizeDataDto {
 
     /** 인식 시 저장된 {@code file_asset.file_id} (persist 시 설정) */
     private Long fileId;
+
+    /** 비전 이미지 로컬 저장 결과: SUCCESS, FAILED, SKIPPED(persist 비활성) */
+    private String imagePersistStatus;
 }

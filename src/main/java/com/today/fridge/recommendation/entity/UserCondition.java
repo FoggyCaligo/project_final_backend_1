@@ -10,7 +10,15 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor
 @Entity
-@Table(name = "user_condition")
+@Table(
+	    name = "user_condition",
+	    uniqueConstraints = {
+	        @UniqueConstraint(
+	            name = "uk_user_condition_user_condition",
+	            columnNames = {"user_id", "condition_id"}
+	        )
+	    }
+	)
 public class UserCondition {
 
     @Id
@@ -49,5 +57,22 @@ public class UserCondition {
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
+    }
+    
+    public static UserCondition create(User user, ConditionCode conditionCode, ConditionSourceType sourceType) {
+        UserCondition userCondition = new UserCondition();
+        userCondition.user = user;
+        userCondition.conditionCode = conditionCode;
+        userCondition.sourceType = sourceType;
+        userCondition.isActive = true;
+        return userCondition;
+    }
+
+    public void activate() {
+        this.isActive = true;
+    }
+
+    public void deactivate() {
+        this.isActive = false;
     }
 }
