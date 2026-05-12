@@ -5,6 +5,7 @@ public record RecipeRecommendationRow(
         String title,
         String thumbnailUrl,
         String summary,
-        String cookTimeText
+        String cookTimeText,
+        String difficultyLevel
 ) {
 }
