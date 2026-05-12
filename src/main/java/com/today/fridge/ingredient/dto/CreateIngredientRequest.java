@@ -44,4 +44,24 @@ public class CreateIngredientRequest {
     @JsonProperty("file_id")
     @JsonAlias({"fileId"})
     private Long fileId;
+
+    /**
+     * true 이면 아파치 업로드 전 DB에만 {@code file_asset} + 연결을 만들고, 클라이언트가 PHP 업로드 후
+     * {@code PATCH .../apache-image-sync} 로 성공/실패를 알린다. {@link #fileId} 와 동시 사용 불가.
+     */
+    @JsonProperty("remote_image_pending")
+    @JsonAlias({"remoteImagePending"})
+    private Boolean remoteImagePending;
+
+    @JsonProperty("remote_image_original_name")
+    @JsonAlias({"remoteImageOriginalName"})
+    private String remoteImageOriginalName;
+
+    @JsonProperty("remote_image_mime_type")
+    @JsonAlias({"remoteImageMimeType"})
+    private String remoteImageMimeType;
+
+    @JsonProperty("remote_image_size")
+    @JsonAlias({"remoteImageSize"})
+    private Long remoteImageSize;
 }

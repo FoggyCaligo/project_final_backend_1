@@ -49,6 +49,74 @@ public class FileAssetService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.VALIDATION_ERROR, "이미지 파일을 찾을 수 없습니다."));
     }
 
+    /**
+     * Spring 디스크에는 쓰지 않고 DB만 둔 뒤, 클라이언트가 아파치 {@code upload_fridge_image.php} 로 바이너리를 올린다.
+     * {@code vision/{file_id}.확장자} 메타만 채운다.
+     */
+    @Transactional
+    public FileAsset createApachePendingVision(
+            User uploader, String originalFilename, String mimeType, Long fileSize) {
+        String ext = extensionFromFilenameOrMime(originalFilename, mimeType);
+        FileAsset fa = new FileAsset();
+        fa.setUploaderUser(uploader);
+        fa.setStorageType("REMOTE_APACHE");
+        fa.setOriginalName(StringUtils.hasText(originalFilename) ? originalFilename : "upload.jpg");
+        fa.setStoredName("pending");
+        fa.setMimeType(StringUtils.hasText(mimeType) ? mimeType : "image/jpeg");
+        fa.setFileSize(fileSize != null ? fileSize : 0L);
+        fa.setStoragePath(null);
+        fa.setChecksumValue(null);
+        fa.setCreatedAt(LocalDateTime.now());
+        fileAssetRepository.save(fa);
+        fileAssetRepository.flush();
+        Long id = fa.getFileId();
+        String stored = id + ext;
+        fa.setStoredName(stored);
+        fa.setStoragePath("vision/" + stored);
+        return fileAssetRepository.save(fa);
+    }
+
+    @Transactional
+    public void deleteByIdAndUser(Long fileId, Long uploaderUserId) {
+        fileAssetRepository.findByFileIdAndUploaderUser_UserId(fileId, uploaderUserId).ifPresent(fileAssetRepository::delete);
+    }
+
+    /** 아파치 업로드 성공 후 기존 컬럼만 갱신 (스키마 변경 없음). */
+    @Transactional
+    public void applyApacheUploadMetadata(
+            Long fileId, Long uploaderUserId, String sha1sum, Long fileSize, String mimeType) {
+        FileAsset fa = getOwnedFileOrThrow(fileId, uploaderUserId);
+        if (StringUtils.hasText(sha1sum)) {
+            fa.setChecksumValue(sha1sum);
+        }
+        if (fileSize != null) {
+            fa.setFileSize(fileSize);
+        }
+        if (StringUtils.hasText(mimeType)) {
+            fa.setMimeType(mimeType);
+        }
+        fileAssetRepository.save(fa);
+    }
+
+    private static String extensionFromFilenameOrMime(String originalFilename, String mimeType) {
+        if (StringUtils.hasText(originalFilename) && originalFilename.contains(".")) {
+            String ext = originalFilename.substring(originalFilename.lastIndexOf('.')).toLowerCase();
+            if (ext.length() > 1 && ext.length() <= 10) {
+                return ext;
+            }
+        }
+        if (!StringUtils.hasText(mimeType)) {
+            return ".jpg";
+        }
+        return switch (mimeType.toLowerCase()) {
+            case "image/png" -> ".png";
+            case "image/webp" -> ".webp";
+            case "image/gif" -> ".gif";
+            case "image/jpeg", "image/jpg" -> ".jpg";
+            default -> ".jpg";
+        };
+    }
+
     private static void validateForInsert(FileAssetDto dto) {
         if (!StringUtils.hasText(dto.getOriginalName())
                 || !StringUtils.hasText(dto.getUuidName())
