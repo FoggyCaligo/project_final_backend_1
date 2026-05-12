@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,11 +26,9 @@ public class RecommendationController {
 
 	@GetMapping("/recommendations")
 	public ResponseEntity<ApiResponse<PageResult<RecipeRecommendationResponse>>> recommend(
+			@RequestHeader(value = "X-User-Id", required = false) Long userId,
 			@PageableDefault(size = 9) Pageable pageable) {
-		// TODO : user 연결 해야
-		Long mockUserId = 1L;
-
-		PageResult<RecipeRecommendationResponse> result = recommendationService.recommend(mockUserId, pageable);
+		PageResult<RecipeRecommendationResponse> result = recommendationService.recommend(userId, pageable);
 
 		return ResponseEntity.ok(ApiResponse.success(result, "추천 레시피 조회 성"));
 	}
