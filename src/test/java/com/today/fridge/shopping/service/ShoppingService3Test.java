@@ -6,6 +6,7 @@ import com.today.fridge.ingredient.repository.IngredientMasterRepository;
 import com.today.fridge.shopping.dto.IngredientPriceResponse;
 import com.today.fridge.shopping.dto.ShoppingItemDto;
 import com.today.fridge.shopping.entity.ShoppingItem;
+import com.today.fridge.shopping.external.ai.ShoppingExplainClient;
 import com.today.fridge.shopping.external.elevenst.ElevenStShoppingClient;
 import com.today.fridge.shopping.external.naver.NaverShoppingClient;
 import com.today.fridge.shopping.repository.ShoppingItemRepository;
@@ -33,6 +34,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 /**
  * ShoppingService3 단위 테스트
@@ -59,6 +61,9 @@ class ShoppingService3Test {
 
     @Mock
     private ElevenStShoppingClient elevenStClient;
+
+    @Mock
+    private ShoppingExplainClient shoppingExplainClient;
 
     @Mock
     private EntityManager em;
@@ -242,5 +247,64 @@ class ShoppingService3Test {
         // then
         assertThat(result.getLowestPrice()).isEqualTo(3000);
         then(shoppingItemRepository).should().saveAll(anyList());
+    }
+
+    // ============================================================
+    // explanation 포함 여부 검증
+    // ============================================================
+
+    @Test
+    @DisplayName("[단위] searchByKeyword: explanation이 응답에 포함된다")
+    void searchByKeyword_includesExplanation() {
+        // given
+        String expectedExplanation = "네이버쇼핑에서 무료배송으로 저렴하게 구매할 수 있습니다.";
+        given(valueOps.get(anyString())).willReturn(null);
+        given(naverClient.search("두부")).willReturn(List.of(
+                ShoppingItemDto.builder().mallName("네이버쇼핑").mallProductId("n1")
+                        .productName("두부 300g").price(1_980)
+                        .shippingType(ShippingType.FREE).stockStatus(StockStatus.IN_STOCK).build()));
+        given(elevenStClient.search("두부")).willReturn(Collections.emptyList());
+        given(shoppingExplainClient.explain(anyString(), anyList())).willReturn(expectedExplanation);
+
+        // when
+        IngredientPriceResponse result = shoppingService3.searchByKeyword("두부");
+
+        // then
+        assertThat(result.getExplanation()).isEqualTo(expectedExplanation);
+    }
+
+    @Test
+    @DisplayName("[단위] searchByKeyword: ShoppingExplainClient가 null 반환 시 explanation=null이지만 정상 응답한다")
+    void searchByKeyword_explainReturnsNull_responseIsStillValid() {
+        // given
+        given(valueOps.get(anyString())).willReturn(null);
+        given(naverClient.search("계란")).willReturn(List.of(
+                ShoppingItemDto.builder().mallName("네이버쇼핑").mallProductId("n1")
+                        .productName("계란 30구").price(5_900)
+                        .shippingType(ShippingType.FREE).stockStatus(StockStatus.IN_STOCK).build()));
+        given(elevenStClient.search("계란")).willReturn(Collections.emptyList());
+        given(shoppingExplainClient.explain(anyString(), anyList())).willReturn(null);
+
+        // when
+        IngredientPriceResponse result = shoppingService3.searchByKeyword("계란");
+
+        // then
+        assertThat(result.getExplanation()).isNull();
+        assertThat(result.getLowestPrice()).isEqualTo(5_900);
+    }
+
+    @Test
+    @DisplayName("[단위] searchByKeyword: 검색 결과 없을 때 explain을 호출하지 않는다")
+    void searchByKeyword_noItems_doesNotCallExplain() {
+        // given
+        given(valueOps.get(anyString())).willReturn(null);
+        given(naverClient.search(anyString())).willReturn(Collections.emptyList());
+        given(elevenStClient.search(anyString())).willReturn(Collections.emptyList());
+
+        // when
+        shoppingService3.searchByKeyword("없는재료");
+
+        // then
+        then(shoppingExplainClient).should(never()).explain(anyString(), anyList());
     }
 }
