@@ -17,18 +17,17 @@ public class BookmarkController {
 
     private final BookmarkService bookmarkService;
 
-    // 💡 변경: @PathVariable("userId") 명시
-    @GetMapping("/{userId}")
-    public ResponseEntity<List<BookmarkedRecipeResponse>> getBookmarksByUser(@PathVariable("userId") Long userId) {
+    @GetMapping
+    public ResponseEntity<List<BookmarkedRecipeResponse>> getBookmarksByUser(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
         List<BookmarkedRecipeResponse> response = bookmarkService.getBookmarkedRecipes(userId);
         return ResponseEntity.ok(response);
     }
 
-    // 💡 변경: @PathVariable("recipeId"), @RequestParam("userId") 명시
     @PostMapping("/{recipeId}")
     public ResponseEntity<Map<String, Object>> addBookmark(
-            @PathVariable("recipeId") Long recipeId, 
-            @RequestParam("userId") Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @PathVariable("recipeId") Long recipeId) {
         
         bookmarkService.addBookmark(userId, recipeId);
         
@@ -37,11 +36,10 @@ public class BookmarkController {
         return ResponseEntity.ok(response);
     }
 
-    // 💡 변경: @PathVariable("recipeId"), @RequestParam("userId") 명시
     @DeleteMapping("/{recipeId}")
     public ResponseEntity<Map<String, Object>> removeBookmark(
-            @PathVariable("recipeId") Long recipeId, 
-            @RequestParam("userId") Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @PathVariable("recipeId") Long recipeId) {
         
         bookmarkService.removeBookmark(userId, recipeId);
         
@@ -50,11 +48,23 @@ public class BookmarkController {
         return ResponseEntity.ok(response);
     }
 
-    // 💡 변경: @PathVariable("recipeId"), @RequestParam("userId") 명시
+    // Frontend compatibility: allow GET /api/v1/bookmarks/{recipeId}
+    @GetMapping("/{recipeId}")
+    public ResponseEntity<Map<String, Boolean>> checkStatusByRecipeId(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @PathVariable("recipeId") Long recipeId) {
+
+        boolean isBookmarked = bookmarkService.checkBookmarkStatus(userId, recipeId);
+
+        Map<String, Boolean> response = new HashMap<>();
+        response.put("isBookmarked", isBookmarked);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/{recipeId}/status")
     public ResponseEntity<Map<String, Boolean>> checkStatus(
-            @PathVariable("recipeId") Long recipeId, 
-            @RequestParam("userId") Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @PathVariable("recipeId") Long recipeId) {
         
         boolean isBookmarked = bookmarkService.checkBookmarkStatus(userId, recipeId);
         

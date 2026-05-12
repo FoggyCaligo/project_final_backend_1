@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.today.fridge.chatbot.dto.request.ChatInterpretRequest;
 import com.today.fridge.chatbot.dto.response.ChatInterpretResponse;
@@ -23,35 +22,44 @@ public class ChatbotOrchestratorService {
     private final RecommendationService recommendationService;
     private final UserConditionRepository userConditionRepository;
 
-    @Transactional(readOnly = true)
     public List<RecipeRecommendationResponse> recommendFromChat(
+            Long userId,
             ChatInterpretRequest request
     ) {
-
         ChatInterpretResponse parsed =
                 intentParserService.interpret(request);
 
-        Long userId = request.getUserId();
         boolean isMember = userId != null;
 
         List<String> includeIngredients =
-                parsed.getIncludeIngredients() == null ? List.of() : parsed.getIncludeIngredients();
+                parsed.getIncludeIngredients() == null
+                        ? List.of()
+                        : parsed.getIncludeIngredients();
 
         List<String> conditionCodes =
-                parsed.getConditionTags() == null ? List.of() : parsed.getConditionTags();
-        
+                parsed.getConditionTags() == null
+                        ? List.of()
+                        : parsed.getConditionTags();
+
+        List<String> excludeIngredients =
+                parsed.getExcludeIngredients() == null
+                        ? List.of()
+                        : parsed.getExcludeIngredients();
+
         List<String> keywords = new java.util.ArrayList<>();
 
-        keywords.add(request.getText());
+        if (request.getText() != null && !request.getText().isBlank()) {
+            keywords.add(request.getText());
+        }
 
         if (parsed.getKeywords() != null) {
-            keywords.addAll(parsed.getKeywords());
+            keywords.addAll(
+                    parsed.getKeywords().stream()
+                            .filter(k -> k != null && !k.isBlank())
+                            .toList()
+            );
         }
-        
-        if (isMember && includeIngredients.isEmpty()) {
-            includeIngredients = List.of();
-        }
-        
+
         List<String> profileConditionCodes = isMember
                 ? userConditionRepository
                         .findByUser_UserIdAndIsActiveTrue(userId)
@@ -62,17 +70,16 @@ public class ChatbotOrchestratorService {
 
         conditionCodes = java.util.stream.Stream
                 .concat(conditionCodes.stream(), profileConditionCodes.stream())
+                .filter(c -> c != null && !c.isBlank())
                 .distinct()
                 .toList();
-        System.out.println("[CHAT_PARSED] conditions=" + conditionCodes);
-        System.out.println("[CHAT_PARSED] includeIngredients=" + includeIngredients);
-        System.out.println("[CHAT_PARSED] keywords=" + keywords);
+
         RecommendationQuery query =
                 RecommendationQuery.builder()
                         .userId(userId)
                         .conditionCodes(conditionCodes)
                         .includeIngredients(includeIngredients)
-                        .excludeIngredients(parsed.getExcludeIngredients())
+                        .excludeIngredients(excludeIngredients)
                         .keywords(keywords)
                         .sortHint(parsed.getSortHint())
                         .source("CHATBOT")
@@ -80,6 +87,11 @@ public class ChatbotOrchestratorService {
                         .useUserFridge(isMember)
                         .build();
 
-        return recommendationService.recommend(query, Pageable.unpaged()).content().stream().limit(3).toList();
+        return recommendationService
+                .recommend(query, Pageable.unpaged())
+                .content()
+                .stream()
+                .limit(3)
+                .toList();
     }
 }

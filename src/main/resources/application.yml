@@ -3,6 +3,8 @@ spring:
     import: optional:file:.env[.properties]
   application:
     name: project_final_backend1
+    admin:
+      enabled: false
   profiles:
     active: local
   servlet:
@@ -31,7 +33,7 @@ spring:
         default_schema: today_fridge
     hibernate:
       # 최종 SQL 기준 운영/개발 스키마 드리프트 방지
-      ddl-auto: validate
+      ddl-auto: update
   flyway:
     enabled: false
   mail:
@@ -89,3 +91,4 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{requestId}] %-5level %logger{36} - %msg%n"
     #file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{requestId}] %-5level %logger{36} - %msg%n"
+

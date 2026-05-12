@@ -15,15 +15,15 @@ import com.today.fridge.embedding.entity.RecipeEmbedding;
 public interface RecipeEmbeddingRepository
                 extends JpaRepository<RecipeEmbedding, Long> {
 
-        @Query(value = """
-                        select recipe_id as recipeId,
-                               embedding <=> cast(:queryVector as vector) as distance
-                        from recipe_embedding
-                        where is_active = true
-                          and model_name = :modelName
-                        order by distance
-                        limit :limit
-                        """, nativeQuery = true)
+	@Query(value = """
+			select recipe_id as recipeId,
+			       embedding <=> cast(:queryVector as vector) as distance
+			from today_fridge.recipe_embedding
+			where is_active = true
+			  and model_name = :modelName
+			order by distance
+			limit :limit
+			""", nativeQuery = true)
         List<SemanticSearchResult> findSimilarRecipes(
                         @Param("queryVector") String queryVector,
                         @Param("modelName") String modelName,
