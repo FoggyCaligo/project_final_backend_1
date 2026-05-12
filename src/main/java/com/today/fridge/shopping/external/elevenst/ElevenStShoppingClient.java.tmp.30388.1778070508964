@@ -27,7 +27,7 @@ import java.util.List;
 @Slf4j
 @Primary
 @Component
-// Todo: 11번가가 쿠팡 클라이언트 상속 받고 있음 > 이후 shoppingClient 공통 인터페이스로 수정하기
+// Todo: 11번가가 11번가 클라이언트 상속 받고 있음 > 이후 shoppingClient 공통 인터페이스로 수정하기
 // 11번가의 XML 응답을'EUC-KR'로 읽고 다시 리스트로 변환하는 역할
 public class ElevenStShoppingClient extends CoupangShoppingClient {
 

@@ -176,7 +176,7 @@ public class ShoppingService3 {
     private IngredientPriceResponse fetchFromExternalApis(IngredientMaster master, Instant now) {
         String keyword = master.getCanonicalName();
 
-        // 네이버와 쿠팡에 동시에 비동기 요청
+        // 네이버와 11번가 동시에 비동기 요청
         CompletableFuture<List<ShoppingItemDto>> naverFuture = CompletableFuture
                 .supplyAsync(() -> naverClient.search(keyword));
         CompletableFuture<List<ShoppingItemDto>> elevenFuture = CompletableFuture
@@ -300,7 +300,7 @@ public class ShoppingService3 {
     private static final String KEYWORD_PREFIX = "shopping:keyword:";
 
     /**
-     * 키워드로 직접 네이버+쿠팡 API를 호출하여 실시간 최저가를 검색합니다.
+     * 키워드로 직접 네이버+11번가 API를 호출하여 실시간 최저가를 검색합니다.
      * ingredient_master 테이블에 없는 식재료도 검색 가능합니다.
      *
      * @param keyword 검색어 (예: "계란", "대파", "양파")

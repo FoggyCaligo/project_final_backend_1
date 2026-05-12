@@ -1,0 +1,8 @@
+app:
+  naver:
+    shopping:
+      client-id: ${NAVER_CLIENT_ID:}
+      client-secret: ${NAVER_CLIENT_SECRET:}
+  elevenst:
+    openapi:
+      key: ${ELEVENST_API_KEY:}

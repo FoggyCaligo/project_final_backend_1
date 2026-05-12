@@ -33,7 +33,7 @@ public class ShoppingController {
     /**
      * 식재료 ID로 최저가 조회 (Redis 캐시 우선)
      */
-    @Operation(summary = "식재료 ID 최저가 조회", description = "식재료 ID로 네이버/11번가/쿠팡 최저가를 조회합니다. Redis 캐시(1시간) 우선 사용.")
+    @Operation(summary = "식재료 ID 최저가 조회", description = "식재료 ID로 네이버/11번가/ 최저가를 조회합니다. Redis 캐시(1시간) 우선 사용.")
     @GetMapping("/ingredients/{ingredientId}/prices")
     public ResponseEntity<ApiResponse<IngredientPriceResponse>> getIngredientPrices(
             @Parameter(description = "사용자 ID (JWT 인증 헤더에서 자동 주입)", example = "1")
@@ -64,7 +64,7 @@ public class ShoppingController {
      *
      * GET /api/v1/shopping/search?keyword=계란
      */
-    @Operation(summary = "키워드 실시간 최저가 검색", description = "키워드로 네이버/11번가/쿠팡에서 실시간 최저가를 검색합니다. 인증 불필요.")
+    @Operation(summary = "키워드 실시간 최저가 검색", description = "키워드로 네이버/11번가/에서 실시간 최저가를 검색합니다. 인증 불필요.")
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<IngredientPriceResponse>> searchByKeyword(
             @Parameter(description = "검색할 식재료 키워드", example = "계란")
