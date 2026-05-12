@@ -65,8 +65,8 @@ app:
       access-token-validity-seconds: 3600
       refresh-token-validity-seconds: 1209600
     cookie:
-      secure: false
-      same-site: Lax
+      secure: ${APP_COOKIE_SECURE:false}
+      same-site: ${APP_COOKIE_SAME_SITE:Lax}
   upload:
     root-path: uploads
   fastapi:
@@ -89,7 +89,13 @@ app:
     client-secret: ${KAKAO_CLIENT_SECRET:}
     redirect-uri: ${KAKAO_REDIRECT_URI}
     frontend-base-url: ${FRONTEND_BASE_URL}
-
+  naver:
+    shopping:
+      client-id: ${NAVER_CLIENT_ID:}
+      client-secret: ${NAVER_CLIENT_SECRET:}
+  elevenst:
+    openapi:
+      key: ${ELEVENST_API_KEY:}
 logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{requestId}] %-5level %logger{36} - %msg%n"

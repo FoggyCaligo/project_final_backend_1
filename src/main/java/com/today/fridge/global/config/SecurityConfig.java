@@ -59,16 +59,18 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOriginPatterns(List.of(
-                "http://localhost:3000",
-                "http://127.0.0.1:3000",
-                "http://localhost:5173",
-                "https://*.ngrok-free.dev",
-                "https://today-fridge-frontend-deploy.vercel.app",
-                "http://127.0.0.1:5173",
-                "http://100.78.2.126:3000",
-                "https://*.ngrok-free.dev",
-                "https://todayfridge.com"
-        ));
+        	    "http://localhost:3000",
+        	    "http://127.0.0.1:3000",
+        	    "http://localhost:5173",
+        	    "http://127.0.0.1:5173",
+
+        	    "https://today-fridge-frontend-deploy.vercel.app",
+        	    "https://today-fridge-frontend-deploy-*.vercel.app",
+        	    "https://*.vercel.app",
+        	    "https://today-fridge-frontend-deploy-nuv3biad4-ddujeongs-projects.vercel.app",
+        	    "https://*.ngrok-free.dev",
+        	    "https://todayfridge.com"
+        	));
 
         configuration.setAllowedMethods(List.of(
                 "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
