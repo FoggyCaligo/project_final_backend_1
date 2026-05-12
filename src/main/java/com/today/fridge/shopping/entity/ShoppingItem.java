@@ -5,6 +5,8 @@ import com.today.fridge.shopping.type.ShippingType;
 import com.today.fridge.shopping.type.StockStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -58,7 +60,8 @@ public class ShoppingItem {
     private BigDecimal unitPricePer100;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "shipping_type")
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "shipping_type", columnDefinition = "today_fridge.shipping_type")
     private ShippingType shippingType;
 
     @Column(name = "shipping_fee", nullable = false)
@@ -66,7 +69,8 @@ public class ShoppingItem {
     private Integer shippingFee = 0;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "stock_status", nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "stock_status", nullable = false, columnDefinition = "today_fridge.stock_status")
     @Builder.Default
     private StockStatus stockStatus = StockStatus.IN_STOCK;
 

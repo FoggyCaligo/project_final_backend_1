@@ -27,7 +27,7 @@ import java.util.List;
 @Slf4j
 @Primary
 @Component
-// Todo: 11번가가 쿠팡 클라이언트 상속 받고 있음 > 이후 shoppingClient 공통 인터페이스로 수정하기
+// Todo: 11번가가  클라이언트 상속 받고 있음 > 이후 shoppingClient 공통 인터페이스로 수정하기
 // 11번가의 XML 응답을'EUC-KR'로 읽고 다시 리스트로 변환하는 역할
 public class ElevenStShoppingClient extends CoupangShoppingClient {
 
@@ -46,18 +46,17 @@ public class ElevenStShoppingClient extends CoupangShoppingClient {
     @Override
     public List<ShoppingItemDto> search(String keyword) {
 
-        log.info("[ElevenStShoppingClient] API 호출 시작 - 검색어: {}", keyword); // 로그
+        log.info("[ElevenStShoppingClient] API 호출 시작 - 검색어: {}", keyword);
 
         if (apiKey.isBlank()) {
             log.warn("[ElevenStShoppingClient] API 키 미설정, 건너뜀");
             return Collections.emptyList();
         }
         try {
-            // encodedKeyword는 URLEncoder.encode를 사용해서 검색어에 띄어쓰기나 글자들을 컴퓨터용 언어로 바꿔주는 번역된 키워드
             String encodedKeyword = URLEncoder.encode(keyword, java.nio.charset.StandardCharsets.UTF_8);
+            // option=Categories: 응답에 카테고리 정보 포함 → 식품 카테고리 여부 판별에 사용
             String url = BASE_URL + "?key=" + apiKey
-                    + "&apiCode=ProductSearch&keyword=" + encodedKeyword + "&pageSize=10";
-            // 데이터 가져오기 (byte배열) : EUC-KR 로 직접 해석하기 위해 가공되지 않은 '날것'의 데이터를 가져온다
+                    + "&apiCode=ProductSearch&keyword=" + encodedKeyword + "&pageSize=20&option=Categories";
             byte[] body = restClient.get()
                     .uri(java.net.URI.create(url))
                     .retrieve()
@@ -69,7 +68,7 @@ public class ElevenStShoppingClient extends CoupangShoppingClient {
             }
 
             List<ShoppingItemDto> results = parseXml(body, keyword);
-            log.info("[ElevenStShoppingClient] 검색 성공 - 결과 수: {}", results.size()); // 결과 확인용
+            log.info("[ElevenStShoppingClient] 검색 성공 - 결과 수: {}", results.size());
             return results;
         } catch (Exception e) {
             log.warn("[ElevenStShoppingClient] 검색 실패 keyword={}: {}", keyword, e.getMessage());
@@ -77,14 +76,18 @@ public class ElevenStShoppingClient extends CoupangShoppingClient {
         }
     }
 
-    // 11번가 api는 xml을 사용, 따라서 euc-kr 을 사용한다 : Charset.forName('EUC-KR')
-    // getElementsByTagName("Product") : <Products> wrapper 유무에 상관없이 Product 태그를 직접 탐색
+    // 식품으로 판별하는 카테고리 키워드 목록
+    private static final java.util.Set<String> FOOD_CATEGORY_KEYWORDS = java.util.Set.of(
+            "식품", "식재료", "과일", "채소", "야채", "정육", "수산", "육류", "곡류", "쌀",
+            "음료", "건강식품", "신선", "냉동", "유제품", "계란", "두부", "김치", "장류",
+            "조미료", "오일", "간식", "스낵", "제과", "빵", "떡", "국수", "라면", "견과"
+    );
+
     private List<ShoppingItemDto> parseXml(byte[] body) throws Exception {
         return parseXml(body, null);
     }
 
     private List<ShoppingItemDto> parseXml(byte[] body, String filterKeyword) throws Exception {
-        // EUC-KR로 변환한 원본 XML 로깅 (응답 구조 확인용)
         String rawXml = new String(body, Charset.forName("EUC-KR"));
         log.info("[ElevenStShoppingClient] XML 응답 (앞 400자): {}",
                 rawXml.length() > 400 ? rawXml.substring(0, 400) + "..." : rawXml);
@@ -94,7 +97,10 @@ public class ElevenStShoppingClient extends CoupangShoppingClient {
                 .parse(new InputSource(new InputStreamReader(
                         new ByteArrayInputStream(body), Charset.forName("EUC-KR"))));
 
-        // <Product> 태그를 문서 전체에서 직접 탐색 (<Products> wrapper 유무 무관)
+        // 응답의 카테고리 명칭에 식품 키워드가 포함되면 식품 카테고리로 판별
+        boolean isFoodContext = hasFoodCategory(doc);
+        log.info("[ElevenStShoppingClient] 식품 카테고리 감지: {}", isFoodContext);
+
         NodeList productNodes = doc.getElementsByTagName("Product");
         if (productNodes.getLength() == 0) {
             log.warn("[ElevenStShoppingClient] <Product> 태그 없음 — 응답 XML 확인 필요");
@@ -107,15 +113,40 @@ public class ElevenStShoppingClient extends CoupangShoppingClient {
             if (node.getNodeType() == Node.ELEMENT_NODE) {
                 ShoppingItemDto dto = toDto((Element) node);
                 if (dto != null) {
-                    // 검색어가 상품명에 포함되고, 비식품 키워드가 없는 경우만 포함
-                    if (filterKeyword == null || dto.getProductName() == null ||
-                            isFoodProductName(dto.getProductName(), filterKeyword)) {
-                        result.add(dto);
+                    // 식품 카테고리가 감지된 경우: 상품명에 키워드만 포함되면 통과
+                    // 식품 카테고리 미감지: 기존 비식품 단어 제외 필터 적용
+                    if (isFoodContext) {
+                        if (filterKeyword == null || dto.getProductName() == null
+                                || dto.getProductName().contains(filterKeyword)) {
+                            result.add(dto);
+                        }
+                    } else {
+                        if (filterKeyword == null || dto.getProductName() == null
+                                || isFoodProductName(dto.getProductName(), filterKeyword)) {
+                            result.add(dto);
+                        }
                     }
                 }
             }
         }
         return result;
+    }
+
+    // option=Categories 응답의 <CategoryName> 태그에서 식품 카테고리 키워드 탐색
+    private boolean hasFoodCategory(Document doc) {
+        NodeList categoryNames = doc.getElementsByTagName("CategoryName");
+        for (int i = 0; i < categoryNames.getLength(); i++) {
+            String name = categoryNames.item(i).getTextContent();
+            if (name != null) {
+                for (String foodKeyword : FOOD_CATEGORY_KEYWORDS) {
+                    if (name.contains(foodKeyword)) {
+                        log.info("[ElevenStShoppingClient] 식품 카테고리 발견: {}", name);
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     // 가격에 콤마를 찍어서 보내줄때 콤마가 포함된 가격표시를 숫자로 바꿈
