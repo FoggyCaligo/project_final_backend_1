@@ -424,7 +424,7 @@ public class FridgeIngredientService {
         }
         userIngredientRepository.delete(e);
         if (fa != null) {
-            fileAssetService.deleteByIdAndUser(fa.getFileId(), userId);
+            //fileAssetService.deleteByIdAndUser(fa.getFileId(), userId);
         }
         return new DeleteIngredientData(id);
     }
