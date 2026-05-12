@@ -16,3 +16,6 @@ src/main/resources/application-local.yml
 
 # AI 에이전트 문서
 .ai/
+
+# Gradle 로컬 오버라이드 (팀원 테스트 컴파일 제외 설정)
+gradle-local.properties
