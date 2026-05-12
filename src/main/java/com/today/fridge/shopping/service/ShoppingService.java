@@ -39,10 +39,10 @@ import java.util.stream.Stream;
  *
  * Redis 장애 시 DB 캐시(shopping_item_mcp)로 자동 fallback합니다.
  */
-// Renamed to ShoppingService. This class is kept for reference only (not a Spring bean).
 @Slf4j
+@Service
 @RequiredArgsConstructor
-public class ShoppingService3 {
+public class ShoppingService {
 
     private static final long CACHE_HOURS = 1;
     private static final String PRICE_PREFIX = "shopping:price:";
@@ -63,52 +63,36 @@ public class ShoppingService3 {
     @Transactional
     public IngredientPriceResponse getIngredientPrices(Long ingredientMasterId) {
         // 1. Redis 캐시 확인
-        //
-        /**
-         * Redis 는 메모리에 쓰는 포스트잇 메모장 같은 역할
-         * opsForValue() : Redis 의 여러 데이터 구조 중 가장 기본인 String(Key-value) 형태를 다룬다, 키에 해당하는
-         * 값을 가져오거나 저장할때 사용
-         * get(key) : 키에 따른 값을 읽는다
-         * set(key, value, timeout, unit) 키에 따른 값을 저장하고 몇분 뒤에 파기해 라고 타이머를 설정
-         * opsForList() : 리스트(순서가 있는 목록)을 다룰때
-         * opsForHash(): 객체처럼 여러 필드가 있는 데이터를 다룰때
-         * delete(key) : 삭제
-         */
         try {
-            // cashed 는 PRICE_PREFIX (shopping:price)에 식재료id를 붙인 키를 Redis 에서 조회 한 결과를 받아서
-            // 변수에 저장
             Object cached = redisTemplate.opsForValue().get(PRICE_PREFIX + ingredientMasterId);
             if (cached != null) {
-                log.debug("[ShoppingService3] Redis 캐시 HIT ingredientId={}", ingredientMasterId);
+                log.debug("[ShoppingService] Redis 캐시 HIT ingredientId={}", ingredientMasterId);
                 return objectMapper.convertValue(cached, IngredientPriceResponse.class);
             }
         } catch (Exception e) {
-            log.warn("[ShoppingService3] Redis 캐시 조회 실패, DB fallback: {}", e.getMessage());
+            log.warn("[ShoppingService] Redis 캐시 조회 실패, DB fallback: {}", e.getMessage());
         }
 
         // 2. DB 캐시 확인 (Redis 장애 시 fallback)
         IngredientMaster master = ingredientMasterRepository.findById(ingredientMasterId)
                 .orElseThrow(ShoppingErrorCode.INGREDIENT_MASTER_NOT_FOUND::toException);
-        // DB 를 조회하지 못하면 '식재료 마스터 정보를 찾을 수 없습니다.' 문구 출력
         Instant now = Instant.now();
-        // dbCached는 shoppingItem 테이블에서 식재료 id 기준으로 데이터를 조회해 가격순서대로 db를 조회한 결과를 받아서 변수에
-        // 저장
         List<ShoppingItem> dbCached = shoppingItemRepository
                 .findByIngredientMaster_IngredientMasterIdAndExpiresAtAfterOrderByPriceAsc(
                         master.getIngredientMasterId(), now);
 
         if (!dbCached.isEmpty()) {
-            log.debug("[ShoppingService3] DB 캐시 HIT ingredientId={}", ingredientMasterId);
+            log.debug("[ShoppingService] DB 캐시 HIT ingredientId={}", ingredientMasterId);
             IngredientPriceResponse response = buildResponse(master, dbCached);
             // DB 캐시 결과를 Redis에도 저장
             cacheToRedis(PRICE_PREFIX + ingredientMasterId, response);
             return response;
         }
 
-        // 3. 캐시 Miss (레디쉬, DB 캐시 둘다 없을때) → 외부 API 호출
+        // 3. 캐시 Miss → 외부 API 호출
         IngredientPriceResponse response = fetchFromExternalApis(master, now);
 
-        // 4. Redis 캐시 저장 (외부 Api를 가져와 1시간동안 저장)
+        // 4. Redis 캐시 저장
         cacheToRedis(PRICE_PREFIX + ingredientMasterId, response);
 
         return response;
@@ -118,22 +102,10 @@ public class ShoppingService3 {
     public List<IngredientPriceResponse> getFridgePrices(Long userId) {
         // 1. Redis 캐시 확인
         try {
-            // cashed 는 FRIDGE_PREFIX (shopping:fridge:유저아이디) 를 레디쉬에서 가져와 저장
             Object cached = redisTemplate.opsForValue().get(FRIDGE_PREFIX + userId);
             if (cached != null) {
-                log.debug("[ShoppingService3] Redis 냉장고 캐시 HIT userId={}", userId);
-                // List<LinkedHashMap> → List<IngredientPriceResponse> 변환
+                log.debug("[ShoppingService] Redis 냉장고 캐시 HIT userId={}", userId);
                 @SuppressWarnings("unchecked")
-
-                // stream 방식은 for문을 길게 쓰는 것보다 코드가 간결하고 무슨 일을 하는지 보기 좋은 가독성을 가진다
-                // stream() : 리스트 (데이터 덩어리)를 컨베이어 밸트에 하나씩 올린다
-                // map() : 컨베이어 밸트 위를 지나가는 데이터 하나하나를 다른 형태 (가격 정보)로 재가공
-                // filter() : 조건에 안맞는 데이터를 벨트 밖으로 밀어낸다
-                // toList() : 가공이 끝난 데이터를 다시 list로 담는다
-                // ---------------------------------------------------
-                // List<LinkedHashMap> → List<IngredientPriceResponse> 변환
-
-                // rawList 는 cached 를 List<Object> 로 변환
                 List<Object> rawList = (List<Object>) cached;
 
                 return rawList.stream()
@@ -141,7 +113,7 @@ public class ShoppingService3 {
                         .toList();
             }
         } catch (Exception e) {
-            log.warn("[ShoppingService3] Redis 냉장고 캐시 조회 실패: {}", e.getMessage());
+            log.warn("[ShoppingService] Redis 냉장고 캐시 조회 실패: {}", e.getMessage());
         }
 
         // 2. 냉장고 식재료 목록 조회
@@ -156,7 +128,6 @@ public class ShoppingService3 {
             return List.of();
         }
 
-        // results는
         List<IngredientPriceResponse> results = masters.stream()
                 .map(master -> getIngredientPrices(master.getIngredientMasterId()))
                 .toList();
@@ -166,7 +137,7 @@ public class ShoppingService3 {
             redisTemplate.opsForValue().set(
                     FRIDGE_PREFIX + userId, results, 30, TimeUnit.MINUTES);
         } catch (Exception e) {
-            log.warn("[ShoppingService3] Redis 냉장고 캐시 저장 실패: {}", e.getMessage());
+            log.warn("[ShoppingService] Redis 냉장고 캐시 저장 실패: {}", e.getMessage());
         }
 
         return results;
@@ -215,13 +186,10 @@ public class ShoppingService3 {
         try {
             redisTemplate.opsForValue().set(key, value, CACHE_HOURS, TimeUnit.HOURS);
         } catch (Exception e) {
-            log.warn("[ShoppingService3] Redis 캐시 저장 실패: {}", e.getMessage());
+            log.warn("[ShoppingService] Redis 캐시 저장 실패: {}", e.getMessage());
         }
     }
 
-    // ShoppingItem 은 식재료마스터DB에 mallName(네이버나 11번가 등), mallProductId, 구메아이템이름, 브랜드,
-    // 할인가격, 원래 가격, 할인비율, 이미지url, 쇼핑타입, 재고현황, 배송료, 리뷰평점, 받아온 시간, 만료시간, 업데이트 시간의 정보를
-    // 담는다.
     private ShoppingItem toEntity(ShoppingItemDto dto, IngredientMaster master,
             Instant fetchedAt, Instant expiresAt) {
         return ShoppingItem.builder()
@@ -293,7 +261,7 @@ public class ShoppingService3 {
             try {
                 shoppingItemRepository.deleteExpired(now);
             } catch (Exception e) {
-                log.warn("[ShoppingService3] 만료 캐시 삭제 실패: {}", e.getMessage());
+                log.warn("[ShoppingService] 만료 캐시 삭제 실패: {}", e.getMessage());
             }
         });
     }
@@ -324,11 +292,11 @@ public class ShoppingService3 {
         try {
             Object cached = redisTemplate.opsForValue().get(KEYWORD_PREFIX + normalizedKeyword);
             if (cached != null) {
-                log.debug("[ShoppingService3] 키워드 캐시 HIT keyword={}", normalizedKeyword);
+                log.debug("[ShoppingService] 키워드 캐시 HIT keyword={}", normalizedKeyword);
                 return objectMapper.convertValue(cached, IngredientPriceResponse.class);
             }
         } catch (Exception e) {
-            log.warn("[ShoppingService3] 키워드 캐시 조회 실패: {}", e.getMessage());
+            log.warn("[ShoppingService] 키워드 캐시 조회 실패: {}", e.getMessage());
         }
 
         // 2. 네이버 + 11번가 병렬 API 호출
@@ -337,27 +305,18 @@ public class ShoppingService3 {
         CompletableFuture<List<ShoppingItemDto>> elevenStFuture = CompletableFuture
                 .supplyAsync(() -> elevenStClient.search(normalizedKeyword));
 
-        // 네이버는 NaverClient 내부에서 이미 min() 1개 반환, 11번가는 여러 개 중 최저가 1개만 사용
-        // List<ShoppingItemDto> naverItems = naverFuture.join();
-
         ShoppingItemDto bestNaver = naverFuture.join().stream()
                 .min(Comparator.comparingInt(ShoppingItemDto::getPrice))
                 .orElse(null);
 
-        // List<ShoppingItemDto> elevenItems = elevenStFuture.join();
         ShoppingItemDto bestEleven = elevenStFuture.join().stream()
                 .min(Comparator.comparingInt(ShoppingItemDto::getPrice))
                 .orElse(null);
 
-        // List<ShoppingItemDto> elevenStItems = elevenStFuture.join().stream()
-        // .min(Comparator.comparingInt(ShoppingItemDto::getPrice))
-        // .map(List::of)
-        // .orElse(List.of());
-
         // 두 개를 합침
         List<ShoppingItemDto> allItems = Stream.of(bestNaver, bestEleven)
                 .filter(java.util.Objects::nonNull)
-                .sorted(Comparator.comparingInt(ShoppingItemDto::getPrice)) // 전체 중 더 싼 게 앞으로 오게 정렬
+                .sorted(Comparator.comparingInt(ShoppingItemDto::getPrice))
                 .toList();
 
         if (allItems.isEmpty()) {
@@ -372,8 +331,6 @@ public class ShoppingService3 {
                     .build();
         }
 
-        // int lowestPrice =
-        // allItems.stream().mapToInt(ShoppingItemDto::getPrice).min().orElse(0);
         int lowestPrice = allItems.get(0).getPrice(); // 정렬되었으므로 첫 번째가 최저가
 
         Instant now = Instant.now();

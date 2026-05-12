@@ -4,7 +4,7 @@ import com.today.fridge.global.exception.BusinessException;
 import com.today.fridge.global.exception.ErrorCode;
 import com.today.fridge.global.response.ApiResponse;
 import com.today.fridge.shopping.dto.IngredientPriceResponse;
-import com.today.fridge.shopping.service.ShoppingService3;
+import com.today.fridge.shopping.service.ShoppingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,7 +27,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ShoppingController {
 
-    private final ShoppingService3 shoppingService3;
+    private final ShoppingService shoppingService;
     private final RecipeService recipeService;
 
     /**
@@ -41,7 +41,7 @@ public class ShoppingController {
             @Parameter(description = "식재료 ID", example = "1")
             @PathVariable("ingredientId") Long ingredientId) {
         requireUserId(userId);
-        IngredientPriceResponse data = shoppingService3.getIngredientPrices(ingredientId);
+        IngredientPriceResponse data = shoppingService.getIngredientPrices(ingredientId);
         return ResponseEntity.ok(ApiResponse.success(data, "식재료 최저가 조회 성공"));
     }
 
@@ -54,7 +54,7 @@ public class ShoppingController {
             @Parameter(description = "사용자 ID (JWT 인증 헤더에서 자동 주입)", example = "1")
             @RequestHeader(value = "X-User-Id", required = false) Long userId) {
         long uid = requireUserId(userId);
-        List<IngredientPriceResponse> data = shoppingService3.getFridgePrices(uid);
+        List<IngredientPriceResponse> data = shoppingService.getFridgePrices(uid);
         return ResponseEntity.ok(ApiResponse.success(data, "냉장고 식재료 최저가 조회 성공"));
     }
 
@@ -73,7 +73,7 @@ public class ShoppingController {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error("INVALID_INPUT", "검색어를 입력해주세요."));
         }
-        IngredientPriceResponse data = shoppingService3.searchByKeyword(keyword);
+        IngredientPriceResponse data = shoppingService.searchByKeyword(keyword);
         return ResponseEntity.ok(ApiResponse.success(data, "실시간 최저가 검색 성공"));
     }
 
@@ -95,7 +95,7 @@ public class ShoppingController {
         // 2. 부족하거나 없는 재료를 필터링하여 일괄 최저가 검색 (각각 Redis 혹은 외부 API 호출)
         List<IngredientPriceResponse> missingIngredientsPrices = recipeResponse.getRecipeIngredients().stream()
                 .filter(ing -> "MISSING".equals(ing.getSufficiency()) || "NOT_ENOUGH".equals(ing.getSufficiency()))
-                .map(ing -> shoppingService3.searchByKeyword(ing.getIngredientName()))
+                .map(ing -> shoppingService.searchByKeyword(ing.getIngredientName()))
                 .toList();
 
         return ResponseEntity.ok(ApiResponse.success(missingIngredientsPrices, "레시피 부족 재료 일괄 최저가 검색 성공"));
@@ -114,7 +114,7 @@ public class ShoppingController {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error("INVALID_INPUT", "재료 이름 목록을 입력해주세요."));
         }
-        List<IngredientPriceResponse> data = shoppingService3.batchSearchByKeywords(ingredientNames);
+        List<IngredientPriceResponse> data = shoppingService.batchSearchByKeywords(ingredientNames);
         return ResponseEntity.ok(ApiResponse.success(data, "대체재 최저가 조회 성공"));
     }
 

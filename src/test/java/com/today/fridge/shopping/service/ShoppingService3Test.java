@@ -38,7 +38,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 /**
- * ShoppingService3 단위 테스트
+ * ShoppingService 단위 테스트
  * - 외부 API(Naver, 11번가), Redis, DB 레포지토리 모두 Mock 처리
  * - searchByKeyword / getIngredientPrices의 캐시 전략(Redis HIT/MISS, DB HIT/MISS) 검증
  */
@@ -50,6 +50,9 @@ class ShoppingService3Test {
 
     @Mock
     private ValueOperations<String, Object> valueOps;
+
+    @Mock
+    private ObjectMapper objectMapper;
 
     @Mock
     private ShoppingItemRepository shoppingItemRepository;
@@ -70,7 +73,7 @@ class ShoppingService3Test {
     private EntityManager em;
 
     @InjectMocks
-    private ShoppingService3 shoppingService3;
+    private ShoppingService shoppingService3;
 
     private IngredientMaster masterEgg;
 
@@ -81,6 +84,10 @@ class ShoppingService3Test {
 
         // RedisTemplate의 opsForValue() 스텁
         given(redisTemplate.opsForValue()).willReturn(valueOps);
+
+        // ObjectMapper.convertValue: 캐시 HIT 시 Redis에서 꺼낸 객체를 그대로 반환
+        lenient().when(objectMapper.convertValue(any(), eq(IngredientPriceResponse.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
 
         masterEgg = IngredientMaster.builder()
                 .ingredientMasterId(1L)

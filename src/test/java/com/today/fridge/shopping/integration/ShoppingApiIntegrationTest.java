@@ -2,7 +2,6 @@ package com.today.fridge.shopping.integration;
 
 import com.today.fridge.global.external.EmailService;
 import com.today.fridge.shopping.dto.ShoppingItemDto;
-import com.today.fridge.shopping.external.ai.ShoppingExplainClient;
 import com.today.fridge.shopping.external.elevenst.ElevenStShoppingClient;
 import com.today.fridge.shopping.external.naver.NaverShoppingClient;
 import com.today.fridge.shopping.type.ShippingType;
@@ -25,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collections;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -37,7 +35,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - H2 인메모리 DB, 전체 Spring 컨텍스트 로딩
  * - NaverShoppingClient, ElevenStShoppingClient, RedisTemplate은 Mock 처리
  *   (외부 API 키 없이 동작 검증)
- * - ShoppingService3 → ShoppingController 전 계층 통합 검증
+ * - ShoppingService → ShoppingController 전 계층 통합 검증
+ * - ShoppingExplainClient는 실제 Bean 사용 (FastAPI 미실행 시 null 반환 — graceful)
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -58,14 +57,11 @@ class ShoppingApiIntegrationTest {
     private ElevenStShoppingClient elevenStClient;
 
     @MockBean
+    private EmailService emailService;
+
+    @MockBean
     @SuppressWarnings("rawtypes")
     private RedisTemplate redisTemplate;
-
-    @MockBean
-    private ShoppingExplainClient shoppingExplainClient;
-
-    @MockBean
-    private EmailService emailService;
 
     @MockBean
     @SuppressWarnings("rawtypes")
@@ -219,10 +215,11 @@ class ShoppingApiIntegrationTest {
 
     // ============================================================
     // explanation 포함 여부 검증
+    // ShoppingExplainClient는 실제 Bean 사용 — FastAPI 미실행 시 null 반환(graceful)
     // ============================================================
 
     @Test
-    @DisplayName("[통합] GET /search: ShoppingExplainClient가 설명을 반환하면 응답에 explanation이 포함된다")
+    @DisplayName("[통합] GET /search: ShoppingExplainClient가 FastAPI 미실행으로 null 반환 시 explanation 필드 없이 정상 응답된다")
     void search_withExplanation_includesExplanationInResponse() throws Exception {
         ShoppingItemDto naverItem = ShoppingItemDto.builder()
                 .mallName("네이버쇼핑").mallProductId("n1").productName("계란 30구")
@@ -230,19 +227,16 @@ class ShoppingApiIntegrationTest {
 
         given(naverClient.search("계란")).willReturn(List.of(naverItem));
         given(elevenStClient.search("계란")).willReturn(Collections.emptyList());
-        given(shoppingExplainClient.explain(anyString(), any()))
-                .willReturn("네이버쇼핑에서 무료배송으로 저렴하게 구매 가능합니다.");
 
         mockMvc.perform(get("/api/v1/shopping/search")
                         .param("keyword", "계란")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.explanation")
-                        .value("네이버쇼핑에서 무료배송으로 저렴하게 구매 가능합니다."));
+                .andExpect(jsonPath("$.data.explanation").doesNotExist());
     }
 
     @Test
-    @DisplayName("[통합] GET /search: ShoppingExplainClient가 null 반환해도 나머지 필드는 정상 응답된다")
+    @DisplayName("[통합] GET /search: ShoppingExplainClient null 반환 시 나머지 필드는 정상 응답된다")
     void search_explainReturnsNull_otherFieldsStillPresent() throws Exception {
         ShoppingItemDto naverItem = ShoppingItemDto.builder()
                 .mallName("네이버쇼핑").mallProductId("n1").productName("대파 1단")
@@ -250,7 +244,6 @@ class ShoppingApiIntegrationTest {
 
         given(naverClient.search("대파")).willReturn(List.of(naverItem));
         given(elevenStClient.search("대파")).willReturn(Collections.emptyList());
-        given(shoppingExplainClient.explain(anyString(), any())).willReturn(null);
 
         mockMvc.perform(get("/api/v1/shopping/search")
                         .param("keyword", "대파")
@@ -258,10 +251,5 @@ class ShoppingApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.lowestPrice").value(980))
                 .andExpect(jsonPath("$.data.explanation").doesNotExist());
-    }
-
-    // JPA 모킹 없이 deleteExpired 부작용 제거를 위한 헬퍼
-    private Object shoppingItemRepositoryDeleteExpired() {
-        return null;
     }
 }

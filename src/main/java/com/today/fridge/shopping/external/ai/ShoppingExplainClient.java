@@ -23,7 +23,7 @@ public class ShoppingExplainClient {
 
     public ShoppingExplainClient(
             RestTemplateBuilder builder,
-            @Value("${ai.server.url:http://localhost:8000}") String aiServerUrl) {
+            @Value("${app.fastapi.base-url:http://localhost:8000}") String aiServerUrl) {
         this.restTemplate = builder
                 .connectTimeout(Duration.ofSeconds(3))
                 .readTimeout(Duration.ofSeconds(10))

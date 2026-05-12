@@ -19,6 +19,7 @@ src/main/resources/application-local.yml
 
 # Gradle 로컬 오버라이드 (팀원 테스트 컴파일 제외 설정)
 gradle-local.properties
+build.gradle
 
 # docker 관련 파일
 docker-compose.yml
