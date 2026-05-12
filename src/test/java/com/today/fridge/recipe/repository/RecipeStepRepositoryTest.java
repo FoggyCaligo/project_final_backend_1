@@ -54,8 +54,14 @@ class RecipeStepRepositoryTest {
                 .build();
         recipeStepRepository.saveAll(List.of(step1, step2));
 
-        List<RecipeStep> foundSteps = recipeStepRepository.findByRecipe_RecipeId(savedRecipe.getRecipeId());
-        
-        assertThat(foundSteps).hasSize(2);
-    }
+                // When
+                List<RecipeStep> foundSteps = recipeStepRepository.findByRecipe_RecipeIdOrderByStepNoAsc(savedRecipe.getRecipeId());
+
+                // Then
+                assertThat(foundSteps).hasSize(2);
+
+                // 추가 검증: 저장된 데이터가 정확히 조회되는지 확인
+                assertThat(foundSteps).extracting("instructionText")
+                                .containsExactlyInAnyOrder("Chop", "Cook");
+        }
 }

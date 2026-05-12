@@ -11,8 +11,6 @@ import com.today.fridge.chatbot.dto.request.ChatInterpretRequest;
 import com.today.fridge.chatbot.dto.response.ChatInterpretResponse;
 import com.today.fridge.chatbot.service.ChatbotOrchestratorService;
 import com.today.fridge.chatbot.service.IntentParserService;
-import com.today.fridge.global.exception.ErrorCode;
-import com.today.fridge.global.exception.ExceptionTemplate;
 import com.today.fridge.global.response.ApiResponse;
 
 import lombok.RequiredArgsConstructor;

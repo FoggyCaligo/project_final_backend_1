@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,9 +14,13 @@ import com.today.fridge.recommendation.dto.response.RecipeRecommendationRow;
 
 public interface RecipeRepository extends JpaRepository<Recipe, Long> {
 
+	@EntityGraph(attributePaths = {"recipeNutrition"})
 	List<Recipe> findByIsActiveTrue();
 	
 	Page<Recipe> findByIsActiveTrue(Pageable pageable);
+	
+	@EntityGraph(attributePaths = {"recipeNutrition"})
+	List<Recipe> findByRecipeIdIn(List<Long> recipeIds);
 	@Query("""
 		    SELECT new com.today.fridge.recommendation.dto.response.RecipeRecommendationRow(
 		        r.recipeId,
@@ -68,4 +73,20 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
 		        @Param("style") String style,
 		        Pageable pageable
 		);
+	
+	@Query("""
+		    SELECT r
+		    FROM Recipe r
+		    WHERE r.isActive = true
+		    ORDER BY
+		        CASE TRIM(COALESCE(r.difficultyLevel, ''))
+		            WHEN '아무나' THEN 0
+		            WHEN '초급' THEN 1
+		            WHEN '중급' THEN 2
+		            WHEN '고급' THEN 3
+		            WHEN '신의경지' THEN 4
+		            ELSE 99
+		        END ASC
+		""")
+		Page<Recipe> findActiveOrderByDifficultyAsc(Pageable pageable);
 }
