@@ -27,7 +27,8 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
 		        r.title,
 		        r.thumbnailUrl,
 		        r.summary,
-		        r.cookTimeText
+		        r.cookTimeText,
+		        r.difficultyLevel
 		    )
 		    FROM Recipe r
 		    WHERE r.isActive = true

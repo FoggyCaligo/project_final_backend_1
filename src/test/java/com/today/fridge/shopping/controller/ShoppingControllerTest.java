@@ -64,6 +64,31 @@ class ShoppingControllerTest {
     // ============================================================
 
     @Test
+    @DisplayName("[단위] GET /search?keyword=계란: explanation 필드가 응답 JSON에 포함된다")
+    void search_withExplanation_includesExplanationInJson() throws Exception {
+        IngredientPriceResponse withExplanation = IngredientPriceResponse.builder()
+                .ingredientId(null).ingredientName("계란").lowestPrice(2800)
+                .items(List.of()).cachedAt(Instant.now()).expiresAt(Instant.now().plusSeconds(3600))
+                .explanation("네이버쇼핑에서 무료배송으로 저렴하게 구매할 수 있습니다.")
+                .build();
+        given(shoppingService3.searchByKeyword("계란")).willReturn(withExplanation);
+
+        mockMvc.perform(get("/api/v1/shopping/search").param("keyword", "계란"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.explanation").value("네이버쇼핑에서 무료배송으로 저렴하게 구매할 수 있습니다."));
+    }
+
+    @Test
+    @DisplayName("[단위] GET /search?keyword=계란: explanation이 null이면 JSON에서 해당 필드가 생략된다")
+    void search_withoutExplanation_omitsExplanationFromJson() throws Exception {
+        given(shoppingService3.searchByKeyword("계란")).willReturn(sampleResponse()); // explanation=null
+
+        mockMvc.perform(get("/api/v1/shopping/search").param("keyword", "계란"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.explanation").doesNotExist());
+    }
+
+    @Test
     @DisplayName("[단위] GET /search?keyword=계란: 키워드 검색 성공 시 200과 결과를 반환한다")
     void search_validKeyword_returns200() throws Exception {
         given(shoppingService3.searchByKeyword("계란")).willReturn(sampleResponse());

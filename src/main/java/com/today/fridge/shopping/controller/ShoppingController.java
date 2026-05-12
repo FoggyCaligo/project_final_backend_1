@@ -33,7 +33,7 @@ public class ShoppingController {
     /**
      * 식재료 ID로 최저가 조회 (Redis 캐시 우선)
      */
-    @Operation(summary = "식재료 ID 최저가 조회", description = "식재료 ID로 네이버/11번가/쿠팡 최저가를 조회합니다. Redis 캐시(1시간) 우선 사용.")
+    @Operation(summary = "식재료 ID 최저가 조회", description = "식재료 ID로 네이버/11번가/ 최저가를 조회합니다. Redis 캐시(1시간) 우선 사용.")
     @GetMapping("/ingredients/{ingredientId}/prices")
     public ResponseEntity<ApiResponse<IngredientPriceResponse>> getIngredientPrices(
             @Parameter(description = "사용자 ID (JWT 인증 헤더에서 자동 주입)", example = "1")
@@ -64,7 +64,7 @@ public class ShoppingController {
      *
      * GET /api/v1/shopping/search?keyword=계란
      */
-    @Operation(summary = "키워드 실시간 최저가 검색", description = "키워드로 네이버/11번가/쿠팡에서 실시간 최저가를 검색합니다. 인증 불필요.")
+    @Operation(summary = "키워드 실시간 최저가 검색", description = "키워드로 네이버/11번가/에서 실시간 최저가를 검색합니다. 인증 불필요.")
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<IngredientPriceResponse>> searchByKeyword(
             @Parameter(description = "검색할 식재료 키워드", example = "계란")
@@ -99,6 +99,23 @@ public class ShoppingController {
                 .toList();
 
         return ResponseEntity.ok(ApiResponse.success(missingIngredientsPrices, "레시피 부족 재료 일괄 최저가 검색 성공"));
+    }
+
+    /**
+     * 대체재 재료 일괄 최저가 조회
+     * POST /api/v1/shopping/substitutes/prices
+     * Body: ["간장", "식용유"]
+     */
+    @Operation(summary = "대체재 재료 일괄 최저가 조회", description = "대체재 추천 모달에서 재료 이름 목록을 받아 각 재료의 실시간 최저가를 조회합니다. 인증 불필요.")
+    @PostMapping("/substitutes/prices")
+    public ResponseEntity<ApiResponse<List<IngredientPriceResponse>>> getSubstitutePrices(
+            @RequestBody List<String> ingredientNames) {
+        if (ingredientNames == null || ingredientNames.isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("INVALID_INPUT", "재료 이름 목록을 입력해주세요."));
+        }
+        List<IngredientPriceResponse> data = shoppingService3.batchSearchByKeywords(ingredientNames);
+        return ResponseEntity.ok(ApiResponse.success(data, "대체재 최저가 조회 성공"));
     }
 
     private static long requireUserId(Long userId) {

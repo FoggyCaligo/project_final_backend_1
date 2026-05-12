@@ -27,6 +27,9 @@ import com.today.fridge.meal.service.MealService;
 import com.today.fridge.meal.service.MealServiceDaily;
 import com.today.fridge.meal.service.MealServicePeriod;
 
+import com.today.fridge.meal.dto.response.FastApiHealthReportResponse;
+import com.today.fridge.meal.service.HealthReportService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,6 +42,7 @@ public class MealController {
     private final MealService mealService;
     private final MealServiceDaily mealServiceDaily;
     private final MealServicePeriod mealServicePeriod;
+    private final HealthReportService healthReportService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<MealLogResponse>>> getMeals(
@@ -50,6 +54,26 @@ public class MealController {
         if (date == null) date = LocalDate.now();
         
         return ResponseEntity.ok(ApiResponse.success(mealServiceDaily.getMeals(uid, date), "식단 기록 조회 성공"));
+    }
+
+    @PostMapping("/health-report/generate")
+    public ResponseEntity<ApiResponse<FastApiHealthReportResponse>> generateHealthReport(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+        log.info("[MealController] generateHealthReport - userId: {}", userId);
+        long uid = requireUserId(userId);
+
+        FastApiHealthReportResponse response = healthReportService.generateHealthReport(uid);
+        return ResponseEntity.ok(ApiResponse.success(response, "AI 건강 레포트 생성 성공"));
+    }
+
+    @GetMapping("/health-report/latest")
+    public ResponseEntity<ApiResponse<FastApiHealthReportResponse>> getLatestHealthReport(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+        log.info("[MealController] getLatestHealthReport - userId: {}", userId);
+        long uid = requireUserId(userId);
+
+        FastApiHealthReportResponse response = healthReportService.getLatestHealthReport(uid);
+        return ResponseEntity.ok(ApiResponse.success(response, "최신 AI 건강 레포트 조회 성공"));
     }
 
 
