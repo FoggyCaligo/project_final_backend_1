@@ -8,6 +8,7 @@ import com.today.fridge.shopping.dto.ShoppingItemDto;
 import com.today.fridge.shopping.entity.ShoppingItem;
 import com.today.fridge.shopping.exception.ShoppingErrorCode;
 // import com.today.fridge.shopping.external.coupang.CoupangShoppingClient2;
+import com.today.fridge.shopping.external.ai.ShoppingExplainClient;
 import com.today.fridge.shopping.external.elevenst.ElevenStShoppingClient;
 import com.today.fridge.shopping.external.naver.NaverShoppingClient;
 import com.today.fridge.shopping.repository.ShoppingItemRepository;
@@ -52,8 +53,8 @@ public class ShoppingService3 {
     private final ShoppingItemRepository shoppingItemRepository;
     private final IngredientMasterRepository ingredientMasterRepository;
     private final NaverShoppingClient naverClient;
-
     private final ElevenStShoppingClient elevenStClient;
+    private final ShoppingExplainClient shoppingExplainClient;
     // private final CoupangShoppingClient2 coupangClient;
 
     @PersistenceContext
@@ -205,7 +206,9 @@ public class ShoppingService3 {
         shoppingItemRepository.saveAll(toSave);
         cleanupExpiredAsync(now);
 
-        return buildResponse(master, toSave);
+        IngredientPriceResponse response = buildResponse(master, toSave);
+        String explanation = shoppingExplainClient.explain(master.getCanonicalName(), allItems);
+        return response.toBuilder().explanation(explanation).build();
     }
 
     private void cacheToRedis(String key, Object value) {
@@ -295,6 +298,14 @@ public class ShoppingService3 {
         });
     }
 
+    // ── 대체재 재료 일괄 검색 ──
+
+    public List<IngredientPriceResponse> batchSearchByKeywords(List<String> keywords) {
+        return keywords.stream()
+                .map(this::searchByKeyword)
+                .toList();
+    }
+
     // ── 키워드 기반 실시간 검색 (ingredient_master 없이 직접 API 호출) ──
 
     private static final String KEYWORD_PREFIX = "shopping:keyword:";
@@ -375,6 +386,9 @@ public class ShoppingService3 {
                 .cachedAt(now)
                 .expiresAt(now.plus(CACHE_HOURS, ChronoUnit.HOURS))
                 .build();
+
+        String explanation = shoppingExplainClient.explain(keyword, allItems);
+        response = response.toBuilder().explanation(explanation).build();
 
         // 3. Redis 캐시 저장
         cacheToRedis(KEYWORD_PREFIX + normalizedKeyword, response);

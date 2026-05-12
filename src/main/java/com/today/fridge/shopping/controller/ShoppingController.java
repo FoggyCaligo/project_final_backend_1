@@ -101,6 +101,23 @@ public class ShoppingController {
         return ResponseEntity.ok(ApiResponse.success(missingIngredientsPrices, "레시피 부족 재료 일괄 최저가 검색 성공"));
     }
 
+    /**
+     * 대체재 재료 일괄 최저가 조회
+     * POST /api/v1/shopping/substitutes/prices
+     * Body: ["간장", "식용유"]
+     */
+    @Operation(summary = "대체재 재료 일괄 최저가 조회", description = "대체재 추천 모달에서 재료 이름 목록을 받아 각 재료의 실시간 최저가를 조회합니다. 인증 불필요.")
+    @PostMapping("/substitutes/prices")
+    public ResponseEntity<ApiResponse<List<IngredientPriceResponse>>> getSubstitutePrices(
+            @RequestBody List<String> ingredientNames) {
+        if (ingredientNames == null || ingredientNames.isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("INVALID_INPUT", "재료 이름 목록을 입력해주세요."));
+        }
+        List<IngredientPriceResponse> data = shoppingService3.batchSearchByKeywords(ingredientNames);
+        return ResponseEntity.ok(ApiResponse.success(data, "대체재 최저가 조회 성공"));
+    }
+
     private static long requireUserId(Long userId) {
         if (userId == null) {
             throw new BusinessException(ErrorCode.UNAUTHORIZED);
