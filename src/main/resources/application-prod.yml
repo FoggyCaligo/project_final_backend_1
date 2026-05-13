@@ -29,6 +29,7 @@ app:
   fastapi:
     base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
     service-key: ${INTERNAL_API_TOKEN:change-me}
+    caller-service: spring-backend
   kakao:
     rest-api-key: ${KAKAO_REST_API_KEY}
     redirect-uri: ${KAKAO_REDIRECT_URI}
