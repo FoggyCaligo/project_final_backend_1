@@ -14,7 +14,6 @@ import com.today.fridge.global.response.PageResponse;
 import com.today.fridge.global.response.PageResult;
 import com.today.fridge.ingredient.repository.UserIngredientRepository;
 import com.today.fridge.llm.service.RecommendationExplanationService;
-import com.today.fridge.recipe.entity.Recipe;
 import com.today.fridge.recipe.entity.RecipeTag;
 import com.today.fridge.recipe.entity.RecipeTagSourceType;
 import com.today.fridge.recipe.repository.RecipeIngredientRepository;
@@ -23,11 +22,11 @@ import com.today.fridge.recipe.repository.RecipeTagRepository;
 import com.today.fridge.recommendation.dto.internal.RecommendationQuery;
 import com.today.fridge.recommendation.dto.response.ConditionWarningDto;
 import com.today.fridge.recommendation.dto.response.RecipeRecommendationResponse;
+import com.today.fridge.recommendation.dto.response.RecipeRecommendationRow;
 import com.today.fridge.recommendation.entity.RecipeConditionMap;
 import com.today.fridge.recommendation.entity.UserCondition;
 import com.today.fridge.recommendation.repository.RecipeConditionMapRepository;
 import com.today.fridge.recommendation.repository.UserConditionRepository;
-import com.today.fridge.substitution.service.SubstituteIngredientService;
 import com.today.fridge.llm.dto.request.RecommendationExplanationContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,14 +34,12 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class RecommendationService {
 
 
     private final UserConditionRepository userConditionRepository;
     private final RecipeConditionMapRepository recipeConditionMapRepository;
     private final RecommendationScoreService recommendationScoreService;
-    private final SubstituteIngredientService substituteIngredientService;
     private final RecommendationReasonService recommendationReasonService;
     private final RecipeRepository recipeRepository;
     private final RecipeIngredientRepository recipeIngredientRepository;
@@ -55,7 +52,7 @@ public class RecommendationService {
     private final RecommendationTagScoreService recommendationTagScoreService;
     
     private RecipeRecommendationResponse createRecipeResponse(
-            Recipe recipe,
+            RecipeRecommendationRow recipe,
             List<String> requiredIngredients,
             double conditionScore,
             List<String> conditionTags,
@@ -102,14 +99,15 @@ public class RecommendationService {
         String reason = recommendationReasonService.buildReason(
                 Math.round(matchRate * 10) / 10.0,
                 conditionTags,
-                missingIngredients
+                missingIngredients,
+                warnings
         );
 
         String llmExplanation = useLlmExplanation
                 ? recommendationExplanationService.generateExplanation(
                         new RecommendationExplanationContext(
-                                recipe.getRecipeId(),
-                                recipe.getTitle(),
+                                recipe.recipeId(),
+                                recipe.title(),
                                 matchedIngredients,
                                 missingIngredients,
                                 conditionTags,
@@ -123,11 +121,12 @@ public class RecommendationService {
                 : null;
 
         return RecipeRecommendationResponse.builder()
-                .recipeId(recipe.getRecipeId())
-                .title(recipe.getTitle())
-                .summary(recipe.getSummary())
-                .cookTimeText(recipe.getCookTimeText())
-                .thumbnailUrl(recipe.getThumbnailUrl())
+                .recipeId(recipe.recipeId())
+                .title(recipe.title())
+                .summary(recipe.summary())
+                .difficultyLevel(recipe.difficultyLevel())
+                .cookTimeText(recipe.cookTimeText())
+                .thumbnailUrl(recipe.thumbnailUrl())
                 .matchRate(Math.round(matchRate * 10) / 10.0)
                 .totalScore(Math.round(totalScore * 10) / 10.0)
                 .semanticScore(Math.round(semanticScore * 1000) / 1000.0)
@@ -137,29 +136,46 @@ public class RecommendationService {
                 .missingIngredients(missingIngredients)
                 .conditionTags(conditionTags)
                 .warnings(warnings)
-                .substituteSuggestions(
-                        substituteIngredientService.suggest(
-                                missingIngredients,
-                                ownedIngredients,
-                                recipe.getTitle()
-                        )
-                )
+                .ownedIngredients(ownedIngredients)
+                .substituteSuggestions(List.of())
                 .reason(reason)
                 .llmExplanation(llmExplanation)
                 .build();
     }
-    private List<ConditionWarningDto> buildWarnings(
-            List<UserCondition> userConditions,
+    private boolean isAllergyCondition(String conditionCode) {
+        return conditionCode != null && conditionCode.startsWith("ALLERGY_");
+    }
+
+    private List<String> buildConditionTags(
+            List<String> activeConditionCodes,
             List<RecipeConditionMap> recipeConditions
     ) {
-        List<Long> userConditionIds = userConditions.stream()
-                .map(uc -> uc.getConditionCode().getConditionId())
-                .toList();
-
         return recipeConditions.stream()
-                .filter(rc -> userConditionIds.contains(
-                        rc.getConditionCode().getConditionId()
-                ))
+        		.filter(rc -> {
+        		    String code = rc.getConditionCode().getConditionCode();
+
+        		    return activeConditionCodes.contains(code)
+        		            && !isAllergyCondition(code);
+        		})
+                .filter(rc ->
+                        "RECOMMENDED".equals(rc.getFitType())
+                        || "ALLOWED".equals(rc.getFitType())
+                )
+                .map(rc -> rc.getConditionCode().getConditionCode())
+                .distinct()
+                .toList();
+    }
+    private List<ConditionWarningDto> buildWarnings(
+            List<String> activeConditionCodes,
+            List<RecipeConditionMap> recipeConditions
+    ) {
+        return recipeConditions.stream()
+                .filter(rc -> {
+                    String code = rc.getConditionCode().getConditionCode();
+
+                    return activeConditionCodes.contains(code)
+                            && !isAllergyCondition(code);
+                })
                 .filter(rc -> "CAUTION".equals(rc.getFitType()))
                 .map(rc -> ConditionWarningDto.builder()
                         .conditionCode(rc.getConditionCode().getConditionCode())
@@ -171,6 +187,7 @@ public class RecommendationService {
                         .build())
                 .toList();
     }
+    @Transactional(readOnly = true)
     public PageResult<RecipeRecommendationResponse> recommend(Long userId, Pageable pageable) {
         return recommend(
                 RecommendationQuery.builder()
@@ -188,6 +205,7 @@ public class RecommendationService {
         );
     }
     
+    @Transactional(readOnly = true)
     public PageResult<RecipeRecommendationResponse> recommend(RecommendationQuery query, Pageable pageable) {
     	List<String> ownedIngredients =
     	        query.isUseUserFridge() && query.getUserId() != null
@@ -195,12 +213,34 @@ public class RecommendationService {
     	                : query.getIncludeIngredients() == null
     	                        ? List.of()
     	                        : query.getIncludeIngredients();
+    	log.info("[OWNED_INGREDIENTS] {}", ownedIngredients);
 
-        List<Recipe> recipes = recipeRepository.findByIsActiveTrue();
+    	List<RecipeRecommendationRow> recipes =
+    	        recipeRepository.findRecommendationRows();
+        
+        List<Long> recipeIds = recipes.stream()
+                .map(RecipeRecommendationRow::recipeId)
+                .toList();
+
+        Map<Long, List<String>> requiredIngredientMap =
+                recipeIngredientRepository.findRequiredIngredientNamesByRecipeIds(recipeIds)
+                        .stream()
+                        .collect(Collectors.groupingBy(
+                                RecipeIngredientRepository.RecipeIngredientNameRow::getRecipeId,
+                                Collectors.mapping(
+                                        RecipeIngredientRepository.RecipeIngredientNameRow::getIngredientName,
+                                        Collectors.toList()
+                                )
+                        ));
+
+        Map<Long, List<RecipeConditionMap>> recipeConditionMap =
+                recipeConditionMapRepository.findByRecipe_RecipeIdIn(recipeIds)
+                        .stream()
+                        .collect(Collectors.groupingBy(rc -> rc.getRecipe().getRecipeId()));
 
         List<UserCondition> userConditions =
                 query.isUseUserProfile() && query.getUserId() != null
-                        ? userConditionRepository.findByUser_UserIdAndIsActiveTrue(query.getUserId())
+                        ? userConditionRepository.findActiveWithConditionCodeByUserId(query.getUserId())
                         : List.of();
         List<String> activeConditionCodes = java.util.stream.Stream.concat(
                 userConditions.stream()
@@ -211,6 +251,7 @@ public class RecommendationService {
         )
         .distinct()
         .toList();
+        log.info("[ACTIVE_CONDITIONS] {}", activeConditionCodes);
         // 사용자 알러지 코드 추출 (condition_code reuse 중이면)
         List<String> userAllergenCodes =
                 userConditions.stream()
@@ -224,10 +265,8 @@ public class RecommendationService {
         if (!userAllergenCodes.isEmpty()) {
             recipes = recipes.stream()
                     .filter(recipe -> {
-                        List<String> recipeIngredients =
-                                recipeIngredientRepository.findRequiredIngredientNamesByRecipeId(
-                                        recipe.getRecipeId()
-                                );
+                    	List<String> recipeIngredients =
+                    	        requiredIngredientMap.getOrDefault(recipe.recipeId(), List.of());
 
                         return !allergyFilterService.containsAllergen(
                                 recipeIngredients,
@@ -243,12 +282,15 @@ public class RecommendationService {
 
         if (useHybridRanking) {
 
-            String semanticQuery =
-                    String.join(" ", query.getKeywords());
+        	String semanticQuery = String.join(" ", query.getKeywords());
 
-            if (semanticQuery.isBlank()) {
-                semanticQuery = String.join(" ", ownedIngredients);
-            }
+        	if (query.isUseUserFridge() && !ownedIngredients.isEmpty()) {
+        	    semanticQuery = semanticQuery + " " + String.join(" ", ownedIngredients);
+        	}
+
+        	if (semanticQuery.isBlank()) {
+        	    semanticQuery = String.join(" ", ownedIngredients);
+        	}
 
             var semanticResults =
                     recipeEmbeddingSearchService.searchSimilarRecipes(
@@ -276,54 +318,85 @@ public class RecommendationService {
         Map<Long, List<RecipeTag>> recipeTagMap =
                 recipeTagRepository.findByRecipeIdIn(
                         recipes.stream()
-                                .map(Recipe::getRecipeId)
+                                .map(RecipeRecommendationRow::recipeId)
                                 .toList()
                 )
                 .stream()
                 .collect(Collectors.groupingBy(RecipeTag::getRecipeId));
         List<RecipeRecommendationResponse> responses = recipes.stream()
                 .map(recipe -> {
-                    List<String> requiredIngredients =
-                            recipeIngredientRepository.findRequiredIngredientNamesByRecipeId(
-                                    recipe.getRecipeId()
-                            );
+                	List<String> requiredIngredients =
+                	        requiredIngredientMap.getOrDefault(recipe.recipeId(), List.of());
 
-                    List<RecipeConditionMap> recipeConditions =
-                            recipeConditionMapRepository.findByRecipe_RecipeId(
-                                    recipe.getRecipeId()
-                            );
-                    double conditionScore =
-                            recommendationScoreService.calculateConditionScoreByCodes(
-                                    activeConditionCodes,
-                                    recipeConditions
-                            );
+                	List<RecipeConditionMap> recipeConditions =
+                	        recipeConditionMap.getOrDefault(recipe.recipeId(), List.of());
+
+                	if (useHybridRanking
+                	        && query.getConditionCodes() != null
+                	        && !query.getConditionCodes().isEmpty()) {
+
+                	    boolean hasCautionForRequestedCondition = recipeConditions.stream()
+                	            .anyMatch(rc ->
+                	                    query.getConditionCodes().contains(
+                	                            rc.getConditionCode().getConditionCode()
+                	                    )
+                	                    && "CAUTION".equals(rc.getFitType())
+                	            );
+
+                	    if (hasCautionForRequestedCondition) {
+                	        return null;
+                	    }
+                	}
+
+                	double conditionScore =
+                	        recommendationScoreService.calculateConditionScoreByCodes(
+                	                activeConditionCodes,
+                	                recipeConditions
+                	        );
                     double requestedBoost = 0.0;
+                    
+                    List<String> boostTargetIngredients =
+                            query.getIncludeIngredients() != null && !query.getIncludeIngredients().isEmpty()
+                                    ? query.getIncludeIngredients()
+                                    : ownedIngredients;
+                    
+                    if (useHybridRanking && !boostTargetIngredients.isEmpty()) {
 
-                    if (useHybridRanking && query.getIncludeIngredients() != null && !query.getIncludeIngredients().isEmpty()) {
+                        Set<String> normalizedOwned = boostTargetIngredients.stream()
+                                .map(String::toLowerCase)
+                                .collect(Collectors.toSet());
 
-                    	Set<String> normalizedRequired = requiredIngredients.stream()
-                    	        .map(String::toLowerCase)
-                    	        .collect(Collectors.toSet());
+                        long matchedRequiredCount = requiredIngredients.stream()
+                                .map(String::toLowerCase)
+                                .filter(ing ->
+                                        normalizedOwned.stream()
+                                                .anyMatch(owned -> ing.contains(owned) || owned.contains(ing))
+                                )
+                                .count();
 
-                    	boolean containsRequested = query.getIncludeIngredients().stream()
-                    	        .map(String::toLowerCase)
-                    	        .anyMatch(req ->
-                    	                normalizedRequired.stream()
-                    	                        .anyMatch(ing -> ing.contains(req))
-                    	        );
+                        int requiredCount = requiredIngredients.size();
 
-                        requestedBoost = containsRequested ? 25.0 : -35.0;
+                        double ingredientCoverage = requiredCount == 0
+                                ? 0.0
+                                : (double) matchedRequiredCount / requiredCount;
+
+                        requestedBoost = ingredientCoverage * 25.0;
+                        
+                 
                     }
-                    List<String> conditionTags = activeConditionCodes;
+                    List<String> conditionTags = buildConditionTags(
+                            activeConditionCodes,
+                            recipeConditions
+                    );
                     
                     List<ConditionWarningDto> warnings = buildWarnings(
-                            userConditions,
+                            activeConditionCodes,
                             recipeConditions
                     );
                     double semanticScore =
-                            semanticScoreMap.getOrDefault(recipe.getRecipeId(), 0.0);
+                            semanticScoreMap.getOrDefault(recipe.recipeId(), 0.0);
                     List<RecipeTag> allTags =
-                            recipeTagMap.getOrDefault(recipe.getRecipeId(), List.of());
+                            recipeTagMap.getOrDefault(recipe.recipeId(), List.of());
 
                     List<RecipeTag> llmTags = allTags.stream()
                             .filter(tag -> tag.getSourceType() == RecipeTagSourceType.LLM)
@@ -353,6 +426,7 @@ public class RecommendationService {
                             false
                     );
                 })
+                .filter(java.util.Objects::nonNull)
                 .sorted((a, b) -> {
                     if (useHybridRanking) {
                         return Double.compare(b.getHybridScore(), a.getHybridScore());

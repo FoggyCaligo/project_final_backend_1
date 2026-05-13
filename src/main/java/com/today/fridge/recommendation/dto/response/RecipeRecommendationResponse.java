@@ -16,6 +16,7 @@ public class RecipeRecommendationResponse {
     private String thumbnailUrl;
     private String cookTimeText;
     private String summary;
+    private String difficultyLevel;
 
     private double matchRate;
 
@@ -34,6 +35,8 @@ public class RecipeRecommendationResponse {
     private List<String> missingIngredients;
     private List<String> conditionTags;
     private List<SubstituteSuggestionDto> substituteSuggestions;
+    
+    private List<String> ownedIngredients;
 
     private List<ConditionWarningDto> warnings;
 

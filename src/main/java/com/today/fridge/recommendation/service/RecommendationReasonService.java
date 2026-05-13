@@ -4,29 +4,42 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.today.fridge.recommendation.dto.response.ConditionWarningDto;
+
 @Service
 public class RecommendationReasonService {
 
-    public String buildReason(
-            double matchRate,
-            List<String> conditionTags,
-            List<String> missingIngredients
-    ) {
-        boolean hasCondition = conditionTags != null && !conditionTags.isEmpty();
-        boolean hasMissing = missingIngredients != null && !missingIngredients.isEmpty();
+	public String buildReason(
+	        double matchRate,
+	        List<String> conditionTags,
+	        List<String> missingIngredients,
+	        List<ConditionWarningDto> warnings
+	) {
+	    boolean hasCondition =
+	            conditionTags != null && !conditionTags.isEmpty();
 
-        if (matchRate >= 90 && hasCondition && !hasMissing) {
-            return "보유 재료가 충분히 일치하고 사용자 조건에도 잘 맞는 추천입니다.";
-        }
+	    boolean hasMissing =
+	            missingIngredients != null && !missingIngredients.isEmpty();
 
-        if (matchRate >= 70 && hasCondition) {
-            return "보유 재료와 사용자 조건을 함께 고려한 추천입니다.";
-        }
+	    boolean hasWarnings =
+	            warnings != null && !warnings.isEmpty();
 
-        if (hasMissing) {
-            return "일부 부족한 재료가 있어 대체 재료 확인이 필요한 추천입니다.";
-        }
+	    if (hasWarnings) {
+	        return "사용자 조건에 일부 주의가 필요한 레시피입니다.";
+	    }
 
-        return "입력한 조건을 기준으로 추천된 레시피입니다.";
-    }
+	    if (matchRate >= 90 && hasCondition && !hasMissing) {
+	        return "보유 재료가 충분히 일치하고 사용자 조건에도 잘 맞는 추천입니다.";
+	    }
+
+	    if (matchRate >= 70 && hasCondition) {
+	        return "보유 재료와 사용자 조건을 함께 고려한 추천입니다.";
+	    }
+
+	    if (hasMissing) {
+	        return "일부 부족한 재료가 있어 대체 재료 확인이 필요한 추천입니다.";
+	    }
+
+	    return "입력한 조건을 기준으로 추천된 레시피입니다.";
+	}
 }

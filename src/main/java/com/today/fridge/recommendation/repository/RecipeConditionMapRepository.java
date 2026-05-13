@@ -4,10 +4,10 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.today.fridge.recommendation.entity.RecipeConditionMap;
-import com.fasterxml.jackson.databind.node.LongNode;
-import com.today.fridge.recipe.entity.Recipe;
 
 
 public interface RecipeConditionMapRepository extends JpaRepository<RecipeConditionMap, Long> {
@@ -23,4 +23,14 @@ public interface RecipeConditionMapRepository extends JpaRepository<RecipeCondit
 	);
 	
 	Optional<RecipeConditionMap> findByRecipe_RecipeIdAndConditionCode_ConditionId(Long recipeId, Long conditionId);
+	
+	@Query("""
+		    SELECT rcm
+		    FROM RecipeConditionMap rcm
+		    JOIN FETCH rcm.conditionCode cc
+		    WHERE rcm.recipe.recipeId IN :recipeIds
+		""")
+		List<RecipeConditionMap> findByRecipe_RecipeIdIn(
+		        @Param("recipeIds") List<Long> recipeIds
+		);
 }

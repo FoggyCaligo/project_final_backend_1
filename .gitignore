@@ -7,6 +7,7 @@ build/
 fileHashes.lock
 bin/
 .DS_Store
+uploads/
 
 # 개인 환경 설정
 .env
@@ -18,3 +19,22 @@ src/main/resources/application-local.yml
 
 model/venv/*
 model/.venv/*
+
+# Gradle 로컬 오버라이드 (팀원 테스트 컴파일 제외 설정)
+gradle-local.properties
+
+# docker 관련 파일
+docker-compose.yml
+Dockerfile
+.instruction.md
+
+# 로그 파일
+logs/
+hs_err_pid*.log
+reply_pid*.log
+skill-lock.json
+
+# local logs
+*.log
+hs_err_pid*.log
+replay_pid*.log

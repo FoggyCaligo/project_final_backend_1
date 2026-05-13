@@ -3,6 +3,7 @@ package com.today.fridge.user.service;
 import com.today.fridge.global.exception.ErrorCode;
 import com.today.fridge.global.exception.ExceptionTemplate;
 import com.today.fridge.global.external.EmailService;
+import com.today.fridge.recommendation.repository.UserConditionRepository;
 import com.today.fridge.user.dto.request.PasswordChangeRequest;
 import com.today.fridge.user.dto.request.ProfileUpdateRequest;
 import com.today.fridge.user.dto.request.SignupRequest;
@@ -13,17 +14,26 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final UserConditionRepository userConditionRepository;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailService emailService) {
+    public UserService(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            EmailService emailService,
+            UserConditionRepository userConditionRepository
+    ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
+        this.userConditionRepository = userConditionRepository;
     }
 
     // 회원가입 — 이메일 인증 토큰 생성 후 인증 메일 발송
@@ -120,7 +130,7 @@ public class UserService {
     public ProfileResponse getProfile(String loginId) {
         User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
-        return ProfileResponse.from(user);
+        return ProfileResponse.from(user, getActiveConditionCodes(user.getUserId()));
     }
 
     // 마이페이지 조회: userId(PK)로 사용자 프로필 반환
@@ -128,7 +138,7 @@ public class UserService {
     public ProfileResponse getProfileByUserId(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ExceptionTemplate(ErrorCode.USER_NOT_FOUND));
-        return ProfileResponse.from(user);
+        return ProfileResponse.from(user, getActiveConditionCodes(user.getUserId()));
     }
 
     // 마이페이지 수정: 닉네임, 프로필 이미지 URL 변경
@@ -145,7 +155,25 @@ public class UserService {
         }
 
         user.updateProfile(request.getNickname(), request.getProfileImageUrl());
-        return ProfileResponse.from(user);
+        if (request.getHeightCm() != null) {
+            user.setHeightCm(request.getHeightCm());
+        }
+        if (request.getWeightKg() != null) {
+            user.setWeightKg(request.getWeightKg());
+        }
+        if (request.getAge() != null) {
+            user.setAge(request.getAge());
+        }
+        if (request.getGender() != null) {
+            user.setGender(request.getGender());
+        }
+        return ProfileResponse.from(user, getActiveConditionCodes(user.getUserId()));
+    }
+
+    private List<String> getActiveConditionCodes(Long userId) {
+        return userConditionRepository.findActiveWithConditionCodeByUserId(userId).stream()
+                .map(userCondition -> userCondition.getConditionCode().getConditionCode())
+                .toList();
     }
 
     // 비밀번호 변경: 현재 비밀번호 확인 후 새 비밀번호로 변경

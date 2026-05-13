@@ -2,6 +2,7 @@ package com.today.fridge.shopping.integration;
 
 import com.today.fridge.global.external.EmailService;
 import com.today.fridge.shopping.dto.ShoppingItemDto;
+import com.today.fridge.shopping.external.ai.ShoppingExplainClient;
 import com.today.fridge.shopping.external.elevenst.ElevenStShoppingClient;
 import com.today.fridge.shopping.external.naver.NaverShoppingClient;
 import com.today.fridge.shopping.type.ShippingType;
@@ -59,6 +60,9 @@ class ShoppingApiIntegrationTest {
     @MockBean
     @SuppressWarnings("rawtypes")
     private RedisTemplate redisTemplate;
+
+    @MockBean
+    private ShoppingExplainClient shoppingExplainClient;
 
     @MockBean
     private EmailService emailService;
@@ -211,6 +215,49 @@ class ShoppingApiIntegrationTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    // ============================================================
+    // explanation 포함 여부 검증
+    // ============================================================
+
+    @Test
+    @DisplayName("[통합] GET /search: ShoppingExplainClient가 설명을 반환하면 응답에 explanation이 포함된다")
+    void search_withExplanation_includesExplanationInResponse() throws Exception {
+        ShoppingItemDto naverItem = ShoppingItemDto.builder()
+                .mallName("네이버쇼핑").mallProductId("n1").productName("계란 30구")
+                .price(3000).shippingType(ShippingType.FREE).stockStatus(StockStatus.IN_STOCK).build();
+
+        given(naverClient.search("계란")).willReturn(List.of(naverItem));
+        given(elevenStClient.search("계란")).willReturn(Collections.emptyList());
+        given(shoppingExplainClient.explain(anyString(), any()))
+                .willReturn("네이버쇼핑에서 무료배송으로 저렴하게 구매 가능합니다.");
+
+        mockMvc.perform(get("/api/v1/shopping/search")
+                        .param("keyword", "계란")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.explanation")
+                        .value("네이버쇼핑에서 무료배송으로 저렴하게 구매 가능합니다."));
+    }
+
+    @Test
+    @DisplayName("[통합] GET /search: ShoppingExplainClient가 null 반환해도 나머지 필드는 정상 응답된다")
+    void search_explainReturnsNull_otherFieldsStillPresent() throws Exception {
+        ShoppingItemDto naverItem = ShoppingItemDto.builder()
+                .mallName("네이버쇼핑").mallProductId("n1").productName("대파 1단")
+                .price(980).shippingType(ShippingType.FREE).stockStatus(StockStatus.IN_STOCK).build();
+
+        given(naverClient.search("대파")).willReturn(List.of(naverItem));
+        given(elevenStClient.search("대파")).willReturn(Collections.emptyList());
+        given(shoppingExplainClient.explain(anyString(), any())).willReturn(null);
+
+        mockMvc.perform(get("/api/v1/shopping/search")
+                        .param("keyword", "대파")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.lowestPrice").value(980))
+                .andExpect(jsonPath("$.data.explanation").doesNotExist());
     }
 
     // JPA 모킹 없이 deleteExpired 부작용 제거를 위한 헬퍼
