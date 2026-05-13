@@ -23,11 +23,14 @@ public interface IngredientMasterRepository extends JpaRepository<IngredientMast
       SELECT m FROM IngredientMaster m
       WHERE (m.isActive IS NULL OR m.isActive = true)
         AND (
-             LOWER(m.normalizedName) = LOWER(:q)
+             LOWER(m.canonicalName) = LOWER(:q)
           OR (m.aliasText IS NOT NULL AND LOWER(m.aliasText) LIKE LOWER(CONCAT('%', :q, '%')))
         )
-      ORDER BY CASE WHEN LOWER(m.normalizedName) = LOWER(:q) THEN 0 ELSE 1 END,
+      ORDER BY CASE WHEN LOWER(m.canonicalName) = LOWER(:q) THEN 0 ELSE 1 END,
                m.ingredientMasterId ASC
       """)
-  List<IngredientMaster> findCandidatesByNormalizedNameOrAlias(@Param("q") String q, Pageable pageable);
+  List<IngredientMaster> findCandidatesByCanonicalNameOrAlias(
+    @Param("q") String q,
+    Pageable pageable
+  );
 }

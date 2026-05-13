@@ -9,6 +9,9 @@ import com.today.fridge.llm.dto.request.SubstitutionLlmRequest;
 import com.today.fridge.llm.dto.response.RecommendationExplainResponse;
 import com.today.fridge.llm.dto.response.SubstitutionLlmResponse;
 
+import com.today.fridge.meal.dto.request.FastApiHealthReportRequest;
+import com.today.fridge.meal.dto.response.FastApiHealthReportResponse;
+
 import lombok.RequiredArgsConstructor;
 
 @Component
@@ -42,5 +45,18 @@ public class FastApiLlmClient {
                 .body(request)
                 .retrieve()
                 .body(SubstitutionLlmResponse.class);
+    }
+
+    public FastApiHealthReportResponse generateHealthReport(
+            FastApiHealthReportRequest request
+    ) {
+        return restClientBuilder
+                .baseUrl(properties.baseUrl())
+                .build()
+                .post()
+                .uri("/api/v1/health-report/generate")
+                .body(request)
+                .retrieve()
+                .body(FastApiHealthReportResponse.class);
     }
 }

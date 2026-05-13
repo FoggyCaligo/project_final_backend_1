@@ -98,7 +98,8 @@ public class RecommendationService {
         String reason = recommendationReasonService.buildReason(
                 Math.round(matchRate * 10) / 10.0,
                 conditionTags,
-                missingIngredients
+                missingIngredients,
+                warnings
         );
 
         String llmExplanation = useLlmExplanation
@@ -122,6 +123,7 @@ public class RecommendationService {
                 .recipeId(recipe.recipeId())
                 .title(recipe.title())
                 .summary(recipe.summary())
+                .difficultyLevel(recipe.difficultyLevel())
                 .cookTimeText(recipe.cookTimeText())
                 .thumbnailUrl(recipe.thumbnailUrl())
                 .matchRate(Math.round(matchRate * 10) / 10.0)
@@ -139,14 +141,40 @@ public class RecommendationService {
                 .llmExplanation(llmExplanation)
                 .build();
     }
+    private boolean isAllergyCondition(String conditionCode) {
+        return conditionCode != null && conditionCode.startsWith("ALLERGY_");
+    }
+
+    private List<String> buildConditionTags(
+            List<String> activeConditionCodes,
+            List<RecipeConditionMap> recipeConditions
+    ) {
+        return recipeConditions.stream()
+        		.filter(rc -> {
+        		    String code = rc.getConditionCode().getConditionCode();
+
+        		    return activeConditionCodes.contains(code)
+        		            && !isAllergyCondition(code);
+        		})
+                .filter(rc ->
+                        "RECOMMENDED".equals(rc.getFitType())
+                        || "ALLOWED".equals(rc.getFitType())
+                )
+                .map(rc -> rc.getConditionCode().getConditionCode())
+                .distinct()
+                .toList();
+    }
     private List<ConditionWarningDto> buildWarnings(
             List<String> activeConditionCodes,
             List<RecipeConditionMap> recipeConditions
     ) {
         return recipeConditions.stream()
-                .filter(rc -> activeConditionCodes.contains(
-                        rc.getConditionCode().getConditionCode()
-                ))
+                .filter(rc -> {
+                    String code = rc.getConditionCode().getConditionCode();
+
+                    return activeConditionCodes.contains(code)
+                            && !isAllergyCondition(code);
+                })
                 .filter(rc -> "CAUTION".equals(rc.getFitType()))
                 .map(rc -> ConditionWarningDto.builder()
                         .conditionCode(rc.getConditionCode().getConditionCode())
@@ -209,7 +237,7 @@ public class RecommendationService {
 
         List<UserCondition> userConditions =
                 query.isUseUserProfile() && query.getUserId() != null
-                        ? userConditionRepository.findByUser_UserIdAndIsActiveTrue(query.getUserId())
+                        ? userConditionRepository.findActiveWithConditionCodeByUserId(query.getUserId())
                         : List.of();
         List<String> activeConditionCodes = java.util.stream.Stream.concat(
                 userConditions.stream()
@@ -353,7 +381,10 @@ public class RecommendationService {
                         
                  
                     }
-                    List<String> conditionTags = activeConditionCodes;
+                    List<String> conditionTags = buildConditionTags(
+                            activeConditionCodes,
+                            recipeConditions
+                    );
                     
                     List<ConditionWarningDto> warnings = buildWarnings(
                             activeConditionCodes,

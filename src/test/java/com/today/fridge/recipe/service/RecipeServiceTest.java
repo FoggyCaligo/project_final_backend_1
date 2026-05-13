@@ -1,142 +1,138 @@
 package com.today.fridge.recipe.service;
 
 /*
- * RecipeServiceTest는 RecipeService의 비즈니스 로직을 단위 테스트하는 클래스입니다.
+ * RecipeServiceTest는 RecipeService의 getRecipe(비회원) 메서드를 통합 테스트하는 클래스입니다.
  *
- * @ExtendWith(MockitoExtension.class)를 사용하여 Spring Context나 DB를 로드하지 않고,
- * Mock 객체를 주입하여 서비스 계층만 격리하여 빠르고 안정적으로 테스트합니다.
+ * @SpringBootTest를 사용하여 실제 데이터베이스(H2) 환경에서 테스트합니다.
+ * @Transactional로 각 테스트 후 데이터가 롤백됩니다.
+ *
+ * 주요 테스트 시나리오:
+ * 1. 정상적인 recipeId로 조회 시 레시피 정보, 영양정보, 단계, 재료가 올바르게 반환되는지 확인
+ * 2. 존재하지 않는 recipeId로 조회 시 ExceptionTemplate 예외가 발생하는지 확인
  */
 
-import com.today.fridge.global.response.PageResult;
-import com.today.fridge.ingredient.repository.UserIngredientRepository;
-import com.today.fridge.recipe.dto.response.RecipeListResponse;
+import com.today.fridge.global.exception.ExceptionTemplate;
+import com.today.fridge.recipe.dto.response.RecipeResponse;
 import com.today.fridge.recipe.entity.Recipe;
+import com.today.fridge.recipe.entity.RecipeIngredient;
+import com.today.fridge.recipe.entity.RecipeNutrition;
+import com.today.fridge.recipe.entity.RecipeStep;
 import com.today.fridge.recipe.repository.RecipeIngredientRepository;
 import com.today.fridge.recipe.repository.RecipeNutritionRepository;
 import com.today.fridge.recipe.repository.RecipeRepository;
 import com.today.fridge.recipe.repository.RecipeStepRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
-import org.springframework.data.domain.PageRequest;
-import com.today.fridge.recipe.repository.RecipeTagRepository;
-
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest
+@ActiveProfiles("test")
+@Transactional
 class RecipeServiceTest {
 
-        @Mock
+        @Autowired
         private RecipeRepository recipeRepository;
-        @Mock
-        private RecipeNutritionRepository recipeNutritionRepository;
-        @Mock
-        private RecipeStepRepository recipeStepRepository;
-        @Mock
-        private RecipeIngredientRepository recipeIngredientRepository;
-        @Mock
-        private UserIngredientRepository userIngredientRepository;
 
-        @InjectMocks
+        @Autowired
+        private RecipeNutritionRepository recipeNutritionRepository;
+
+        @Autowired
+        private RecipeStepRepository recipeStepRepository;
+
+        @Autowired
+        private RecipeIngredientRepository recipeIngredientRepository;
+
+        @Autowired
         private RecipeService recipeService;
 
-        @Mock
-        private RecipeTagRepository recipeTagRepository;
-
+        // ========================================================================
+        // 비회원 전용 레시피 조회 - 정상 시나리오
+        // ========================================================================
         @Test
-        @DisplayName("전체 레시피를 페이징으로 조회한다")
-        void testGetRecipes_All() {
-                Pageable pageable = PageRequest.of(0, 10);
-
+        @DisplayName("Service Integration Test for getRecipe")
+        void testGetRecipe() {
+                // 1. 레시피 데이터 저장
                 Recipe recipe = Recipe.builder()
-                                .recipeId(1L)
-                                .title("A Recipe")
+                                .sourceSite("test.com")
+                                .sourceRecipeKey("test")
+                                .title("Test Recipe")
                                 .thumbnailUrl("test.jpg")
+                                .summary("This is a test recipe")
+                                .servingsText("1")
                                 .cookTimeText("10분")
+                                .sourceUrl("test.com")
                                 .isActive(true)
+                                .createdAt(LocalDateTime.now())
+                                .updatedAt(LocalDateTime.now())
                                 .build();
+                Recipe savedRecipe = recipeRepository.save(recipe);
+                Long recipeId = savedRecipe.getRecipeId();
 
-                Page<Recipe> recipePage = new PageImpl<>(List.of(recipe), pageable, 1);
+                // 2. 레시피 영양정보 저장
+                RecipeNutrition nutrition = RecipeNutrition.builder()
+                                .recipe(savedRecipe)
+                                .calories(BigDecimal.valueOf(500))
+                                .carbs(BigDecimal.valueOf(50))
+                                .protein(BigDecimal.valueOf(20))
+                                .fat(BigDecimal.valueOf(10))
+                                .build();
+                recipeNutritionRepository.save(nutrition);
 
-                given(recipeRepository.findByIsActiveTrue(any(Pageable.class)))
-                                .willReturn(recipePage);
+                // 3. 레시피 단계 저장
+                RecipeStep step1 = RecipeStep.builder()
+                                .recipe(savedRecipe)
+                                .stepNo(1)
+                                .instructionText("Chop the onions")
+                                .build();
+                RecipeStep step2 = RecipeStep.builder()
+                                .recipe(savedRecipe)
+                                .stepNo(2)
+                                .instructionText("Cook the onions")
+                                .build();
+                recipeStepRepository.saveAll(List.of(step1, step2));
 
-                PageResult<RecipeListResponse> result = recipeService.getRecipes("ALL", null, pageable);
+                // 4. 레시피 재료 저장
+                RecipeIngredient ingredient1 = RecipeIngredient.builder()
+                                .recipe(savedRecipe)
+                                .rawText("Onion")
+                                .amountText("1")
+                                .build();
+                recipeIngredientRepository.save(ingredient1);
 
-                assertThat(result.content()).isNotEmpty();
-                assertThat(result.pageInfo().page()).isEqualTo(0);
-                assertThat(result.pageInfo().size()).isEqualTo(10);
+                // 5. 서비스 메서드 호출
+                RecipeResponse response = recipeService.getRecipe(recipeId);
+
+                // 6. 결과 검증
+                assertThat(response.getRecipeId()).isEqualTo(recipeId);
+                assertThat(response.getTitle()).isEqualTo("Test Recipe");
+                assertThat(response.getCalories()).isEqualByComparingTo(BigDecimal.valueOf(500));
+
+                assertThat(response.getRecipeSteps()).hasSize(2);
+                assertThat(response.getRecipeSteps().get(0).getInstructionText()).isEqualTo("Chop the onions");
+
+                assertThat(response.getRecipeIngredients()).hasSize(1);
+                assertThat(response.getRecipeIngredients().get(0).getRawText()).isEqualTo("Onion");
         }
 
+        // ========================================================================
+        // 비회원 전용 레시피 조회 - 존재하지 않는 레시피 예외 시나리오
+        // ========================================================================
         @Test
-        @DisplayName("이름순 정렬을 적용한다")
-        void testGetRecipes_SortByName() {
-                Pageable pageable = PageRequest.of(0, 10);
-
-                Recipe recipeA = Recipe.builder()
-                                .recipeId(1L)
-                                .title("A Recipe")
-                                .thumbnailUrl("a.jpg")
-                                .cookTimeText("10분")
-                                .isActive(true)
-                                .build();
-
-                Recipe recipeB = Recipe.builder()
-                                .recipeId(2L)
-                                .title("B Recipe")
-                                .thumbnailUrl("b.jpg")
-                                .cookTimeText("20분")
-                                .isActive(true)
-                                .build();
-
-                Page<Recipe> recipePage = new PageImpl<>(List.of(recipeA, recipeB), pageable, 2);
-
-                given(recipeRepository.findByIsActiveTrue(any(Pageable.class)))
-                                .willReturn(recipePage);
-
-                PageResult<RecipeListResponse> result = recipeService.getRecipes("ALL", "name", pageable);
-
-                assertThat(result.content())
-                                .extracting(RecipeListResponse::title)
-                                .containsSubsequence("A Recipe", "B Recipe");
+        @DisplayName("Service throws exception when Recipe is not found")
+        void testGetRecipe_NotFound() {
+                // 존재하지 않는 recipeId로 조회 시 ExceptionTemplate 예외가 발생해야 함
+                assertThrows(ExceptionTemplate.class, () -> {
+                        recipeService.getRecipe(9999L);
+                });
         }
-
-        @Test
-        @DisplayName("cookingType 필터를 적용한다")
-        void testGetRecipes_FilterByCookingType() {
-                Pageable pageable = PageRequest.of(0, 10);
-
-                Recipe recipe = Recipe.builder()
-                                .recipeId(1L)
-                                .title("어묵국")
-                                .thumbnailUrl("soup.jpg")
-                                .cookTimeText("10분")
-                                .isActive(true)
-                                .build();
-
-                Page<Recipe> recipePage = new PageImpl<>(List.of(recipe), pageable, 1);
-
-                given(recipeRepository.findActiveRecipesByCookingType(eq("SOUP"), any(Pageable.class)))
-                                .willReturn(recipePage);
-
-                PageResult<RecipeListResponse> result = recipeService.getRecipes("SOUP", null, pageable);
-
-                assertThat(result.content())
-                                .extracting(RecipeListResponse::title)
-                                .contains("어묵국");
-        }
-
 }

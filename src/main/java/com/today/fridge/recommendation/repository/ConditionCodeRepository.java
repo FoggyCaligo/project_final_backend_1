@@ -1,6 +1,7 @@
 package com.today.fridge.recommendation.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -11,4 +12,6 @@ public interface ConditionCodeRepository extends JpaRepository<ConditionCode, Lo
 	List<ConditionCode> findByConditionCodeInAndIsActiveTrue(List<String> conditionCodes);
 	
 	List<ConditionCode> findByIsActiveTrue();
+	
+	Optional<ConditionCode> findByConditionCode(String conditionCode);
 }

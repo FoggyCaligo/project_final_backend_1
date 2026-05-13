@@ -16,11 +16,14 @@ import com.today.fridge.ingredient.dto.DeleteIngredientData;
 import com.today.fridge.ingredient.dto.FridgeIngredientListData;
 import com.today.fridge.ingredient.dto.FridgeSummaryResponse;
 import com.today.fridge.ingredient.dto.IngredientResponse;
+import com.today.fridge.ingredient.dto.RemoteImageStagingRequest;
+import com.today.fridge.ingredient.dto.RemoteImageStagingResponse;
+import com.today.fridge.ingredient.dto.RemoteImageStagingResultRequest;
+import com.today.fridge.ingredient.dto.RemoteImageUploadResultRequest;
 import com.today.fridge.ingredient.dto.SoonItemResponse;
 import com.today.fridge.global.upload.BytesMultipartFile;
 import com.today.fridge.ingredient.dto.vision.VisionRecognizeDataDto;
 import com.today.fridge.vision.dto.VisionRecognitionStatusDto;
-import com.today.fridge.vision.service.VisionRecognitionPersistenceService;
 import com.today.fridge.vision.service.VisionRecognitionQueryService;
 import com.today.fridge.ingredient.entity.IngredientCategory;
 import com.today.fridge.file.entity.FileAsset;
@@ -65,7 +68,6 @@ public class FridgeIngredientService {
     private final IngredientMasterRepository ingredientMasterRepository;
     private final IngredientCategoryRepository ingredientCategoryRepository;
     private final FastApiService fastApiService;
-    private final VisionRecognitionPersistenceService visionRecognitionPersistenceService;
     private final VisionRecognitionQueryService visionRecognitionQueryService;
     private final FileAssetService fileAssetService;
     private final ObjectMapper objectMapper;
@@ -76,7 +78,6 @@ public class FridgeIngredientService {
             IngredientMasterRepository ingredientMasterRepository,
             IngredientCategoryRepository ingredientCategoryRepository,
             FastApiService fastApiService,
-            VisionRecognitionPersistenceService visionRecognitionPersistenceService,
             VisionRecognitionQueryService visionRecognitionQueryService,
             FileAssetService fileAssetService,
             ObjectMapper objectMapper) {
@@ -85,7 +86,6 @@ public class FridgeIngredientService {
         this.ingredientMasterRepository = ingredientMasterRepository;
         this.ingredientCategoryRepository = ingredientCategoryRepository;
         this.fastApiService = fastApiService;
-        this.visionRecognitionPersistenceService = visionRecognitionPersistenceService;
         this.visionRecognitionQueryService = visionRecognitionQueryService;
         this.fileAssetService = fileAssetService;
         this.objectMapper = objectMapper;
@@ -168,7 +168,7 @@ public class FridgeIngredientService {
 
     @Transactional
     public IngredientResponse create(Long userId, CreateIngredientRequest req) {
-        validateQuantity(req.getQuantity());
+        validatePositiveQuantity(req.getQuantity());
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -208,7 +208,22 @@ public class FridgeIngredientService {
         }
         e.setCategoryId(catId);
 
-        if (req.getFileId() != null) {
+        if (Boolean.TRUE.equals(req.getRemoteImagePending())) {
+            if (req.getFileId() != null) {
+                throw new BusinessException(
+                        ErrorCode.VALIDATION_ERROR, "remote_image_pending 과 file_id 는 함께 사용할 수 없습니다.");
+            }
+            if (!StringUtils.hasText(req.getRemoteImageMimeType())) {
+                throw new BusinessException(ErrorCode.VALIDATION_ERROR, "remote_image_mime_type 이 필요합니다.");
+            }
+            FileAsset pending =
+                    fileAssetService.createApachePendingVision(
+                            user,
+                            req.getRemoteImageOriginalName(),
+                            req.getRemoteImageMimeType(),
+                            req.getRemoteImageSize());
+            e.setFileAsset(pending);
+        } else if (req.getFileId() != null) {
             e.setFileAsset(fileAssetService.getOwnedFileOrThrow(req.getFileId(), userId));
         } else if (req.getImageFile() != null) {
             var savedAsset = fileAssetService.saveFromUploadMetadata(user, req.getImageFile());
@@ -230,6 +245,89 @@ public class FridgeIngredientService {
 
         UserIngredient saved = userIngredientRepository.save(e);
         return toResponse(saved);
+    }
+
+    @Transactional
+    public IngredientResponse applyApacheImageSync(
+            Long userId, Long ingredientId, RemoteImageUploadResultRequest req) {
+        if (req == null) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR);
+        }
+        UserIngredient ui =
+                userIngredientRepository
+                        .findByIdAndUserId(ingredientId, userId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.INGREDIENT_NOT_FOUND));
+        FileAsset fa = ui.getFileAsset();
+        if (fa == null) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "연결된 이미지가 없습니다.");
+        }
+        if (!Boolean.TRUE.equals(req.getSuccess())) {
+            Long fid = fa.getFileId();
+            ui.setFileAsset(null);
+            userIngredientRepository.save(ui);
+            fileAssetService.deleteByIdAndUser(fid, userId);
+            UserIngredient reloaded =
+                    userIngredientRepository
+                            .findByIdAndUserId(ingredientId, userId)
+                            .orElseThrow(() -> new BusinessException(ErrorCode.INGREDIENT_NOT_FOUND));
+            return toResponse(reloaded);
+        }
+        fileAssetService.applyApacheUploadMetadata(
+                fa.getFileId(), userId, req.getSha1sum(), req.getFileSize(), req.getMimeType());
+        UserIngredient reloaded =
+                userIngredientRepository
+                        .findByIdAndUserId(ingredientId, userId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.INGREDIENT_NOT_FOUND));
+        return toResponse(reloaded);
+    }
+
+    @Transactional
+    public RemoteImageStagingResponse stageApacheImageReplaceStaging(
+            Long userId, Long ingredientId, RemoteImageStagingRequest req) {
+        userIngredientRepository
+                .findByIdAndUserId(ingredientId, userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INGREDIENT_NOT_FOUND));
+        if (req == null || !StringUtils.hasText(req.getMimeType())) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "mime_type 이 필요합니다.");
+        }
+        User user =
+                userRepository
+                        .findById(userId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        FileAsset pending =
+                fileAssetService.createApachePendingVision(
+                        user, req.getOriginalName(), req.getMimeType(), req.getFileSize());
+        return new RemoteImageStagingResponse(pending.getFileId());
+    }
+
+    @Transactional
+    public IngredientResponse applyApacheImageReplaceStagingResult(
+            Long userId, Long ingredientId, RemoteImageStagingResultRequest req) {
+        if (req == null || req.getPendingFileId() == null) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "pending_file_id 가 필요합니다.");
+        }
+        UserIngredient ui =
+                userIngredientRepository
+                        .findByIdAndUserId(ingredientId, userId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.INGREDIENT_NOT_FOUND));
+        FileAsset pending = fileAssetService.getOwnedFileOrThrow(req.getPendingFileId(), userId);
+        if (!Boolean.TRUE.equals(req.getSuccess())) {
+            fileAssetService.deleteByIdAndUser(req.getPendingFileId(), userId);
+            return toResponse(ui);
+        }
+        FileAsset old = ui.getFileAsset();
+        ui.setFileAsset(pending);
+        userIngredientRepository.save(ui);
+        if (old != null && !old.getFileId().equals(pending.getFileId())) {
+            fileAssetService.deleteByIdAndUser(old.getFileId(), userId);
+        }
+        fileAssetService.applyApacheUploadMetadata(
+                pending.getFileId(), userId, req.getSha1sum(), req.getFileSize(), req.getMimeType());
+        UserIngredient reloaded =
+                userIngredientRepository
+                        .findByIdAndUserId(ingredientId, userId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.INGREDIENT_NOT_FOUND));
+        return toResponse(reloaded);
     }
 
     /**
@@ -260,7 +358,7 @@ public class FridgeIngredientService {
                 e.setQuantity(null);
             } else {
                 BigDecimal q = toBigDecimal(v);
-                validateQuantity(q);
+                validatePositiveQuantity(q);
                 e.setQuantity(q);
             }
         }
@@ -318,7 +416,16 @@ public class FridgeIngredientService {
         UserIngredient e = userIngredientRepository.findByIdAndUserId(ingredientId, userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.INGREDIENT_NOT_FOUND));
         long id = e.getUserIngredientId();
+        FileAsset fa = e.getFileAsset();
+        if (fa != null) {
+            e.setFileAsset(null);
+            userIngredientRepository.save(e);
+            userIngredientRepository.flush();
+        }
         userIngredientRepository.delete(e);
+        if (fa != null) {
+            //fileAssetService.deleteByIdAndUser(fa.getFileId(), userId);
+        }
         return new DeleteIngredientData(id);
     }
 
@@ -353,11 +460,11 @@ public class FridgeIngredientService {
         if (!StringUtils.hasText(q)) {
             return Optional.empty();
         }
-        Optional<IngredientMaster> exact = ingredientMasterRepository.findByNormalizedNameIgnoreCase(q);
+        Optional<IngredientMaster> exact = ingredientMasterRepository.findByCanonicalNameIgnoreCase(q);
         if (exact.isPresent()) {
             return exact;
         }
-        List<IngredientMaster> candidates = ingredientMasterRepository.findCandidatesByNormalizedNameOrAlias(
+        List<IngredientMaster> candidates = ingredientMasterRepository.findCandidatesByCanonicalNameOrAlias(
                 q, PageRequest.of(0, 5));
         return candidates.stream().findFirst();
     }
@@ -407,6 +514,30 @@ public class FridgeIngredientService {
         }
     }
 
+    /** API·프론트 URL은 항상 {@code vision/{file_id}.확장자} 형태로 맞춘다 (DB에 UUID 파일명이 남아 있어도). */
+    private static String fileAssetStoredExtension(FileAsset fa) {
+        String stored = fa.getStoredName();
+        if (stored != null) {
+            int dot = stored.lastIndexOf('.');
+            if (dot >= 0 && dot < stored.length() - 1) {
+                String ext = stored.substring(dot).toLowerCase();
+                if (ext.length() <= 10) {
+                    return ext;
+                }
+            }
+        }
+        String mime = fa.getMimeType();
+        if (mime == null) {
+            return ".jpg";
+        }
+        return switch (mime.toLowerCase()) {
+            case "image/png" -> ".png";
+            case "image/webp" -> ".webp";
+            case "image/gif" -> ".gif";
+            default -> ".jpg";
+        };
+    }
+
     private IngredientResponse toResponse(UserIngredient ui) {
         LocalDate today = LocalDate.now(KST);
         FreshnessStatus status = FreshnessCalculator.computeStatus(ui.getExpiresAt(), today);
@@ -414,9 +545,11 @@ public class FridgeIngredientService {
         String imgStored = null;
         Long imgFileId = null;
         if (ui.getFileAsset() != null) {
-            imgPath = ui.getFileAsset().getStoragePath();
-            imgStored = ui.getFileAsset().getStoredName();
-            imgFileId = ui.getFileAsset().getFileId();
+            FileAsset fa = ui.getFileAsset();
+            imgFileId = fa.getFileId();
+            String ext = fileAssetStoredExtension(fa);
+            imgStored = imgFileId + ext;
+            imgPath = "vision/" + imgStored;
         }
         return new IngredientResponse(
                 ui.getUserIngredientId(),
@@ -559,8 +692,9 @@ public class FridgeIngredientService {
         }
     }
 
-    private static void validateQuantity(BigDecimal quantity) {
-        if (quantity != null && quantity.compareTo(BigDecimal.ZERO) < 0) {
+    /** 등록·수정 시 수량은 null 이 아니면 1 이상(0·음수 불가). */
+    private static void validatePositiveQuantity(BigDecimal quantity) {
+        if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessException(ErrorCode.VALIDATION_ERROR);
         }
     }
@@ -590,8 +724,8 @@ public class FridgeIngredientService {
     }
 
     /**
-     * 식재료 이미지 인식 — FastAPI 비전 파이프라인 프록시 (공개 API 계약 잠금 경로).
-     * 성공 시 vision_recognition_request에 analysis_result(JSONB) 저장 시도.
+     * 식재료 이미지 인식 — FastAPI 비전만 호출한다. Spring 디스크·{@code file_asset} 저장은 하지 않으며,
+     * 실제 바이너리는 등록/수정 시 아파치 {@code upload_fridge_image.php} 경로로 올린다.
      */
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public VisionRecognizeDataDto recognizeIngredientImage(Long userId, MultipartFile file, int topK) {
@@ -611,9 +745,9 @@ public class FridgeIngredientService {
         MultipartFile forVision = new BytesMultipartFile(bytes, orig, ct);
 
         VisionRecognizeDataDto data = fastApiService.recognizeIngredientImage(forVision, topK);
-        visionRecognitionPersistenceService
-                .persistAfterRecognition(userId, bytes, orig, ct, data)
-                .ifPresent(data::setRecognitionRequestId);
+        data.setImagePersistStatus("SKIPPED");
+        data.setFileId(null);
+        data.setRecognitionRequestId(null);
         return data;
     }
 
