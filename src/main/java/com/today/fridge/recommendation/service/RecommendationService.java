@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.today.fridge.embedding.service.RecipeEmbeddingSearchService;
 import com.today.fridge.global.response.PageResponse;
@@ -186,6 +187,7 @@ public class RecommendationService {
                         .build())
                 .toList();
     }
+    @Transactional(readOnly = true)
     public PageResult<RecipeRecommendationResponse> recommend(Long userId, Pageable pageable) {
         return recommend(
                 RecommendationQuery.builder()
@@ -203,6 +205,7 @@ public class RecommendationService {
         );
     }
     
+    @Transactional(readOnly = true)
     public PageResult<RecipeRecommendationResponse> recommend(RecommendationQuery query, Pageable pageable) {
     	List<String> ownedIngredients =
     	        query.isUseUserFridge() && query.getUserId() != null
