@@ -29,6 +29,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
         config.setAllowedOrigins(List.of(
                 "http://localhost:3000",
                 "https://my-frontend-backup.vercel.app",
+                "https://today-fridge-teamwork.vercel.app",
+                "https://today-fridge-frontend-deploy.vercel.app",
                 frontendBaseUrl
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
@@ -45,6 +47,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .allowedOrigins(
                         "http://localhost:3000",
                         "https://my-frontend-backup.vercel.app",
+                        "https://today-fridge-teamwork.vercel.app",
+                        "https://today-fridge-frontend-deploy.vercel.app",
                         frontendBaseUrl
                 )
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
