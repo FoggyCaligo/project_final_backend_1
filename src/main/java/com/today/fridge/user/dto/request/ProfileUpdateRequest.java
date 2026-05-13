@@ -15,4 +15,13 @@ public class ProfileUpdateRequest {
 
     @Size(max = 2048, message = "프로필 이미지 URL은 2048자를 초과할 수 없습니다.")
     private String profileImageUrl;
+
+    private Double heightCm;
+
+    private Double weightKg;
+
+    private Integer age;
+
+    @Size(max = 10, message = "성별은 10자를 초과할 수 없습니다.")
+    private String gender;
 }
