@@ -1,4 +1,10 @@
 services:
+  environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/today_fridge
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      APP_FASTAPI_BASE_URL: http://fastapi:8000
+      APP_UPLOAD_ROOT_PATH: /app/uploads
   mailpit:
     image: axllent/mailpit
     container_name: today_fridge_mailpit
@@ -7,3 +13,8 @@ services:
       - "1025:1025" # SMTP port
     environment:
       MP_MAX_MESSAGES: 500 
+  depends_on:
+    - postgres
+    - fastapi
+  volumes:
+    postgres_data:

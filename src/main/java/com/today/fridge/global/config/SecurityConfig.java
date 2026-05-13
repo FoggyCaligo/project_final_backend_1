@@ -65,7 +65,9 @@ public class SecurityConfig {
                 "http://127.0.0.1:5173",
                 "http://100.78.2.126:3000",
                 "https://*.ngrok-free.dev",
-                "https://todayfridge.com"
+                "https://todayfridge.com",
+                "https://www.todayfridge.com"
+                
         ));
 
         configuration.setAllowedMethods(List.of(
@@ -118,7 +120,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/recommendation/**").permitAll()
                         .requestMatchers("/api/v1/dashboard/**").permitAll()
                         .requestMatchers("/api/v1/bookmarks/**").authenticated()
-                        .requestMatchers("/api/v1/meal", "/api/v1/meal/**").authenticated()
+                        .requestMatchers("/api/v1/meal/**").authenticated()
                         .requestMatchers("/api/v1/files/**").permitAll()
                         .requestMatchers("/api/fastapi-test").permitAll()
                         // v3 쇼핑 검색 (키워드 검색은 인증 없이 허용)
