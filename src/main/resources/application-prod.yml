@@ -30,6 +30,7 @@ app:
     base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
     service-key: ${INTERNAL_API_TOKEN:change-me}
   kakao:
+    rest-api-key: ${KAKAO_REST_API_KEY}
     redirect-uri: ${KAKAO_REDIRECT_URI}
     frontend-base-url: ${FRONTEND_BASE_URL}
   mail:
