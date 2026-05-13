@@ -58,7 +58,7 @@ jobs:
             --min-instances 0 \
             --max-instances 3 \
             --timeout 300 \
-            --set-env-vars "^|^SPRING_PROFILES_ACTIVE=prod|SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}|SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}|SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}|REDIS_URL=${{ secrets.REDIS_URL }}|JWT_SECRET=${{ secrets.JWT_SECRET }}|MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}|MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}|INTERNAL_API_TOKEN=${{ secrets.INTERNAL_API_TOKEN }}|FASTAPI_BASE_URL=${{ secrets.FASTAPI_BASE_URL }}|ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}|KAKAO_REDIRECT_URI=${{ secrets.KAKAO_REDIRECT_URI }}|FRONTEND_BASE_URL=${{ secrets.FRONTEND_BASE_URL }}"
+            --set-env-vars "^|^SPRING_PROFILES_ACTIVE=prod|DB_URL=${{ secrets.DB_URL }}|DB_USERNAME=${{ secrets.DB_USERNAME }}|DB_PASSWORD=${{ secrets.DB_PASSWORD }}|REDIS_URL=${{ secrets.REDIS_URL }}|JWT_SECRET=${{ secrets.JWT_SECRET }}|MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}|MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}|INTERNAL_API_TOKEN=${{ secrets.INTERNAL_API_TOKEN }}|FASTAPI_BASE_URL=${{ secrets.FASTAPI_BASE_URL }}|APP_BASE_URL=${{ secrets.APP_BASE_URL }}|KAKAO_REDIRECT_URI=${{ secrets.KAKAO_REDIRECT_URI }}|FRONTEND_BASE_URL=${{ secrets.FRONTEND_BASE_URL }}"
 
       - name: Show Service URL
         run: |
