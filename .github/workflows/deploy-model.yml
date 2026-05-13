@@ -54,7 +54,7 @@ jobs:
             --max-instances 2 \
             --timeout 300 \
             --concurrency 4 \
-            --set-env-vars "INTERNAL_API_TOKEN=${{ secrets.INTERNAL_API_TOKEN }}"
+            --set-env-vars "INTERNAL_API_TOKEN=${{ secrets.INTERNAL_API_TOKEN }}|FASTAPI_DB_URL=${{ secrets.FASTAPI_DB_URL }}|GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}"
 
       - name: Show Service URL
         run: |
