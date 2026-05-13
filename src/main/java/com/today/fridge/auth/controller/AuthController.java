@@ -33,6 +33,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /**
+ * 0514 파일이 사라졌다가 다시 생겻는데 인식이 안된다??
  * Redis 기반 인증 컨트롤러 (AuthController + KakaoAuthController 통합).
  *
  * 기존 /api/v1/auth 경로를 유지하면서 /api/v1/auth 경로로 분리하여,
