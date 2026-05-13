@@ -122,6 +122,7 @@ public class RecommendationService {
                 .recipeId(recipe.recipeId())
                 .title(recipe.title())
                 .summary(recipe.summary())
+                .difficultyLevel(recipe.difficultyLevel())
                 .cookTimeText(recipe.cookTimeText())
                 .thumbnailUrl(recipe.thumbnailUrl())
                 .matchRate(Math.round(matchRate * 10) / 10.0)

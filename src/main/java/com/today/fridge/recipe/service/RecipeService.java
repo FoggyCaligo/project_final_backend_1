@@ -308,9 +308,6 @@ public class RecipeService {
     	        case "time_asc":
     	            sortSpec = Sort.by(Sort.Direction.ASC, "cookTimeText");
     	            break;
-    	        case "difficulty_asc":
-    	            sortSpec = Sort.by(Sort.Direction.ASC, "difficulty");
-    	            break;
     	        case "name":
     	            sortSpec = Sort.by(Sort.Direction.ASC, "title");
     	            break;
@@ -326,14 +323,32 @@ public class RecipeService {
     	);
         Page<Recipe> recipePage;
 
-        if (cookingType == null || "ALL".equalsIgnoreCase(cookingType)) {
-            recipePage = recipeRepository.findByIsActiveTrue(sortedPageable);
-        } else {
-            recipePage = recipeRepository.findActiveRecipesByCookingType(
-                    cookingType,
-                    sortedPageable
+        if ("difficulty_asc".equals(sort)) {
+
+            Pageable unsortedPageable = PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize()
             );
+
+            recipePage =
+                    recipeRepository.findActiveOrderByDifficultyAsc(
+                            unsortedPageable
+                    );
+
+        } else if (cookingType == null || "ALL".equalsIgnoreCase(cookingType)) {
+
+            recipePage =
+                    recipeRepository.findByIsActiveTrue(sortedPageable);
+
+        } else {
+
+            recipePage =
+                    recipeRepository.findActiveRecipesByCookingType(
+                            cookingType,
+                            sortedPageable
+                    );
         }
+        
         log.info("[RECIPE_SORT] sort={}, pageableSort={}", sort, sortedPageable.getSort());
         List<RecipeListResponse> content = recipePage.getContent()
                 .stream()
