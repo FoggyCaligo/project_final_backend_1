@@ -1,8 +1,7 @@
 name: Deploy FastAPI to Cloud Run
 
 on:
-  push:
-    branches: [main, my-work]
+  workflow_dispatch:  # FastAPI는 별도 레포에서 독립 배포 중 — 수동 실행만 허용
 
 env:
   REGION: asia-northeast3
