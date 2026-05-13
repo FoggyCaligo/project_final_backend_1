@@ -62,7 +62,7 @@ public class ChatbotOrchestratorService {
 
         List<String> profileConditionCodes = isMember
                 ? userConditionRepository
-                        .findByUser_UserIdAndIsActiveTrue(userId)
+                        .findActiveWithConditionCodeByUserId(userId)
                         .stream()
                         .map(uc -> uc.getConditionCode().getConditionCode())
                         .toList()
