@@ -171,7 +171,7 @@ public class UserService {
     }
 
     private List<String> getActiveConditionCodes(Long userId) {
-        return userConditionRepository.findByUser_UserIdAndIsActiveTrue(userId).stream()
+        return userConditionRepository.findActiveWithConditionCodeByUserId(userId).stream()
                 .map(userCondition -> userCondition.getConditionCode().getConditionCode())
                 .toList();
     }
