@@ -165,9 +165,12 @@ public class AuthController {
         User user = userRepository.findByLoginId(request.getLoginId())
                 .orElse(null);
         if (user != null) {
-            String redisToken = redisEmailVerifyService.createVerifyToken(user.getLoginId());
-            // Redis 토큰으로 인증 이메일 발송 (DB 토큰과 별도)
-            emailService.sendVerificationEmail(user.getEmail(), redisToken);
+            try {
+                String redisToken = redisEmailVerifyService.createVerifyToken(user.getLoginId());
+                emailService.sendVerificationEmail(user.getEmail(), redisToken);
+            } catch (Exception e) {
+                log.warn("[signup] Redis 토큰 저장 실패 — DB 인증 메일만 발송됨: {}", e.getMessage());
+            }
         }
 
         return ApiResponse.success(null, "회원가입이 완료되었습니다. 인증 이메일을 확인해주세요.");
