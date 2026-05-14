@@ -1,0 +1,7 @@
+.git
+.gradle
+build
+bin
+.env
+.DS_Store
+uploads
