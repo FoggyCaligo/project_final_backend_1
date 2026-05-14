@@ -66,8 +66,8 @@ public class SecurityConfig {
                 "http://100.78.2.126:3000",
                 "https://*.ngrok-free.dev",
                 "https://todayfridge.com",
-                "https://www.todayfridge.com"
-                
+                "https://www.todayfridge.com",
+                "https://today-fridge-frontend-deploy.vercel.app"
         ));
 
         configuration.setAllowedMethods(List.of(
