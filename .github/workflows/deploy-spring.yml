@@ -38,3 +38,19 @@ jobs:
             --region asia-northeast3 \
             --platform managed \
             --allow-unauthenticated
+
+      - name: Notify Discord Success
+        if: success()
+        run: |
+          curl -H "Content-Type: application/json" \
+            -X POST \
+            -d '{"content":"✅ [오늘 냉장고] Spring Boot Cloud Run 배포 완료"}' \
+            "${{ secrets.DISCORD_WEBHOOK_URL }}"
+
+      - name: Notify Discord Failure
+        if: failure()
+        run: |
+          curl -H "Content-Type: application/json" \
+            -X POST \
+            -d '{"content":"❌ [오늘 냉장고] Spring Boot Cloud Run 배포 실패"}' \
+            "${{ secrets.DISCORD_WEBHOOK_URL }}"
