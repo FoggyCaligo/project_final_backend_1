@@ -19,16 +19,19 @@ public class JwtProvider {
     private final long accessTokenValidity;
     private final long refreshTokenValidity;
     private final boolean cookieSecure;
+    private final String cookieSameSite;
 
     public JwtProvider(
             @Value("${app.security.jwt.secret:VG9kYXlGcmlkZ2VQcm9qZWN0QmFja2VuZDFTdGFydGVyU2VjcmV0S2V5Rm9ySldU}") String secretKey,
             @Value("${app.security.jwt.access-token-validity-seconds:3600}") long accessTokenValiditySeconds,
             @Value("${app.security.jwt.refresh-token-validity-seconds:1209600}") long refreshTokenValiditySeconds,
-            @Value("${app.security.cookie.secure:false}") boolean cookieSecure) {
+            @Value("${app.security.cookie.secure:false}") boolean cookieSecure,
+            @Value("${app.security.cookie.same-site:Lax}") String cookieSameSite) {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
         this.accessTokenValidity = accessTokenValiditySeconds * 1000;
         this.refreshTokenValidity = refreshTokenValiditySeconds * 1000;
         this.cookieSecure = cookieSecure;
+        this.cookieSameSite = cookieSameSite;
     }
 
     public String createAccessToken(String loginId) {
@@ -54,7 +57,7 @@ public class JwtProvider {
         return ResponseCookie.from(cookieName, token)
                 .httpOnly(true)
                 .secure(cookieSecure)
-                .sameSite("Lax")
+                .sameSite(cookieSameSite)
                 .path("/")
                 .maxAge(maxAgeMs / 1000)
                 .build();

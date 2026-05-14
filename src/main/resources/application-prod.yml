@@ -1,0 +1,49 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD}
+  flyway:
+    baseline-on-migrate: true
+    baseline-version: 0
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+app:
+  naver:
+    shopping:
+      client-id: ${NAVER_CLIENT_ID}
+      client-secret: ${NAVER_CLIENT_SECRET}
+  elevenst:
+    openapi:
+      key: ${ELEVENST_API_KEY}
+  security:
+    jwt:
+      secret: ${JWT_SECRET}
+    cookie:
+      secure: true
+      same-site: None
+  fastapi:
+    base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
+    service-key: ${INTERNAL_API_TOKEN:change-me}
+    caller-service: spring-backend
+  kakao:
+    rest-api-key: ${KAKAO_REST_API_KEY}
+    redirect-uri: ${KAKAO_REDIRECT_URI}
+    frontend-base-url: ${FRONTEND_BASE_URL}
+  mail:
+    base-url: ${APP_BASE_URL}
+    verification-required: true

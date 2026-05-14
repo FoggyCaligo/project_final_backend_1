@@ -1,0 +1,433 @@
+"""
+rawIngredientClassifier.py
+
+raw_ingredient 이미지용 실제 식재료 분류 모듈.
+
+역할:
+- 이미 1차 라우터에서 raw_ingredient로 판정된 단일 물체 이미지를 입력받는다.
+- YOLO classification 모델로 실제 식재료 후보를 topK개 반환한다.
+- 내부 API의 recognizedCandidates 계약에 맞는 list[dict]를 반환한다.
+
+주의:
+- 이 파일은 OCR을 다루지 않는다.
+- packaged_food 경로는 민예린 씨의 OCR 모듈에서 담당한다.
+- 이 파일은 "세부 식재료 분류 모델"의 추론 wrapper다.
+- 실제 동작에는 raw 식재료 클래스로 학습한 best.pt가 필요하다.
+
+권장 모델 위치:
+    app/models/ingredient/weights/raw_ingredient_best.pt
+
+필수 함수:
+    recognize_raw_ingredient_image(image_path, top_k=5)
+
+적용 순서·학습 절차: README_raw_ingredient_apply.md
+팀 메모(ingredient_master 동기화 전 보류·후속 도구): cursor_documents/raw_ingredient_ingredient_master_동기화_보류_및_후속.md
+
+런타임 라벨 매핑 (우선순위):
+1) `model_label_to_master.json` (기본 RAW_INGREDIENT_LABEL_MAP_PATH)
+2) 같은 디렉터리의 `model_label_to_master_train_non_packaged.json` 가 있으면 그 위에 병합
+   (122클래스 학습 전용 키가 전체 export에 없을 수 있음 → 한글 표시용)
+3) 내장 `BUILTIN_LABEL_FALLBACK`
+
+어휘 검증(선택): `ingredient_normalized_vocab.json` + RAW_INGREDIENT_ENFORCE_VOCAB
+
+환경변수:
+- RAW_INGREDIENT_LABEL_MAP_PATH, RAW_INGREDIENT_VOCAB_PATH
+- RAW_INGREDIENT_UNMAPPED_POLICY=passthrough|skip (기본 passthrough)
+- RAW_INGREDIENT_ENFORCE_VOCAB=true|false (기본 false)
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Set
+
+DEFAULT_MODEL_PATH = "app/models/ingredient/weights/raw_ingredient_best.pt"
+_DATA_DIR = Path(__file__).resolve().parent / "data"
+
+# JSON이 없거나 특정 키가 없을 때 사용. 기존 INGREDIENT_LABEL_MAP 전체와 동일한 내용.
+BUILTIN_LABEL_FALLBACK: Dict[str, Dict[str, str]] = {
+    "apple": {"displayName": "사과", "normalizedName": "사과", "categorySuggestion": "과일"},
+    "pear": {"displayName": "배", "normalizedName": "배", "categorySuggestion": "과일"},
+    "avocado": {"displayName": "아보카도", "normalizedName": "아보카도", "categorySuggestion": "과일"},
+    "pomegranate": {"displayName": "석류", "normalizedName": "석류", "categorySuggestion": "과일"},
+    "kiwi": {"displayName": "키위", "normalizedName": "키위", "categorySuggestion": "과일"},
+    "lemon": {"displayName": "레몬", "normalizedName": "레몬", "categorySuggestion": "과일"},
+    "plum": {"displayName": "자두", "normalizedName": "자두", "categorySuggestion": "과일"},
+    "nectarine": {"displayName": "천도복숭아", "normalizedName": "천도복숭아", "categorySuggestion": "과일"},
+    "red_grapefruit": {"displayName": "자몽", "normalizedName": "자몽", "categorySuggestion": "과일"},
+    "lime": {"displayName": "라임", "normalizedName": "라임", "categorySuggestion": "과일"},
+    "mango": {"displayName": "망고", "normalizedName": "망고", "categorySuggestion": "과일"},
+    "passion_fruit": {"displayName": "패션프루트", "normalizedName": "패션프루트", "categorySuggestion": "과일"},
+    "banana": {"displayName": "바나나", "normalizedName": "바나나", "categorySuggestion": "과일"},
+    "papaya": {"displayName": "파파야", "normalizedName": "파파야", "categorySuggestion": "과일"},
+    "satsumas": {"displayName": "귤", "normalizedName": "귤", "categorySuggestion": "과일"},
+    "pineapple": {"displayName": "파인애플", "normalizedName": "파인애플", "categorySuggestion": "과일"},
+    "melon": {"displayName": "멜론", "normalizedName": "멜론", "categorySuggestion": "과일"},
+    "orange": {"displayName": "오렌지", "normalizedName": "오렌지", "categorySuggestion": "과일"},
+    "peach": {"displayName": "복숭아", "normalizedName": "복숭아", "categorySuggestion": "과일"},
+    "mushroom": {"displayName": "버섯", "normalizedName": "버섯", "categorySuggestion": "채소"},
+    "brown_cap_mushroom": {"displayName": "양송이버섯", "normalizedName": "양송이버섯", "categorySuggestion": "채소"},
+    "onion": {"displayName": "양파", "normalizedName": "양파", "categorySuggestion": "채소"},
+    "potato": {"displayName": "감자", "normalizedName": "감자", "categorySuggestion": "채소"},
+    "cucumber": {"displayName": "오이", "normalizedName": "오이", "categorySuggestion": "채소"},
+    "carrots": {"displayName": "당근", "normalizedName": "당근", "categorySuggestion": "채소"},
+    "carrot": {"displayName": "당근", "normalizedName": "당근", "categorySuggestion": "채소"},
+    "red_beet": {"displayName": "비트", "normalizedName": "비트", "categorySuggestion": "채소"},
+    "cabbage": {"displayName": "양배추", "normalizedName": "양배추", "categorySuggestion": "채소"},
+    "asparagus": {"displayName": "아스파라거스", "normalizedName": "아스파라거스", "categorySuggestion": "채소"},
+    "ginger": {"displayName": "생강", "normalizedName": "생강", "categorySuggestion": "채소"},
+    "zucchini": {"displayName": "주키니", "normalizedName": "주키니", "categorySuggestion": "채소"},
+    "garlic": {"displayName": "마늘", "normalizedName": "마늘", "categorySuggestion": "채소"},
+    "pepper": {"displayName": "파프리카", "normalizedName": "파프리카", "categorySuggestion": "채소"},
+    "aubergine": {"displayName": "가지", "normalizedName": "가지", "categorySuggestion": "채소"},
+    "tomato": {"displayName": "토마토", "normalizedName": "토마토", "categorySuggestion": "채소"},
+    "leek": {"displayName": "대파", "normalizedName": "대파", "categorySuggestion": "채소"},
+}
+
+# 하위 호환·문서 명칭: 예전 코드/주석에서 INGREDIENT_LABEL_MAP 이라 부르던 딕셔너리와 동일 본문.
+INGREDIENT_LABEL_MAP = BUILTIN_LABEL_FALLBACK
+
+_label_map_cache: Optional[Dict[str, Dict[str, str]]] = None
+_vocab_loaded: bool = False
+_vocab_allow_set: Optional[Set[str]] = None
+
+
+def normalize_label(label: str) -> str:
+    return str(label).strip().lower().replace("-", "_").replace(" ", "_")
+
+
+def canonical_ing_label_key(label: str) -> Optional[str]:
+    """model_label_to_master.json 키는 ing_00001 형태. 모델 names 가 ing_2043 처럼 오면 패딩 키로 재조회."""
+    nl = normalize_label(label)
+    m = re.fullmatch(r"ing_(\d+)", nl, flags=re.IGNORECASE)
+    if not m:
+        return None
+    return f"ing_{int(m.group(1)):05d}"
+
+
+def _load_json_labels(path: Path) -> Dict[str, Dict[str, str]]:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    raw = data.get("labels", {})
+    out: Dict[str, Dict[str, str]] = {}
+    for k, v in raw.items():
+        if not isinstance(v, dict):
+            continue
+        key = normalize_label(str(k))
+        entry = {
+            "displayName": str(v.get("displayName", v.get("display_name", k))),
+            "normalizedName": str(v.get("normalizedName", v.get("normalized_name", k))),
+            "categorySuggestion": str(v["categorySuggestion"])
+            if v.get("categorySuggestion") or v.get("category_suggestion")
+            else "",
+        }
+        iid = v.get("ingredientId", v.get("ingredient_id"))
+        if iid is not None:
+            try:
+                entry["ingredientId"] = int(iid)
+            except (TypeError, ValueError):
+                pass
+        out[key] = entry
+    return out
+
+
+def get_label_map() -> Dict[str, Dict[str, str]]:
+    global _label_map_cache
+    if _label_map_cache is not None:
+        return _label_map_cache
+
+    merged: Dict[str, Dict[str, str]] = {}
+    for k, v in BUILTIN_LABEL_FALLBACK.items():
+        merged[normalize_label(k)] = dict(v)
+
+    path = Path(os.getenv("RAW_INGREDIENT_LABEL_MAP_PATH", str(_DATA_DIR / "model_label_to_master.json")))
+    if path.exists():
+        file_labels = _load_json_labels(path)
+        merged.update(file_labels)
+
+    train_overlay = _DATA_DIR / "model_label_to_master_train_non_packaged.json"
+    if train_overlay.exists():
+        merged.update(_load_json_labels(train_overlay))
+
+    _label_map_cache = merged
+    return _label_map_cache
+
+
+def get_vocab_allow_set() -> Optional[Set[str]]:
+    """None = vocab 파일 없음(검증 스킵)."""
+    global _vocab_loaded, _vocab_allow_set
+    if _vocab_loaded:
+        return _vocab_allow_set
+
+    _vocab_loaded = True
+    path = Path(os.getenv("RAW_INGREDIENT_VOCAB_PATH", str(_DATA_DIR / "ingredient_normalized_vocab.json")))
+    if not path.exists():
+        _vocab_allow_set = None
+        return None
+
+    data = json.loads(path.read_text(encoding="utf-8"))
+    names = data.get("names", [])
+    _vocab_allow_set = set(str(x) for x in names)
+    return _vocab_allow_set
+
+
+def reset_ingredient_classifier_caches() -> None:
+    global _label_map_cache, _vocab_loaded, _vocab_allow_set, _classifier
+    _label_map_cache = None
+    _vocab_loaded = False
+    _vocab_allow_set = None
+    _classifier = None
+
+
+@dataclass
+class RawIngredientCandidate:
+    displayName: str
+    normalizedName: str
+    categorySuggestion: Optional[str]
+    confidence: float
+    bbox: None = None
+    modelLabel: Optional[str] = None
+    ingredientMasterId: Optional[int] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        out: Dict[str, Any] = {
+            "displayName": self.displayName,
+            "normalizedName": self.normalizedName,
+            "categorySuggestion": self.categorySuggestion,
+            "bbox": self.bbox,
+            "confidence": self.confidence,
+            "modelLabel": self.modelLabel,
+        }
+        if self.ingredientMasterId is not None:
+            out["ingredientMasterId"] = self.ingredientMasterId
+        return out
+
+
+class RawIngredientClassifier:
+    def __init__(
+        self,
+        model_path: str | Path = DEFAULT_MODEL_PATH,
+        confidence_threshold: float = 0.20,
+        device: Optional[str] = None,
+        imgsz: int = 224,
+    ) -> None:
+        self.model_path = Path(model_path)
+        self.confidence_threshold = confidence_threshold
+        self.device = device
+        self.imgsz = imgsz
+        self._label_map = get_label_map()
+        self._vocab = get_vocab_allow_set()
+        self._unmapped_policy = os.getenv("RAW_INGREDIENT_UNMAPPED_POLICY", "passthrough").strip().lower()
+        self._enforce_vocab = os.getenv("RAW_INGREDIENT_ENFORCE_VOCAB", "").strip().lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+
+        if not self.model_path.exists():
+            raise FileNotFoundError(
+                f"raw ingredient model 파일을 찾을 수 없습니다: {self.model_path}\n"
+                "먼저 raw 식재료 분류 모델을 학습하고 best.pt를 해당 위치에 복사하세요."
+            )
+
+        try:
+            from ultralytics import YOLO
+        except ImportError as exc:
+            raise ImportError("ultralytics가 설치되어 있지 않습니다. 설치: pip install ultralytics") from exc
+
+        self.model = YOLO(str(self.model_path))
+
+    def recognize(self, image_path: str | Path, top_k: int = 5) -> List[Dict[str, Any]]:
+        image_path = Path(image_path)
+
+        if not image_path.exists():
+            raise FileNotFoundError(f"이미지 파일을 찾을 수 없습니다: {image_path}")
+
+        top_k = max(1, int(top_k))
+
+        results = self.model.predict(
+            source=str(image_path),
+            imgsz=self.imgsz,
+            device=self.device,
+            verbose=False,
+        )
+
+        if not results:
+            return []
+
+        result = results[0]
+        probs = getattr(result, "probs", None)
+        names = getattr(result, "names", None) or getattr(self.model, "names", None)
+
+        if probs is None:
+            raise RuntimeError(
+                "classification 확률 정보(probs)가 없습니다. raw ingredient 모델이 detect 모델인지 확인하세요."
+            )
+
+        candidates = self._topk_candidates(probs=probs, names=names, top_k=top_k)
+        return [candidate.to_dict() for candidate in candidates]
+
+    def _lookup_meta(self, label: str) -> Optional[Dict[str, Any]]:
+        key = normalize_label(label)
+        meta = self._label_map.get(key)
+        if meta:
+            return meta
+        alt = normalize_label(label.replace("__", "_"))
+        if alt != key:
+            meta = self._label_map.get(alt)
+            if meta:
+                return meta
+        canon = canonical_ing_label_key(label)
+        if canon:
+            meta = self._label_map.get(canon)
+            if meta:
+                return meta
+        return None
+
+    def _topk_candidates(self, probs: Any, names: Any, top_k: int) -> List[RawIngredientCandidate]:
+        prob_values = self._prob_values(probs)
+        if not prob_values:
+            return []
+
+        indexed = list(enumerate(prob_values))
+        indexed.sort(key=lambda item: item[1], reverse=True)
+
+        candidates: List[RawIngredientCandidate] = []
+        vocab = self._vocab
+
+        for class_id, confidence in indexed[:top_k]:
+            confidence = float(confidence)
+
+            label = self._label_from_id(names, class_id)
+            meta = self._lookup_meta(label)
+
+            master_id: Optional[int] = None
+            if meta:
+                display_name = meta["displayName"]
+                normalized_name = meta["normalizedName"]
+                category = meta["categorySuggestion"] or None
+                raw_mid = meta.get("ingredientId")
+                if raw_mid is not None:
+                    try:
+                        master_id = int(raw_mid)
+                    except (TypeError, ValueError):
+                        master_id = None
+            else:
+                if self._unmapped_policy == "skip":
+                    continue
+                nl = normalize_label(label)
+                identity_nn: Optional[str] = None
+                if vocab is not None:
+                    if label in vocab:
+                        identity_nn = label
+                    elif nl in vocab:
+                        identity_nn = nl
+                if identity_nn is not None:
+                    display_name = identity_nn
+                    normalized_name = identity_nn
+                    category = None
+                else:
+                    display_name = label
+                    normalized_name = label
+                    category = None
+
+            if vocab is not None and self._enforce_vocab and normalized_name not in vocab:
+                continue
+
+            candidates.append(
+                RawIngredientCandidate(
+                    displayName=display_name,
+                    normalizedName=normalized_name,
+                    categorySuggestion=category,
+                    confidence=confidence,
+                    bbox=None,
+                    modelLabel=label,
+                    ingredientMasterId=master_id,
+                )
+            )
+
+        return candidates
+
+    @staticmethod
+    def _prob_values(probs: Any) -> List[float]:
+        data = getattr(probs, "data", None)
+        if data is None:
+            return []
+
+        try:
+            return [float(v) for v in data.detach().cpu().tolist()]
+        except AttributeError:
+            try:
+                return [float(v) for v in data.cpu().tolist()]
+            except AttributeError:
+                try:
+                    return [float(v) for v in data.tolist()]
+                except AttributeError:
+                    return []
+
+    @staticmethod
+    def _label_from_id(names: Any, class_id: int) -> str:
+        if isinstance(names, dict):
+            return str(names.get(class_id, class_id))
+        if isinstance(names, list) and 0 <= class_id < len(names):
+            return str(names[class_id])
+        return str(class_id)
+
+
+_classifier: Optional[RawIngredientClassifier] = None
+
+
+def get_raw_ingredient_classifier() -> RawIngredientClassifier:
+    global _classifier
+
+    if _classifier is not None:
+        return _classifier
+
+    model_path = os.getenv("RAW_INGREDIENT_MODEL_PATH", DEFAULT_MODEL_PATH)
+    threshold = float(os.getenv("RAW_INGREDIENT_CONFIDENCE_THRESHOLD", "0.20"))
+    device = os.getenv("RAW_INGREDIENT_DEVICE") or os.getenv("INGREDIENT_ROUTE_DEVICE") or None
+    imgsz = int(os.getenv("RAW_INGREDIENT_IMGSZ", "224"))
+
+    _classifier = RawIngredientClassifier(
+        model_path=model_path,
+        confidence_threshold=threshold,
+        device=device,
+        imgsz=imgsz,
+    )
+    return _classifier
+
+
+def recognize_raw_ingredient_image(
+    image_path: str | Path,
+    top_k: int = 5,
+) -> List[Dict[str, Any]]:
+    classifier = get_raw_ingredient_classifier()
+    return classifier.recognize(image_path=image_path, top_k=top_k)
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="raw ingredient image classifier")
+    parser.add_argument("--image", required=True, help="입력 이미지 경로")
+    parser.add_argument("--model", default=DEFAULT_MODEL_PATH, help="raw ingredient best.pt 경로")
+    parser.add_argument("--topK", type=int, default=5)
+    parser.add_argument("--device", default=None, help='예: "cpu", "mps", "0"')
+    parser.add_argument("--imgsz", type=int, default=224)
+    parser.add_argument("--threshold", type=float, default=0.20)
+
+    args = parser.parse_args()
+
+    clf = RawIngredientClassifier(
+        model_path=args.model,
+        confidence_threshold=args.threshold,
+        device=args.device,
+        imgsz=args.imgsz,
+    )
+
+    output = clf.recognize(args.image, top_k=args.topK)
+    print(json.dumps(output, ensure_ascii=False, indent=2))

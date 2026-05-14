@@ -1,0 +1,64 @@
+name: Deploy FastAPI to Cloud Run
+
+on:
+  workflow_dispatch:  # FastAPI는 별도 레포에서 독립 배포 중 — 수동 실행만 허용
+
+env:
+  REGION: asia-northeast3
+  SERVICE_NAME: fastapi-model
+  IMAGE: asia-northeast3-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/today-fridge/fastapi-model
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker asia-northeast3-docker.pkg.dev --quiet
+
+      - name: Build Docker image
+        working-directory: model
+        run: |
+          docker build \
+            -t ${{ env.IMAGE }}:${{ github.sha }} \
+            -t ${{ env.IMAGE }}:latest \
+            .
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ env.IMAGE }}:${{ github.sha }}
+          docker push ${{ env.IMAGE }}:latest
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image ${{ env.IMAGE }}:${{ github.sha }} \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 8000 \
+            --memory 2Gi \
+            --cpu 2 \
+            --min-instances 0 \
+            --max-instances 2 \
+            --timeout 300 \
+            --concurrency 4 \
+            --set-env-vars "INTERNAL_API_TOKEN=${{ secrets.INTERNAL_API_TOKEN }}|FASTAPI_DB_URL=${{ secrets.FASTAPI_DB_URL }}|GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}"
+
+      - name: Show Service URL
+        run: |
+          echo "Deployed URL:"
+          gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region ${{ env.REGION }} \
+            --format "value(status.url)"

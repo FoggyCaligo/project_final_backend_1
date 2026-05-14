@@ -31,3 +31,19 @@ app:
     base-url: http://127.0.0.1:59999
     service-key: test
     caller-service: spring-backend-test
+  mail:
+    from: noreply@test.com
+    base-url: http://localhost:8080
+    verification-required: false
+  naver:
+    shopping:
+      client-id: test-naver-id
+      client-secret: test-naver-secret
+  elevenst:
+    openapi:
+      key: test-elevenst-key
+  kakao:
+    rest-api-key: test-kakao-key
+    client-secret: ""
+    redirect-uri: http://localhost:8080/api/v1/auth/kakao/callback
+    frontend-base-url: http://localhost:3000

@@ -1,0 +1,66 @@
+name: Deploy Spring Boot to Cloud Run
+
+on:
+  push:
+    branches: [main, my-work]
+    paths-ignore:
+      - 'model/**'
+      - '.github/workflows/deploy-model.yml'
+
+env:
+  REGION: asia-northeast3
+  SERVICE_NAME: spring-backend
+  IMAGE: asia-northeast3-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/today-fridge/spring-backend
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker asia-northeast3-docker.pkg.dev --quiet
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t ${{ env.IMAGE }}:${{ github.sha }} \
+            -t ${{ env.IMAGE }}:latest \
+            .
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ env.IMAGE }}:${{ github.sha }}
+          docker push ${{ env.IMAGE }}:latest
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image ${{ env.IMAGE }}:${{ github.sha }} \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 8080 \
+            --memory 1Gi \
+            --cpu 1 \
+            --min-instances 0 \
+            --max-instances 3 \
+            --timeout 300 \
+            --set-env-vars "^|^SPRING_PROFILES_ACTIVE=prod|DB_URL=${{ secrets.DB_URL }}|DB_PASSWORD=${{ secrets.DB_PASSWORD }}|DB_USERNAME=${{ secrets.DB_USERNAME }}|REDIS_URL=${{ secrets.REDIS_URL }}|JWT_SECRET=${{ secrets.JWT_SECRET }}|MAIL_HOST=${{ secrets.MAIL_HOST }}|MAIL_PORT=${{ secrets.MAIL_PORT }}|MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}|MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}|INTERNAL_API_TOKEN=${{ secrets.INTERNAL_API_TOKEN }}|FASTAPI_BASE_URL=${{ secrets.FASTAPI_BASE_URL }}|KAKAO_REDIRECT_URI=${{ secrets.KAKAO_REDIRECT_URI }}|FRONTEND_BASE_URL=${{ secrets.FRONTEND_BASE_URL }}|APP_BASE_URL=${{ secrets.APP_BASE_URL }}|ELEVENST_API_KEY=${{ secrets.ELEVENST_API_KEY }}|NAVER_CLIENT_ID=${{ secrets.NAVER_CLIENT_ID }}|NAVER_CLIENT_SECRET=${{ secrets.NAVER_CLIENT_SECRET }}|KAKAO_REST_API_KEY=${{ secrets.KAKAO_REST_API_KEY }}"
+
+      - name: Show Service URL
+        run: |
+          echo "Deployed URL:"
+          gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region ${{ env.REGION }} \
+            --format "value(status.url)"

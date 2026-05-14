@@ -1,0 +1,17 @@
+name: Local Config
+version: 1.0.0
+schema: v1
+
+models:
+  - name: Autodetect
+    provider: ollama
+    model: AUTODETECT
+    apiBase: http://localhost:11434
+    roles:
+      - chat
+      - edit
+      - apply
+    defaultCompletionOptions:
+      contextLength: 16384080808080
+      maxTokens: 2048080808
+      temperature: 0.5
