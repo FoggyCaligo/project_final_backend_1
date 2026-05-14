@@ -28,7 +28,8 @@ jobs:
       - name: Build Docker Image
         run: |
           gcloud builds submit . \
-            --tag asia-northeast3-docker.pkg.dev/myfridge-495707/today-fridge-repo/spring-app
+            --tag asia-northeast3-docker.pkg.dev/myfridge-495707/today-fridge-repo/spring-app \
+            --suppress-logs
 
       - name: Deploy to Cloud Run
         run: |
