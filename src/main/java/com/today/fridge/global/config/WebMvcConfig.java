@@ -8,25 +8,32 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
 
     @Value("${app.upload.root-path:uploads}")
     private String uploadRoot;
 
+    @Value("${app.kakao.frontend-base-url:http://localhost:3000}")
+    private String frontendBaseUrl;
+
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
                 .allowedOrigins(
-                    "http://localhost:3000", 
-                    "http://localhost:3000",
-                    "http://127.0.0.1:3000",
-                    "http://localhost:5173",
-                    "http://127.0.0.1:5173",
-                    "http://100.78.2.126:3000",
-                    "https://todayfridge.com",
-                    "https://www.todayfridge.com")
+                        "http://localhost:3000", 
+                        "https://my-frontend-backup.vercel.app",
+                        "https://today-fridge-teamwork.vercel.app",
+                        "https://today-fridge-frontend-deploy.vercel.app",
+                        "http://localhost:3000",
+                        "http://127.0.0.1:3000",
+                        "http://localhost:5173",
+                        "http://127.0.0.1:5173",
+                        "http://100.78.2.126:3000",
+                        "https://todayfridge.com",
+                        "https://www.todayfridge.com",
+                        frontendBaseUrl
+                )
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true);
